@@ -20,15 +20,15 @@ skills:
   - weave-core-agent
 tools:
   - <role_tool1> # e.g. view_file, write_to_file, search_web
-  - status_verify
-  - status_update
+  - weave__status_verify
+  - weave__status_update
 ---
 ```
 
 * **`subagent: true`**: Registers the markdown definition as a delegatable subagent for `invoke_subagent`.
 * **`skills: [weave-core-agent]`**: Natively mounts the `weave-core-agent` skill into the subagent's execution environment.
 * **`inheritCustomizations: false`**: Isolates the subagent from ambient parent rules, unrelated workspace skills, and unassigned MCP servers, preventing context pollution.
-* **`tools: [..., status_verify, status_update]`**: Whitelists only the permitted tools and the WeaveMAS MCP status tools. When shell commands are not required by the role, **strictly omit `run_command`**.
+* **`tools: [..., weave__status_verify, weave__status_update]`**: Whitelists only the permitted tools and the WeaveMAS MCP status tools. When shell commands are not required by the role, **strictly omit `run_command`**.
 
 ### Prompt Binding Statement
 Every WeaveMAS agent prompt must include this mandatory binding statement verbatim:
@@ -40,9 +40,9 @@ Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage
 By binding to `weave-core-agent`, the agent automatically inherits:
 1. **Directory Sandboxing**: Operating strictly within its assigned working directory (`.`).
 2. **Zero Unnecessary Exploration (ZUE)**: No repository scans, directory listings, or root file browsing.
-3. **Step 0 Pre-flight Check**: Validating directory and role via `status_verify(expected_role="<role_slug>")`.
-4. **Lifecycle Tracking**: Transitioning states and logging progress via `status_update(status="in_progress/<step_slug>", progress="...")`.
-5. **Deliverable Verification**: Validating that the final output file exists on disk via `status_update(status="completed", deliverable="<filename>", ...)` before marking complete.
+3. **Step 0 Pre-flight Check**: Validating directory and role via `weave__status_verify(expected_role="<role_slug>")`.
+4. **Lifecycle Tracking**: Transitioning states and logging progress via `weave__status_update(status="in_progress/<step_slug>", progress="...")`.
+5. **Deliverable Verification**: Validating that the final output file exists on disk via `weave__status_update(status="completed", deliverable="<filename>", ...)` before marking complete.
 
 ---
 
@@ -68,7 +68,7 @@ This is a [N]-step process:
 The `weave-core-agent` protocol maps these step names directly into `in_progress/<step_slug>` transitions via the native MCP tool:
 
 ```json
-status_update({
+weave__status_update({
   "status": "in_progress/<step_slug>",
   "progress": "<Concise summary of progress and decisions>"
 })
@@ -113,8 +113,8 @@ skills:
 tools:
   - view_file
   - write_to_file
-  - status_verify
-  - status_update
+  - weave__status_verify
+  - weave__status_update
 ---
 
 # Writer Agent
@@ -163,8 +163,8 @@ tools:
   - view_file
   - search_web
   - write_to_file
-  - status_verify
-  - status_update
+  - weave__status_verify
+  - weave__status_update
 ---
 
 # Fact Checker Agent
@@ -212,8 +212,8 @@ skills:
 tools:
   - search_web
   - write_to_file
-  - status_verify
-  - status_update
+  - weave__status_verify
+  - weave__status_update
 ---
 
 # Director Agent
