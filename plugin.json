@@ -1,0 +1,8 @@
+{
+  "name": "weavemas",
+  "description": "WeaveMAS: High-observability multi-agent orchestration with sandboxed status machines and native MCP tooling.",
+  "suggestedPrompts": [
+    "Verify subagent status in the current working directory",
+    "Inspect the master pipeline status.md"
+  ]
+}

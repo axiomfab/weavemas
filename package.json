@@ -1,0 +1,20 @@
+{
+  "name": "weavemas",
+  "version": "1.0.0",
+  "description": "WeaveMAS: Observable Multi-Agent Systems Plugin & MCP Server for Antigravity",
+  "type": "module",
+  "main": "src/mcp_server.mjs",
+  "scripts": {
+    "test": "node --test tests/*.mjs",
+    "start": "node src/mcp_server.mjs"
+  },
+  "keywords": [
+    "antigravity",
+    "weavemas",
+    "mcp",
+    "multi-agent",
+    "status"
+  ],
+  "author": "Antigravity Team",
+  "license": "MIT"
+}
