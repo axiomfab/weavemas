@@ -31,12 +31,14 @@ Your current working directory (`.`) is your absolute execution boundary:
 
 Before starting any task work, verify that your assigned working directory and pre-initialized `status.md` are valid:
 
-* **Using Native MCP Tool (Recommended)**:
-  Call `weave__status_verify` with:
+* **Using Native MCP Tool (Standard)**:
+  Call `status_verify` (or `weavemas_weave__status_verify`):
   ```json
-  { "expected_role": "<role_slug>" }
+  {
+    "expected_role": "<role_slug>"
+  }
   ```
-* **Using CLI Tool**:
+* **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py verify --expected-role <role_slug>
   ```
@@ -49,15 +51,15 @@ If verification fails, fail fast and report the error immediately.
 
 As you proceed through each step outlined in your role instructions, update `status.md` with the step slug:
 
-* **Using Native MCP Tool (Recommended)**:
-  Call `weave__status_update` with:
+* **Using Native MCP Tool (Standard)**:
+  Call `status_update` (or `weavemas_weave__status_update`):
   ```json
   {
     "status": "in_progress/<step_slug>",
     "progress": "<Summary of current step progress>"
   }
   ```
-* **Using CLI Tool**:
+* **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py update \
     --status "in_progress/<step_slug>" \
@@ -73,8 +75,8 @@ As you proceed through each step outlined in your role instructions, update `sta
 
 When your required deliverable (e.g., `setup.md`) has been fully written to disk in your working directory, transition your status to `completed`:
 
-* **Using Native MCP Tool (Recommended)**:
-  Call `weave__status_update` with:
+* **Using Native MCP Tool (Standard)**:
+  Call `status_update` (or `weavemas_weave__status_update`):
   ```json
   {
     "status": "completed",
@@ -82,7 +84,7 @@ When your required deliverable (e.g., `setup.md`) has been fully written to disk
     "progress": "<Final executive summary of output>"
   }
   ```
-* **Using CLI Tool**:
+* **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py update \
     --status "completed" \

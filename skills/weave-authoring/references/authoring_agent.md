@@ -7,7 +7,7 @@ This guide details how to author **Agent Definitions** (`.agent/agents/[<stage>/
 ## 🎯 1. The Standard Agent Binding Contract
 
 ### Frontmatter Configuration
-Every WeaveMAS agent definition file (`.agent/agents/*.md`) MUST declare its frontmatter with declarative skill injection and isolation:
+Every WeaveMAS agent definition file (`.agent/agents/*.md`) MUST declare its frontmatter with declarative skill injection, isolation, and explicit status tools:
 
 ```yaml
 ---
@@ -19,14 +19,16 @@ inheritCustomizations: false
 skills:
   - weave-core-agent
 tools:
-  - <tool1>
-  - <tool2>
+  - <role_tool1> # e.g. view_file, write_to_file, search_web
+  - status_verify
+  - status_update
 ---
 ```
 
 * **`subagent: true`**: Registers the markdown definition as a delegatable subagent for `invoke_subagent`.
 * **`skills: [weave-core-agent]`**: Natively mounts the `weave-core-agent` skill into the subagent's execution environment.
-* **`inheritCustomizations: false`**: Isolates the subagent from ambient parent rules, unrelated workspace skills, and MCP servers, preventing context pollution.
+* **`inheritCustomizations: false`**: Isolates the subagent from ambient parent rules, unrelated workspace skills, and unassigned MCP servers, preventing context pollution.
+* **`tools: [..., status_verify, status_update]`**: Whitelists only the permitted tools and the WeaveMAS MCP status tools. When shell commands are not required by the role, **strictly omit `run_command`**.
 
 ### Prompt Binding Statement
 Every WeaveMAS agent prompt must include this mandatory binding statement verbatim:
@@ -38,9 +40,9 @@ Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage
 By binding to `weave-core-agent`, the agent automatically inherits:
 1. **Directory Sandboxing**: Operating strictly within its assigned working directory (`.`).
 2. **Zero Unnecessary Exploration (ZUE)**: No repository scans, directory listings, or root file browsing.
-3. **Step 0 Pre-flight Check**: Validating directory and role via `weave_status.py verify --expected-role <role_slug>`.
-4. **Lifecycle Tracking**: Transitioning states and logging progress via `weave_status.py update`.
-5. **Deliverable Verification**: Validating that the final output file exists on disk before marking `completed`.
+3. **Step 0 Pre-flight Check**: Validating directory and role via `status_verify(expected_role="<role_slug>")`.
+4. **Lifecycle Tracking**: Transitioning states and logging progress via `status_update(status="in_progress/<step_slug>", progress="...")`.
+5. **Deliverable Verification**: Validating that the final output file exists on disk via `status_update(status="completed", deliverable="<filename>", ...)` before marking complete.
 
 ---
 
@@ -63,12 +65,13 @@ This is a [N]-step process:
 ```
 
 ### Automatic Step-Slug Mapping
-The `weave-core-agent` skill maps these step names directly into `in_progress/<step_slug>` transitions via the CLI:
+The `weave-core-agent` protocol maps these step names directly into `in_progress/<step_slug>` transitions via the native MCP tool:
 
-```bash
-python .agent/skills/weave-core/scripts/weave_status.py update \
-  --status "in_progress/<step_slug>" \
-  --progress "<Concise summary of progress and decisions>"
+```json
+status_update({
+  "status": "in_progress/<step_slug>",
+  "progress": "<Concise summary of progress and decisions>"
+})
 ```
 
 * For single-step or atomic tasks where decomposition into multiple phases is unnecessary, use a single clear state (e.g. `in_progress/drafting` or `in_progress/synthesizing`).
@@ -99,6 +102,21 @@ Every agent definition must explicitly declare its deliverable and any read auth
 
 ### Example A: Broadcast Script Writer (`agent_writer.md`)
 ```markdown
+---
+name: stage3_writer
+description: agent that writes spoken broadcast prose for assigned radio segments
+model: flash
+subagent: true
+inheritCustomizations: false
+skills:
+  - weave-core-agent
+tools:
+  - view_file
+  - write_to_file
+  - status_verify
+  - status_update
+---
+
 # Writer Agent
 
 You write broadcast-ready radio prose for assigned segments within your dedicated working directory.
@@ -133,6 +151,22 @@ Check the target segment duration and ensure word count aligns with the target. 
 
 ### Example B: Fact Checker / Auditor Agent (`agent_factchecker.md`)
 ```markdown
+---
+name: stage3_factchecker
+description: agent that audits drafted segment prose against historical records
+model: flash_lite
+subagent: true
+inheritCustomizations: false
+skills:
+  - weave-core-agent
+tools:
+  - view_file
+  - search_web
+  - write_to_file
+  - status_verify
+  - status_update
+---
+
 # Fact Checker Agent
 
 You audit drafted segment prose against historical records within your dedicated working directory.
@@ -167,6 +201,21 @@ Compile your findings into `audit_report.md` detailing verified claims, flagged 
 
 ### Example C: Director / Setup Agent (`agent_director.md`)
 ```markdown
+---
+name: stage1_director
+description: agent that selects a writer persona and defines showrunner guidelines
+model: flash
+subagent: true
+inheritCustomizations: false
+skills:
+  - weave-core-agent
+tools:
+  - search_web
+  - write_to_file
+  - status_verify
+  - status_update
+---
+
 # Director Agent
 
 You provide high-level creative direction and establish the core showrunner guidelines.
