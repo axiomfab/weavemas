@@ -1,0 +1,184 @@
+// Main Frontend Controller
+(function() {
+  let pipelineData = null;
+  let selectedStageNum = null;
+  let selectedShowDir = null;
+  let pollInterval = null;
+
+  async function getParams() {
+    const parts = [];
+    if (window.sidecar && window.sidecar.getWorkspaceUris) {
+      try {
+        const uris = await window.sidecar.getWorkspaceUris();
+        if (uris && uris.length > 0) parts.push(`workspaceUri=${encodeURIComponent(uris[0])}`);
+      } catch (e) {
+        console.warn('Workspace URI lookup failed:', e);
+      }
+    }
+    if (selectedShowDir) {
+      parts.push(`showDir=${encodeURIComponent(selectedShowDir)}`);
+    }
+    return parts.length > 0 ? `?${parts.join('&')}` : '';
+  }
+
+  async function fetchJSON(url) {
+    const params = await getParams();
+    const fullUrl = url + params;
+    const fetchFn = (window.sidecar && window.sidecar.fetch) ? window.sidecar.fetch.bind(window.sidecar) : window.fetch;
+    const res = await fetchFn(fullUrl);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return await res.json();
+  }
+
+  async function refreshData() {
+    try {
+      pipelineData = await fetchJSON('/api/pipeline');
+      
+      if (!selectedShowDir && pipelineData && pipelineData.showDir) {
+        selectedShowDir = pipelineData.showDir;
+      }
+
+      // Update show dropdown
+      updateShowSelector(pipelineData.availableShows || []);
+
+      renderUI();
+    } catch (err) {
+      console.error('Error refreshing pipeline panel:', err);
+    }
+  }
+
+  function updateShowSelector(shows) {
+    const sel = document.getElementById('show-select');
+    if (!sel) return;
+
+    const norm = (p) => (p || '').replace(/\\/g, '/').toLowerCase();
+    const currentVal = norm(sel.value || selectedShowDir);
+    
+    // Check if currentVal matches any show
+    const hasMatch = shows.some(s => norm(s.path) === currentVal);
+    const activePath = hasMatch ? (sel.value || selectedShowDir) : (shows[0]?.path || null);
+    if (!hasMatch && activePath) {
+      selectedShowDir = activePath;
+    }
+
+    sel.innerHTML = shows.map(s => {
+      const isSel = norm(s.path) === norm(activePath);
+      const label = s.displayPath || s.title || (s.name ? `output\\${s.name}` : s.path);
+      return `<option value="${s.path}" ${isSel ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+
+    if (shows.length === 0) {
+      sel.innerHTML = '<option value="">No shows in output/</option>';
+    }
+  }
+
+  function renderUI() {
+    if (!pipelineData) return;
+
+    // Header title
+    const titleEl = document.getElementById('show-title');
+    if (titleEl) titleEl.textContent = pipelineData.showTitle || 'WeaveMAS UI';
+
+    // Stepper row
+    const stepperRow = document.getElementById('stages-stepper-row');
+    const stepperLine = document.getElementById('stepper-line');
+    if (!stepperRow) return;
+
+    const stages = pipelineData.stages || {};
+    const stageList = pipelineData.stageList || Object.values(stages);
+
+    if (selectedStageNum && !stages[selectedStageNum]) {
+      selectedStageNum = null;
+    }
+
+    if (stepperLine) {
+      if (stageList.length <= 1) {
+        stepperLine.style.display = 'none';
+      } else {
+        stepperLine.style.display = 'block';
+        const offsetPct = (100 / (2 * stageList.length)).toFixed(2);
+        stepperLine.style.left = `${offsetPct}%`;
+        stepperLine.style.right = `${offsetPct}%`;
+      }
+    }
+
+    function hasAgentInProgress(nodes) {
+      if (!nodes || !Array.isArray(nodes)) return false;
+      for (const node of nodes) {
+        if (!node) continue;
+        if (node.type === 'agent') {
+          const status = (node.frontmatter?.status || '').toLowerCase();
+          const base = status.split('/')[0];
+          if (base === 'in_progress' || base === 'revising' || base === 'running') return true;
+        } else if (node.type === 'group' && node.children) {
+          if (hasAgentInProgress(node.children)) return true;
+        }
+      }
+      return false;
+    }
+
+    if (stageList.length === 0) {
+      stepperRow.innerHTML = '<div class="w-full text-center py-2 text-slate-500 text-xs">No stage directories found in output folder.</div>';
+    } else {
+      let stepperHtml = '';
+      const stageAgentsList = pipelineData.stageAgents || [];
+      for (const st of stageList) {
+        const isSelected = (st.num === selectedStageNum);
+        const stageAgentEntry = stageAgentsList.find(sa => sa.num === st.num);
+        const hasAgentActive = stageAgentEntry ? hasAgentInProgress(stageAgentEntry.nodes || []) : false;
+
+        let dotClass = 'stage-dot-pending';
+        if (hasAgentActive) dotClass = 'stage-dot-flashing';
+        else if (st.isCompleted) dotClass = 'stage-dot-completed';
+        else if (st.status === 'in_progress') dotClass = 'stage-dot-in-progress';
+        if (isSelected) dotClass += ' stage-dot-selected';
+
+        stepperHtml += `
+          <div class="flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
+            <div class="stage-dot ${dotClass}"></div>
+            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'text-white' : 'text-slate-300'} text-center">Stage ${st.num}</span>
+            <span class="text-[10px] text-slate-500 text-center truncate max-w-[55px]">${st.name}</span>
+          </div>
+        `;
+      }
+      stepperRow.innerHTML = stepperHtml;
+    }
+
+    // Mount all discovered pipeline agents panel (filtered if a stage is selected)
+    const agentsContainer = document.getElementById('pipeline-agents-container');
+    const panel = window.AgentPanel || window.ConceptTracker;
+    if (agentsContainer && panel) {
+      panel.render(agentsContainer, { stages: pipelineData.stageAgents || [] }, selectedStageNum);
+    }
+  }
+
+  window.App = {
+    selectStage(num) {
+      if (selectedStageNum === num) {
+        selectedStageNum = null; // Toggle filter off
+      } else {
+        selectedStageNum = num;
+      }
+      renderUI();
+    },
+    refresh() {
+      renderUI();
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn) syncBtn.addEventListener('click', refreshData);
+
+    const showSelect = document.getElementById('show-select');
+    if (showSelect) {
+      showSelect.addEventListener('change', (e) => {
+        selectedShowDir = e.target.value;
+        refreshData();
+      });
+    }
+
+    refreshData();
+    pollInterval = setInterval(refreshData, 4000);
+  });
+})();

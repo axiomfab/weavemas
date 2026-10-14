@@ -2,7 +2,7 @@
 name: weave-core-agent
 description: >-
   Standard WeaveMAS subagent execution protocol. Enforces CWD sandboxing,
-  pre-flight verification, step-by-step lifecycle tracking, and deliverable verification via weave_status CLI.
+  pre-flight verification, step-by-step lifecycle tracking, and deliverable verification via WeaveMAS MCP status tools.
 ---
 
 # 🤖 WeaveMAS Subagent Execution Protocol
@@ -32,12 +32,16 @@ Your current working directory (`.`) is your absolute execution boundary:
 Before starting any task work, verify that your assigned working directory and pre-initialized `status.md` are valid:
 
 * **Using Native MCP Tool (Standard)**:
-  Call `weave__status_verify`:
-  ```json
-  {
-    "expected_role": "<role_slug>"
-  }
-  ```
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_verify"`
+  * `Arguments`:
+    ```json
+    {
+      "expected_role": "<role_slug>",
+      "dir": "<working_directory>"
+    }
+    ```
 * **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py verify --expected-role <role_slug>
@@ -52,13 +56,17 @@ If verification fails, fail fast and report the error immediately.
 As you proceed through each step outlined in your role instructions, update `status.md` with the step slug:
 
 * **Using Native MCP Tool (Standard)**:
-  Call `weave__status_update`:
-  ```json
-  {
-    "status": "in_progress/<step_slug>",
-    "progress": "<Summary of current step progress>"
-  }
-  ```
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_update"`
+  * `Arguments`:
+    ```json
+    {
+      "status": "in_progress/<step_slug>",
+      "progress": "<Summary of current step progress>",
+      "dir": "<working_directory>"
+    }
+    ```
 * **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py update \
@@ -76,14 +84,18 @@ As you proceed through each step outlined in your role instructions, update `sta
 When your required deliverable (e.g., `setup.md`) has been fully written to disk in your working directory, transition your status to `completed`:
 
 * **Using Native MCP Tool (Standard)**:
-  Call `weave__status_update`:
-  ```json
-  {
-    "status": "completed",
-    "deliverable": "<deliverable_filename>",
-    "progress": "<Final executive summary of output>"
-  }
-  ```
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_update"`
+  * `Arguments`:
+    ```json
+    {
+      "status": "completed",
+      "deliverable": "<deliverable_filename>",
+      "progress": "<Final executive summary of output>",
+      "dir": "<working_directory>"
+    }
+    ```
 * **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py update \

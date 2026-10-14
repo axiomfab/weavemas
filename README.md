@@ -57,9 +57,22 @@ Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage
 
 ---
 
+## 🖥️ WeaveMAS UI (Sidecar Observer)
+
+WeaveMAS includes a real-time reactive auxiliary side pane observer:
+* **Directory**: `sidecars/panel/`
+* **Features**:
+  * **Interactive Agent Cards**: Hierarchical tree visualization of all subagents discovered across pipeline stages (`agent_panel.js`).
+  * **Deliverable Inspection**: 1-click toggle to inspect deliverable files directly in the card.
+  * **Auto-Scrolling Log View**: Auto-scrolls to the newest updates and preserves reading scroll positions during background polling.
+  * **Pipeline Stepper**: Real-time status indicators reflecting stage progress.
+
+---
+
 ## 🧪 Testing
 
 Run native test suite:
 ```bash
 npm test
 ```
+

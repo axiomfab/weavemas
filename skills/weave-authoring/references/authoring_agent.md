@@ -15,20 +15,20 @@ name: <agent_name>
 description: <agent_description>
 model: <flash | pro | inherit>
 subagent: true
-inheritCustomizations: false
+inheritMcp: true
 skills:
   - weave-core-agent
 tools:
-  - <role_tool1> # e.g. view_file, write_to_file, search_web
-  - weave__status_verify
-  - weave__status_update
+  - <role_tool1> # Built-in tools ONLY: view_file, write_to_file, search_web, run_command
 ---
 ```
 
 * **`subagent: true`**: Registers the markdown definition as a delegatable subagent for `invoke_subagent`.
 * **`skills: [weave-core-agent]`**: Natively mounts the `weave-core-agent` skill into the subagent's execution environment.
-* **`inheritCustomizations: false`**: Isolates the subagent from ambient parent rules, unrelated workspace skills, and unassigned MCP servers, preventing context pollution.
-* **`tools: [..., weave__status_verify, weave__status_update]`**: Whitelists only the permitted tools and the WeaveMAS MCP status tools. When shell commands are not required by the role, **strictly omit `run_command`**.
+* **`inheritMcp: true`**: Automatically provides the subagent with the native Antigravity MCP dispatcher (`call_mcp_tool`) for mounted MCP servers (`weavemas_weave`).
+* **`tools: [...]`**: Strictly whitelists **built-in core tools** (e.g. `view_file`, `write_to_file`, `search_web`, `run_command`).
+  * ⚠️ **CRITICAL RULE**: **NEVER** list `call_mcp_tool` or `weave__*` in the `tools:` array. Listing MCP tools in `tools:` causes executor component registry failures (`tool not found in registry`). MCP tool access is granted solely via `inheritMcp: true`.
+  * When shell execution is not required by the role, **strictly omit `run_command`**.
 
 ### Prompt Binding Statement
 Every WeaveMAS agent prompt must include this mandatory binding statement verbatim:
@@ -40,9 +40,9 @@ Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage
 By binding to `weave-core-agent`, the agent automatically inherits:
 1. **Directory Sandboxing**: Operating strictly within its assigned working directory (`.`).
 2. **Zero Unnecessary Exploration (ZUE)**: No repository scans, directory listings, or root file browsing.
-3. **Step 0 Pre-flight Check**: Validating directory and role via `weave__status_verify(expected_role="<role_slug>")`.
-4. **Lifecycle Tracking**: Transitioning states and logging progress via `weave__status_update(status="in_progress/<step_slug>", progress="...")`.
-5. **Deliverable Verification**: Validating that the final output file exists on disk via `weave__status_update(status="completed", deliverable="<filename>", ...)` before marking complete.
+3. **Step 0 Pre-flight Check**: Validating directory and role via `call_mcp_tool` (`status_verify` with `expected_role="<role_slug>"` and `dir="<cwd>"`).
+4. **Lifecycle Tracking**: Transitioning states and logging progress via `call_mcp_tool` (`status_update` with `status="in_progress/<step_slug>"`, `progress="..."`, and `dir="<cwd>"`).
+5. **Deliverable Verification**: Validating that the final output file exists on disk via `call_mcp_tool` (`status_update` with `status="completed"`, `deliverable="<filename>"`, ...) before marking complete.
 
 ---
 
@@ -65,12 +65,17 @@ This is a [N]-step process:
 ```
 
 ### Automatic Step-Slug Mapping
-The `weave-core-agent` protocol maps these step names directly into `in_progress/<step_slug>` transitions via the native MCP tool:
+The `weave-core-agent` protocol maps these step names directly into `in_progress/<step_slug>` transitions via the WeaveMAS MCP tool:
 
 ```json
-weave__status_update({
-  "status": "in_progress/<step_slug>",
-  "progress": "<Concise summary of progress and decisions>"
+call_mcp_tool({
+  "ServerName": "weavemas_weave",
+  "ToolName": "status_update",
+  "Arguments": {
+    "status": "in_progress/<step_slug>",
+    "progress": "<Concise summary of progress and decisions>",
+    "dir": "<working_directory>"
+  }
 })
 ```
 
@@ -107,14 +112,12 @@ name: stage3_writer
 description: agent that writes spoken broadcast prose for assigned radio segments
 model: flash
 subagent: true
-inheritCustomizations: false
+inheritMcp: true
 skills:
   - weave-core-agent
 tools:
   - view_file
   - write_to_file
-  - weave__status_verify
-  - weave__status_update
 ---
 
 # Writer Agent
@@ -156,15 +159,13 @@ name: stage3_factchecker
 description: agent that audits drafted segment prose against historical records
 model: flash_lite
 subagent: true
-inheritCustomizations: false
+inheritMcp: true
 skills:
   - weave-core-agent
 tools:
   - view_file
   - search_web
   - write_to_file
-  - weave__status_verify
-  - weave__status_update
 ---
 
 # Fact Checker Agent
@@ -206,14 +207,13 @@ name: stage1_director
 description: agent that selects a writer persona and defines showrunner guidelines
 model: flash
 subagent: true
-inheritCustomizations: false
+inheritMcp: true
 skills:
   - weave-core-agent
 tools:
   - search_web
   - write_to_file
-  - weave__status_verify
-  - weave__status_update
+  - run_command
 ---
 
 # Director Agent
