@@ -29,7 +29,9 @@ Anytime an orchestration guide, stage script, or workflow directive refers to in
   - Whenever a guide says *"Initialize status (`status.md`)"* or *"Initialize master `status.md`"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_init"`).
   - Whenever a guide says *"Advance master status (`status.md`)"* or *"Update status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_update"`).
   - Whenever a guide says *"Verify status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_verify"`).
-* **Absolute Path Requirement (`dir`)**: The `dir` argument passed to all status MCP tools (`status_init`, `status_update`, `status_verify`) **must strictly be an absolute path** (e.g. `<workspace_root>/output/<context_slug>`). Relative paths will fail fast immediately to prevent working directory collisions.
+  - Whenever checking subagent lifecycle, completion, or deliverable existence $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_read"`).
+* **Never Inspect `status.md` via `view_file`**: Inspecting `status.md` via `view_file` or file reading tools is strictly prohibited. It introduces unnecessary token overhead and bypasses automated deliverable verification. Always use `status_read` to receive concise, structured status metadata.
+* **Absolute Path Requirement (`dir`)**: The `dir` argument passed to all status MCP tools (`status_init`, `status_update`, `status_verify`, `status_read`) **must strictly be an absolute path** (e.g. `<workspace_root>/output/<context_slug>`). Relative paths will fail fast immediately to prevent working directory collisions.
 * **Declarative Mapping**: Stage guides define status lifecycle events declaratively (referencing `status.md`); the orchestrator executing this skill is strictly responsible for translating these declarative directives into the appropriate WeaveMAS MCP status tool invocations.
 
 ---
@@ -111,12 +113,21 @@ Dispatch subagents as autonomous black boxes:
 
 ## 6. Step 3: Deliverable Ingestion & Verification (Fail Fast)
 
-Upon subagent completion:
-1. Read the agent's `status.md`.
-2. Verify that `status` starts with `completed` (e.g., `completed` or `completed/<sub_state>`).
-3. Read the relative deliverable file path specified in the `deliverable` frontmatter field.
-4. If `deliverable` is `null`, missing, or points to an empty file: **fail fast** and log a blocker error immediately.
-5. If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
+Upon subagent completion notification:
+1. **Read Status via MCP**:
+   Call `call_mcp_tool`:
+   * `ServerName`: `"weavemas_weave"`
+   * `ToolName`: `"status_read"`
+   * `Arguments`: `{ "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>" }`
+2. **Validate Completion Metadata**:
+   - Verify `is_completed` is `true` (status starts with `completed`).
+   - Verify `deliverable_exists` is `true` and `deliverable_size > 0`.
+3. **Fail Fast**:
+   - If `is_completed` is `false`, `deliverable` is `null`, or `deliverable_exists` is `false`: **halt immediately** and log a critical blocker error.
+4. **Ingest Deliverable**:
+   - Copy or compile the verified deliverable file from `deliverable_path` into the canonical stage handoff location (e.g. `output/<context_slug>/01_setup.md`).
+5. **Handle Auditing/Revision**:
+   - If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
 
 ---
 

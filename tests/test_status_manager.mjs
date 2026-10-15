@@ -8,7 +8,8 @@ import {
   serializeStatus,
   statusInit,
   statusUpdate,
-  statusVerify
+  statusVerify,
+  statusRead
 } from '../src/status_manager.mjs';
 
 function createTempDir() {
@@ -208,3 +209,57 @@ test('statusVerify - Failure Path 3: relative targetDir throws Error', () => {
     message: /CRITICAL: Target directory must be an absolute path/
   });
 });
+
+test('statusRead - Happy Path: reads status and verifies completed deliverable metadata', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'stage1_setup/agent_director', 'agent', 'not_started');
+
+  // Verify initial read
+  const initial = statusRead(tmp);
+  assert.equal(initial.success, true);
+  assert.equal(initial.role, 'stage1_setup/agent_director');
+  assert.equal(initial.status, 'not_started');
+  assert.equal(initial.deliverable, null);
+  assert.equal(initial.deliverable_exists, false);
+  assert.equal(initial.is_completed, false);
+
+  // Create deliverable and complete status
+  fs.writeFileSync(path.join(tmp, 'setup.md'), '# Creative Setup Deliverable', 'utf-8');
+  statusUpdate(tmp, 'completed/setup_ready', 'Finished setup', 'setup.md');
+
+  const completed = statusRead(tmp);
+  assert.equal(completed.success, true);
+  assert.equal(completed.role, 'stage1_setup/agent_director');
+  assert.equal(completed.status, 'completed/setup_ready');
+  assert.equal(completed.deliverable, 'setup.md');
+  assert.equal(completed.deliverable_exists, true);
+  assert.ok(completed.deliverable_size > 0);
+  assert.equal(completed.is_completed, true);
+  assert.equal(completed.deliverable_path, path.join(tmp, 'setup.md'));
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusRead - Failure Path 1: relative targetDir throws Error', () => {
+  assert.throws(() => statusRead('relative/path'), {
+    name: 'Error',
+    message: /CRITICAL: Target directory must be an absolute path/
+  });
+});
+
+test('statusRead - Failure Path 2: missing status.md throws Error', () => {
+  const tmp = createTempDir();
+  assert.throws(() => statusRead(tmp), {
+    name: 'Error',
+    message: /CRITICAL: status.md not found in directory/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusRead - Failure Path 3: non-string targetDir throws TypeError', () => {
+  assert.throws(() => statusRead(null), {
+    name: 'TypeError',
+    message: /CRITICAL: Target directory must be a non-empty string/
+  });
+});
+

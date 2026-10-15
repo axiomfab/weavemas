@@ -1,81 +1,9 @@
 import readline from 'node:readline';
 import path from 'node:path';
-import { statusInit, statusUpdate, statusVerify } from './status_manager.mjs';
+import { TOOLS } from './tool_schemas.mjs';
+import { statusInit, statusUpdate, statusVerify, statusRead } from './status_manager.mjs';
 
 const PROTOCOL_VERSION = '2024-11-05';
-
-const TOOLS = [
-  {
-    name: 'status_init',
-    description: 'Initialize a new WeaveMAS status.md file in the specified directory.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dir: {
-          type: 'string',
-          description: 'Absolute path to the target directory to initialize status.md in.'
-        },
-        role: {
-          type: 'string',
-          description: 'The expected role identifier (e.g. stage2_concept/agent_showrunner or orchestrator).'
-        },
-        type: {
-          type: 'string',
-          description: 'Node type: "agent" or "orchestrator" (default: "agent").'
-        },
-        status: {
-          type: 'string',
-          description: 'Initial lifecycle status (default: "not_started").'
-        }
-      },
-      required: ['dir', 'role']
-    }
-  },
-  {
-    name: 'status_update',
-    description: 'Update the WeaveMAS status.md with a new lifecycle state and progress note.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dir: {
-          type: 'string',
-          description: 'Absolute path to the target directory containing status.md.'
-        },
-        status: {
-          type: 'string',
-          description: 'Target lifecycle status (e.g. in_progress/step_name, waiting/reason, completed, blocked/reason).'
-        },
-        progress: {
-          type: 'string',
-          description: 'Concise summary of progress, decisions, or transition rationale.'
-        },
-        deliverable: {
-          type: 'string',
-          description: 'Relative path to output deliverable (required if status is completed).'
-        }
-      },
-      required: ['dir', 'status']
-    }
-  },
-  {
-    name: 'status_verify',
-    description: 'Verify that the working directory status.md matches the assigned subagent role.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dir: {
-          type: 'string',
-          description: 'Absolute path to the target directory containing status.md.'
-        },
-        expected_role: {
-          type: 'string',
-          description: 'The expected role identifier for pre-flight verification.'
-        }
-      },
-      required: ['dir', 'expected_role']
-    }
-  }
-];
 
 /**
  * Sends a single JSON-RPC response or notification line to stdout.
@@ -115,8 +43,13 @@ export function handleMessage(msg) {
       id,
       result: {
         protocolVersion: PROTOCOL_VERSION,
-        capabilities: { tools: {} },
-        serverInfo: { name: 'weave-mcp', version: '1.0.0' }
+        capabilities: {
+          tools: { listChanged: false }
+        },
+        serverInfo: {
+          name: 'weave-mcp',
+          version: '0.1.0'
+        }
       }
     });
   }
@@ -139,10 +72,9 @@ export function handleMessage(msg) {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
         const role = args.role;
-        if (!role) throw new Error("CRITICAL: 'role' argument is required for status_init.");
         const type = args.type || 'agent';
-        const initialStatus = args.status || 'not_started';
-        const res = statusInit(targetDir, role, type, initialStatus);
+        const status = args.status || 'not_started';
+        const res = statusInit(targetDir, role, type, status);
         resultText = res.message;
       } else if (name === 'status_update') {
         const targetDir = args.dir;
@@ -164,6 +96,13 @@ export function handleMessage(msg) {
         if (!expectedRole) throw new Error("CRITICAL: 'expected_role' argument is required for status_verify.");
         const res = statusVerify(targetDir, expectedRole);
         resultText = `STATUS_VERIFY_OK: Role verified as '${res.role}' (Current status: ${res.status})`;
+      } else if (name === 'status_read') {
+        const targetDir = args.dir;
+        if (!targetDir || typeof targetDir !== 'string') {
+          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        }
+        const res = statusRead(targetDir);
+        resultText = JSON.stringify(res, null, 2);
       } else {
         return sendLine({
           jsonrpc: '2.0',

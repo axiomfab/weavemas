@@ -49,6 +49,7 @@ test('MCP Discovery - Happy Path: tools/list returns Weave status tools', () => 
   assert.ok(toolNames.includes('status_init'));
   assert.ok(toolNames.includes('status_update'));
   assert.ok(toolNames.includes('status_verify'));
+  assert.ok(toolNames.includes('status_read'));
 });
 
 test('MCP Tool Call - Happy Path: executes status_init and status_update', () => {
@@ -199,3 +200,82 @@ test('MCP Failure Path 6: status_init with relative dir returns isError: true re
   assert.equal(res.result.isError, true);
   assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
 });
+
+test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deliverable status', () => {
+  const tmp = createTempDir();
+  handleMessage({
+    jsonrpc: '2.0',
+    id: 16,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: { dir: tmp, role: 'stage1_setup/agent_director' }
+    }
+  });
+
+  fs.writeFileSync(path.join(tmp, 'setup.md'), '# Setup content', 'utf-8');
+  handleMessage({
+    jsonrpc: '2.0',
+    id: 17,
+    method: 'tools/call',
+    params: {
+      name: 'status_update',
+      arguments: { dir: tmp, status: 'completed', deliverable: 'setup.md', progress: 'Setup completed' }
+    }
+  });
+
+  const readReq = {
+    jsonrpc: '2.0',
+    id: 18,
+    method: 'tools/call',
+    params: {
+      name: 'status_read',
+      arguments: { dir: tmp }
+    }
+  };
+  const readRes = captureResponse(readReq);
+  assert.equal(readRes.id, 18);
+  assert.equal(readRes.result.isError, undefined);
+  const data = JSON.parse(readRes.result.content[0].text);
+  assert.equal(data.success, true);
+  assert.equal(data.role, 'stage1_setup/agent_director');
+  assert.equal(data.status, 'completed');
+  assert.equal(data.deliverable, 'setup.md');
+  assert.equal(data.deliverable_exists, true);
+  assert.ok(data.deliverable_size > 0);
+  assert.equal(data.is_completed, true);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 7: status_read without dir returns isError: true result', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 19,
+    method: 'tools/call',
+    params: {
+      name: 'status_read',
+      arguments: {}
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 19);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: 'dir' argument is required and must be an absolute path/);
+});
+
+test('MCP Failure Path 8: status_read with relative dir returns isError: true result', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 20,
+    method: 'tools/call',
+    params: {
+      name: 'status_read',
+      arguments: { dir: 'relative/path' }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 20);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
+});
+

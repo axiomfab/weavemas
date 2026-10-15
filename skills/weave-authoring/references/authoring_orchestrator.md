@@ -28,7 +28,7 @@ tools:
 
 * **`subagent: false`**: Orchestrators act as parent agents, not leaf workers.
 * **`skills: [weave-core-orchestrator]`**: Natively mounts the orchestrator execution protocol.
-* **`inheritMcp: true`**: Grants access to WeaveMAS MCP status tools (`status_init`, `status_update`).
+* **`inheritMcp: true`**: Grants access to WeaveMAS MCP status tools (`status_init`, `status_update`, `status_verify`, `status_read`).
 * **Least-Privilege `tools:`**:
   * **`invoke_subagent`**: Mandatory for spawning and coordinating stage agents.
   * **`view_file`**: Mandatory for inspecting deliverables and checking stage outputs.
@@ -127,9 +127,11 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
      - **Strict Prohibition**: Never micromanage or dictate intermediate status transitions (e.g. `"update status to in_progress/xyz"`) or step-by-step reasoning in the dispatch prompt. All execution mechanics belong in the agent definition.
    * Do NOT poll in a loop; leverage reactive wakeups.
 2. **Completion & Deliverable Ingestion (Fail Fast)**:
-   * When the agent finishes, read its `status.md`.
-   * Verify `status` starts with `completed` (e.g. `completed` or `completed/<sub_state>`).
-   * Read the relative file path specified in `deliverable`. If `deliverable` is `null`, missing, or points to an empty file, **fail fast** and log a blocker error immediately.
+   * When the agent finishes, query its status via `status_read` (`dir: "<absolute_subagent_dir>"`).
+   * Verify `is_completed` is `true` (status starts with `completed`).
+   * Verify `deliverable_exists` is `true` and deliverable file is non-empty.
+   * If `is_completed` is `false`, `deliverable` is `null`, or deliverable is missing/empty, **fail fast** and log a blocker error immediately.
+   * Ingest the verified deliverable from `deliverable_path`. Never use `view_file` to read `status.md`.
 
 ---
 
@@ -169,8 +171,8 @@ For each agent in the workflow:
 4. Dispatch agent via `invoke_subagent`, passing assigned working directory and required deliverable.
 
 ### Phase 2: Ingestion & Verification
-1. Verify agent `status.md` indicates `status: completed`.
-2. Verify deliverable file exists on disk and is non-empty.
+1. Read agent status via `status_read` (`dir: "<subagent_dir>"`).
+2. Verify `is_completed: true`, `deliverable_exists: true`, and `deliverable_size > 0`.
 3. Validate deliverable contents against stage requirements.
 
 ### Phase 3: Stage Handoff & Pipeline Completion
