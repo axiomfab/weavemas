@@ -177,7 +177,6 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   const role = String(frontmatter.role ?? '');
   const type = String(frontmatter.type ?? 'agent');
   const deliverable = frontmatter.deliverable ? String(frontmatter.deliverable) : null;
-  const progress = frontmatter.progress ? String(frontmatter.progress) : null;
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
   if (expectedStatus !== undefined && expectedStatus !== null) {
@@ -211,12 +210,10 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   }
 
   return {
-    success: true,
     status,
     role,
     deliverable,
     type,
-    ...(progress ? { progress } : {}),
-    ...(updatedAt ? { updated_at: updatedAt } : {})
+    updated_at: updatedAt
   };
 }

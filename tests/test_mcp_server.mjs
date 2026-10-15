@@ -237,11 +237,11 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
   assert.equal(readRes.id, 18);
   assert.equal(readRes.result.isError, undefined);
   const data = JSON.parse(readRes.result.content[0].text);
-  assert.equal(data.success, true);
   assert.equal(data.role, 'stage1_setup/agent_director');
   assert.equal(data.status, 'completed');
   assert.equal(data.deliverable, 'setup.md');
   assert.equal(data.type, 'agent');
+  assert.ok(data.updated_at);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

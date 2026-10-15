@@ -216,21 +216,22 @@ test('statusRead - Happy Path: reads status and matches expected deliverable', (
 
   // Verify initial read
   const initial = statusRead(tmp);
-  assert.equal(initial.success, true);
   assert.equal(initial.role, 'stage1_setup/agent_director');
   assert.equal(initial.status, 'not_started');
   assert.equal(initial.deliverable, null);
   assert.equal(initial.type, 'agent');
+  assert.ok(initial.updated_at);
 
   // Create deliverable and complete status
   fs.writeFileSync(path.join(tmp, 'setup.md'), '# Creative Setup Deliverable', 'utf-8');
   statusUpdate(tmp, 'completed/setup_ready', 'Finished setup', 'setup.md');
 
   const completed = statusRead(tmp);
-  assert.equal(completed.success, true);
   assert.equal(completed.role, 'stage1_setup/agent_director');
   assert.equal(completed.status, 'completed/setup_ready');
   assert.equal(completed.deliverable, 'setup.md');
+  assert.equal(completed.type, 'agent');
+  assert.ok(completed.updated_at);
 
   // Verify with expected deliverable & status matching
   const matched = statusRead(tmp, 'setup.md', 'completed');
