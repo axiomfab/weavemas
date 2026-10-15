@@ -110,6 +110,9 @@ test('getRuntimeBadgeHtml - Generates proper badge HTML for running and stopped 
   assert.match(runningHtml, /data-running-timer/);
   assert.match(runningHtml, /15s/);
   assert.match(runningHtml, /\(running\)/);
+  assert.match(runningHtml, /text-slate-500/);
+  assert.doesNotMatch(runningHtml, /animate-pulse/);
+  assert.doesNotMatch(runningHtml, /amber/);
 
   const stoppedBody = `
 - 2026-10-15T10:00:00.000Z: \`in_progress/test\` - Work
@@ -118,5 +121,30 @@ test('getRuntimeBadgeHtml - Generates proper badge HTML for running and stopped 
   const stoppedHtml = RuntimeTracker.getRuntimeBadgeHtml(stoppedBody, 'completed');
   assert.doesNotMatch(stoppedHtml, /data-running-timer/);
   assert.match(stoppedHtml, /20s/);
+  assert.match(stoppedHtml, /text-slate-500/);
   assert.doesNotMatch(stoppedHtml, /\(running\)/);
+});
+
+test('formatRelativeTime - Happy Path: formats relative times across intervals', () => {
+  const nowMs = 1760000000000;
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 5000, nowMs), 'just now');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 14000, nowMs), 'just now');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 30000, nowMs), 'a few moments ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 59000, nowMs), 'a few moments ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 65000, nowMs), '1 minute ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 150000, nowMs), '2 minutes ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 3650000, nowMs), '1 hour ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 7500000, nowMs), '2 hours ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 86500000, nowMs), '1 day ago');
+  assert.equal(RuntimeTracker.formatRelativeTime(nowMs - 260000000, nowMs), '3 days ago');
+});
+
+test('formatRelativeTime - Failure Path 1: handles null, undefined, and empty string', () => {
+  assert.equal(RuntimeTracker.formatRelativeTime(null), '');
+  assert.equal(RuntimeTracker.formatRelativeTime(undefined), '');
+  assert.equal(RuntimeTracker.formatRelativeTime(''), '');
+});
+
+test('formatRelativeTime - Failure Path 2: handles invalid date string', () => {
+  assert.equal(RuntimeTracker.formatRelativeTime('invalid-date-string'), '');
 });

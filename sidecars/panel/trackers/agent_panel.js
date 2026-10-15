@@ -82,10 +82,15 @@
     const body = agentData?.body || '';
     const status = fm.status || 'pending';
     const convId = fm.conversation_id;
-    const updatedAt = fm.updated_at ? new Date(fm.updated_at).toLocaleTimeString() : null;
-    const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
     const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || (typeof RuntimeTracker !== 'undefined' ? RuntimeTracker : null);
     const runtimeBadge = rtTracker ? rtTracker.getRuntimeBadgeHtml(body, status) : '';
+    let updatedLabelHtml = '';
+    if (fm.updated_at) {
+      const rel = rtTracker?.formatRelativeTime ? rtTracker.formatRelativeTime(fm.updated_at) : new Date(fm.updated_at).toLocaleTimeString();
+      const exactTime = new Date(fm.updated_at).toLocaleTimeString();
+      updatedLabelHtml = `<span title="${escapeHtml(exactTime)}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
+    }
+    const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
 
     let headerActionHtml = '', mainContentHtml = '';
     if (viewMode === 'deliverable' && fm.deliverable) {
@@ -93,7 +98,7 @@
       const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(fm.deliverable)}) has not been generated yet.`);
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
     } else {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedAt ? `Updated: ${escapeHtml(updatedAt)}` : ''}</div>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       mainContentHtml = body ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(body)}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
     }
 

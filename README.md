@@ -2,29 +2,30 @@
 
 **WeaveMAS** is an architecture and plugin for building observable, deterministic multi-agent systems in **Google Antigravity 2.0**.
 
-By combining file-based state machines (`status.md`) with a lightweight, native Model Context Protocol (MCP) server, WeaveMAS completely decouples subagent status reporting from shell access (`run_command`), enforcing strict directory sandboxing and zero unnecessary repository exploration.
+By combining file-based state machines (`status.md`) with a lightweight, native Model Context Protocol (MCP) server, WeaveMAS decouples status reporting and observability from ad-hoc manual scripts, enforcing strict directory sandboxing and zero unnecessary repository exploration.
 
 ---
 
 ## 🚀 Key Features
 
-* **Zero Shell Execution**: Subagents manage their lifecycle entirely via native, typed MCP tools (`weave__status_update`, `weave__status_verify`) without requiring shell access.
-* **Granular Tool Whitelisting**: Subagents use `inheritCustomizations: false` to isolate themselves from ambient parent tools, whitelisting only the exact Weave status tools they need.
+* **Pure Native MCP Tooling**: Subagents manage their lifecycle entirely via native MCP tools (`status_verify`, `status_update`) via `call_mcp_tool`. Zero CLI wrappers or secondary runner scripts.
+* **Declarative Agent Definitions**: Subagents declare `inheritCustomizations: true`, `inheritMcp: true`, and mount `skills: [weave-core-agent]`.
 * **Deterministic Sandboxing**: Subagent directories are self-contained working spaces.
 * **Instant Observability**: Real-time status, progress logs, and deliverable verification are serialized to standard `status.md` files observable by the UI and tracker sidecars.
 * **Zero npm Dependencies**: Pure native Node.js (standard library only).
 
 ---
 
-## 🛠️ MCP Tools
+## 🛠️ MCP Tools (`weavemas_weave`)
 
-When mounted by Antigravity under the `weave` identifier, the following tools are available:
+When mounted by Antigravity under the `weavemas_weave` identifier, the following tools are available:
 
 | Tool | Description | Required Arguments |
 | :--- | :--- | :--- |
-| `weave__status_init` | Initializes `status.md` in a directory with `not_started` state | `role`, `dir` (optional, defaults to CWD) |
-| `weave__status_update` | Updates state (`in_progress/*`, `waiting/*`, `completed`) and appends progress notes | `status`, `progress` (opt), `deliverable` (opt) |
-| `weave__status_verify` | Pre-flight verification that the directory's `status.md` matches assigned role | `expected_role`, `dir` (optional) |
+| `status_init` | Initializes `status.md` in a directory with `not_started` state | `role`, `dir` (required absolute path) |
+| `status_update` | Updates state (`in_progress/*`, `waiting/*`, `completed`) and appends progress notes | `status`, `dir` (required absolute path), `progress` (opt), `deliverable` (opt) |
+| `status_verify` | Pre-flight verification that the directory's `status.md` matches assigned role | `expected_role`, `dir` (required absolute path) |
+| `status_read` | Ingests agent status, verify completed state, and resolves deliverable | `dir` (required absolute path) |
 
 ---
 
@@ -34,25 +35,27 @@ To equip an Antigravity custom subagent with WeaveMAS:
 
 ```yaml
 ---
-name: "stage2_showrunner"
-description: "Showrunner subagent that designs structural concept outline."
+name: "stage1_director"
+description: "Director subagent that selects persona and sets show guidelines."
+model: flash
 subagent: true
-inheritCustomizations: false
+inheritCustomizations: true
+inheritMcp: true
 skills:
   - "weave-core-agent"
 tools:
   - "view_file"
   - "search_web"
-  - "weave__status_verify"
-  - "weave__status_update"
+  - "write_to_file"
+  - "run_command"
 ---
 
-# Showrunner Agent
+# Director Agent
 
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
 ## Role Specifics
-* **Deliverable Target**: Save your finalized show concept to `concept.md`.
+* **Deliverable Target**: Save your finalized setup document to `setup.md`.
 ```
 
 ---
@@ -64,6 +67,7 @@ WeaveMAS includes a real-time reactive auxiliary side pane observer:
 * **Features**:
   * **Interactive Agent Cards**: Hierarchical tree visualization of all subagents discovered across pipeline stages (`agent_panel.js`).
   * **Deliverable Inspection**: 1-click toggle to inspect deliverable files directly in the card.
+  * **Runtime Tracking**: Displays elapsed active runtime on the left and last updated time on the right.
   * **Auto-Scrolling Log View**: Auto-scrolls to the newest updates and preserves reading scroll positions during background polling.
   * **Pipeline Stepper**: Real-time status indicators reflecting stage progress.
 
@@ -75,4 +79,3 @@ Run native test suite:
 ```bash
 npm test
 ```
-
