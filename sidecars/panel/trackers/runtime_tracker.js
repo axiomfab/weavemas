@@ -33,13 +33,13 @@
       return { seconds: 0, isRunning: false, formatted: '0s' };
     }
 
-    let totalActiveMs = 0;
+    let priorActiveMs = 0;
     for (let i = 0; i < entries.length - 1; i++) {
       const curr = entries[i];
       const next = entries[i + 1];
       if (curr.slug.startsWith('in_progress')) {
         const delta = Math.max(0, next.timestamp - curr.timestamp);
-        totalActiveMs += delta;
+        priorActiveMs += delta;
       }
     }
 
@@ -47,8 +47,10 @@
     const effectiveStatus = currentStatus || lastEntry.slug;
     const isRunning = effectiveStatus.startsWith('in_progress');
 
+    let totalActiveMs = priorActiveMs;
+    const lastStartMs = lastEntry.timestamp;
     if (isRunning) {
-      const liveDelta = Math.max(0, nowMs - lastEntry.timestamp);
+      const liveDelta = Math.max(0, nowMs - lastStartMs);
       totalActiveMs += liveDelta;
     }
 
@@ -56,7 +58,9 @@
     return {
       seconds,
       isRunning,
-      formatted: formatRuntime(seconds)
+      formatted: formatRuntime(seconds),
+      priorActiveMs,
+      lastStartMs
     };
   }
 
@@ -78,42 +82,60 @@
   function getRuntimeBadgeHtml(body, currentStatus, nowMs = Date.now()) {
     const res = calculateActiveRuntime(body, currentStatus, nowMs);
     if (res.isRunning) {
-      return `<span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><span class="text-[10px]">⏱️</span> <span data-running-timer data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
+      return `<span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><span class="text-[10px]">⏱️</span> <span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
     }
     return `<span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time"><span class="text-[10px]">⏱️</span> ${res.formatted}</span>`;
   }
 
-  // Smooth local 1-second live ticker for running cards and relative timestamps
-  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    setInterval(() => {
-      const now = Date.now();
-      const elements = document.querySelectorAll('[data-running-timer]');
-      if (elements && elements.length > 0) {
-        elements.forEach(el => {
+  function tickTimers(root = (typeof document !== 'undefined' ? document : null), now = Date.now()) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    const elements = root.querySelectorAll('[data-running-timer]');
+    if (elements && elements.length > 0) {
+      elements.forEach(el => {
+        const startMs = parseInt(el.getAttribute('data-start-ms'), 10) || 0;
+        const priorMs = parseInt(el.getAttribute('data-prior-ms'), 10) || 0;
+        let totalMs = priorMs;
+        if (startMs > 0) {
+          totalMs += Math.max(0, now - startMs);
+        } else {
           const base = parseInt(el.getAttribute('data-base-seconds'), 10) || 0;
           const calcTime = parseInt(el.getAttribute('data-calc-time'), 10) || now;
-          const elapsed = Math.max(0, Math.floor((now - calcTime) / 1000));
-          el.textContent = formatRuntime(base + elapsed);
-        });
-      }
-      const relElements = document.querySelectorAll('[data-relative-time]');
-      if (relElements && relElements.length > 0) {
-        relElements.forEach(el => {
-          const ts = el.getAttribute('data-relative-time');
-          if (ts) {
-            const rel = formatRelativeTime(ts, now);
-            if (rel) el.textContent = `Updated: ${rel}`;
+          totalMs = (base * 1000) + Math.max(0, now - calcTime);
+        }
+        const formatted = formatRuntime(Math.floor(totalMs / 1000));
+        if (el.textContent !== formatted) {
+          el.textContent = formatted;
+        }
+      });
+    }
+    const relElements = root.querySelectorAll('[data-relative-time]');
+    if (relElements && relElements.length > 0) {
+      relElements.forEach(el => {
+        const ts = el.getAttribute('data-relative-time');
+        if (ts) {
+          const rel = formatRelativeTime(ts, now);
+          const formatted = `Updated: ${rel}`;
+          if (rel && el.textContent !== formatted) {
+            el.textContent = formatted;
           }
-        });
-      }
-    }, 1000);
+        }
+      });
+    }
+  }
+
+  // Smooth local live ticker (200ms resolution for sub-second precision without layout thrashing)
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    setInterval(() => {
+      tickTimers(document, Date.now());
+    }, 200);
   }
 
   const api = {
     formatRuntime,
     calculateActiveRuntime,
     getRuntimeBadgeHtml,
-    formatRelativeTime
+    formatRelativeTime,
+    tickTimers
   };
 
   if (typeof window !== 'undefined') {

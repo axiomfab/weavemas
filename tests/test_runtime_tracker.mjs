@@ -148,3 +148,56 @@ test('formatRelativeTime - Failure Path 1: handles null, undefined, and empty st
 test('formatRelativeTime - Failure Path 2: handles invalid date string', () => {
   assert.equal(RuntimeTracker.formatRelativeTime('invalid-date-string'), '');
 });
+
+test('tickTimers - Happy Path: updates running timer text with millisecond precision without second skipping', () => {
+  const el = {
+    attrs: {
+      'data-running-timer': '',
+      'data-prior-ms': '3000',
+      'data-start-ms': '1000000'
+    },
+    textContent: '3s',
+    getAttribute(name) { return this.attrs[name]; }
+  };
+  const mockRoot = {
+    querySelectorAll(selector) {
+      if (selector === '[data-running-timer]') return [el];
+      return [];
+    }
+  };
+
+  // At 1002500 (2.5s elapsed): total = 3000 + 2500 = 5500ms -> 5s
+  RuntimeTracker.tickTimers(mockRoot, 1002500);
+  assert.equal(el.textContent, '5s');
+
+  // At 1003100 (3.1s elapsed): total = 3000 + 3100 = 6100ms -> 6s (advances smoothly without skipping)
+  RuntimeTracker.tickTimers(mockRoot, 1003100);
+  assert.equal(el.textContent, '6s');
+});
+
+test('tickTimers - Failure Path 1: handles legacy attributes or missing data-start-ms without error', () => {
+  const el = {
+    attrs: {
+      'data-running-timer': '',
+      'data-base-seconds': '10',
+      'data-calc-time': '1000000'
+    },
+    textContent: '10s',
+    getAttribute(name) { return this.attrs[name]; }
+  };
+  const mockRoot = {
+    querySelectorAll(selector) {
+      if (selector === '[data-running-timer]') return [el];
+      return [];
+    }
+  };
+
+  RuntimeTracker.tickTimers(mockRoot, 1002000);
+  assert.equal(el.textContent, '12s');
+});
+
+test('tickTimers - Failure Path 2: handles null root or non-element roots gracefully', () => {
+  assert.doesNotThrow(() => RuntimeTracker.tickTimers(null));
+  assert.doesNotThrow(() => RuntimeTracker.tickTimers({}));
+  assert.doesNotThrow(() => RuntimeTracker.tickTimers(undefined));
+});
