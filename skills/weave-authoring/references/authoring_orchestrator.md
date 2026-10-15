@@ -140,16 +140,18 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
 
 ---
 
-## 🔁 4. Authoring Bounded Feedback Loops
+## 🔁 4. Subagent Session Continuity & Iterative Feedback Loops
 
-When one subagent audits or reviews another (e.g., Auditor auditing Writer):
+When an agent needs revision (e.g. from user review gates, Showrunner adjustments, or Fact Checker feedback):
 
-1. **Blocked Transition**:
-   * If the auditor reports `status: blocked/revision_requested`, the orchestrator marks the authoring agent's `status.md` to `status: blocked/revision_requested`.
-2. **Targeted Re-Invocation**:
-   * Re-invoke the authoring agent, injecting the auditor's specific flags directly into the prompt.
+1. **Session Continuity Mandate**:
+   * `invoke_subagent` is strictly reserved for the **initial instantiation** of an agent role within a stage.
+   * When revisions or feedback occur, the orchestrator **must** send the feedback directly to the existing agent instance using `send_message(Recipient: <conversationId>, Message: ...)`.
+   * **Zero Subagent Churn**: Spawning duplicate agent instances for an already active or idle subagent role is strictly prohibited.
+2. **In-Place Deliverable Iteration**:
+   * Never delete or reset existing deliverable files (`concept.md`, `draft.md`) or status files on revision. The subagent inspects its previous work in its assigned directory and refines it in place.
 3. **Hard Cap (Strict Termination)**:
-   * Always enforce a maximum revision iteration limit (e.g., maximum 2 revision loops). If exceeded, escalate to the user.
+   * Always enforce a maximum revision iteration limit (e.g., maximum 2 revision loops). If exceeded, halt and escalate to the user.
 
 ---
 
