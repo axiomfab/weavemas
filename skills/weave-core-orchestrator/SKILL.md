@@ -102,13 +102,26 @@ Dispatch subagents as autonomous black boxes:
 
 * **Mandatory Subagent Delegation (No Orchestrator Overstepping)**:
   The orchestrator coordinates, stages inputs, and verifies deliverables—it must never execute domain tasks (such as writing prose, conducting research, calculating parameters, or generating media) directly in its own context. Every stage task must be dispatched to its designated subagents via `invoke_subagent`. Do not combine separate subagent roles into single ad-hoc monolithic agents or invent intermediary coordinator agents unless explicitly declared in the pipeline specification.
-* **Dispatch Prompt Contents (Strictly Minimal)**:
-  1. The target agent role definition file.
-  2. The assigned working directory (e.g. `output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`).
-  3. The staged inputs in that directory.
-  4. The required final deliverable filename.
+* **Dispatch via `TypeName: "self"` (`invoke_subagent`)**:
+  Dispatch the subagent with `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition) and `Role: "<agent_identifier>"` matching the exact slug defined in `## Agent Roles` (e.g. `Role: "director"`, `Role: "showrunner"`, or parameterized `Role: "architect_a01_s01"`). This ensures deterministic UI badges and unambiguous routing for `send_message`.
+* **Dispatch Prompt Contents**:
+  The prompt instructs the agent to adopt its role and read its instruction file, followed by the sandboxed paths and inputs:
+  ```markdown
+  Act as the <role_name> configured in `<agent_instruction_path>`.
+  Read `<agent_instruction_path>` for your role instructions, lifecycle steps, and deliverable schema.
+
+  Assigned Working Directory: <workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>/
+
+  Tier 1 Parameters:
+  - <param_name>: <param_value>
+
+  Tier 3 Read-Only Assets:
+  - <asset_name>: <asset_path>
+
+  Required Deliverable: <deliverable_filename>
+  ```
 * **Zero Prompt Micromanagement**:
-  Never dictate how the subagent conducts internal reasoning, pre-flight checks, or intermediate status updates in the prompt. All lifecycle mechanics belong inside the agent definition.
+  Never dictate how the subagent conducts internal reasoning, pre-flight checks, or intermediate status updates in the prompt. All lifecycle mechanics belong inside the agent definition and mounted skills.
 * **Non-Polling Reactive Wait**:
   Do NOT poll `status.md` in a loop; wait for subagent completion notifications.
 
@@ -130,12 +143,16 @@ Upon subagent completion notification:
    - If `status` is not completed or the deliverable does not match the orchestrator's expectation: **halt immediately** and log a critical blocker error.
 4. **Ingest Deliverable**:
    - Copy or compile the verified deliverable file into the canonical stage handoff location (e.g. `output/<context_slug>/01_setup.md`).
-5. **Handle Auditing/Revision**:
-   - If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
-6. **Subagent Session Continuity & In-Place Iteration**:
-   - `invoke_subagent` is strictly reserved for the initial instantiation of an agent role within a stage.
-   - When review gates, user feedback, or downstream revision loops occur, the orchestrator MUST send instructions directly to the existing subagent instance using `send_message(Recipient: <conversationId>, Message: ...)`. Spawning duplicate subagent instances for an already active or idle role is strictly prohibited.
-   - Never delete or reset existing deliverable or status files on revision; subagents inspect and refine their deliverables in place.
+5. **User Review Gates & Subagent Feedback Loop**:
+   When a stage guide declares a User Review Gate:
+   - **Publish UI Review Artifact**: Write the stage deliverable to `<appDataDir>/brain/<conversation-id>/<stage_deliverable_name>` with `RequestFeedback: true` and `UserFacing: true`.
+   - **Pause for Review**: Present a concise executive summary of the deliverable and request user review approval.
+   - **Strict Gate Rule**: Do NOT advance master status or proceed to the next stage until the user grants explicit approval.
+   - **Subagent Session Continuity & In-Place Iteration**:
+     - If the user approves: advance master status to the next stage via `status_update`.
+     - If the user requests changes or disapproves: send the feedback directly to the existing subagent instance using `send_message(Recipient: <conversationId>, Message: "<feedback>")`.
+     - The subagent iterates on its deliverable in place and calls `status_update` to `completed` upon finishing revisions.
+     - Spawning duplicate subagent instances for revisions is strictly prohibited.
 
 ---
 

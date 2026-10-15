@@ -55,11 +55,17 @@ Every multi-stage WeaveMAS pipeline structures its orchestration documentation i
    * **`Gate`** *(Optional)*: Explicit review approval required before unlocking the next stage.
    * *Anti-Pattern*: Never duplicate subagent action steps, prompts, or internal reasoning in the master guide. The master guide is strictly a high-level contract; stage guides govern stage details.
 2. **Modular Stage Guides (`orchestration/[<stage_slug>].md`)**: Dedicated guideline files residing in the `orchestration/` folder (e.g., `orchestration/stage1_setup.md`, `orchestration/stage2_concept.md`, `orchestration/stage3_writing.md`, etc.). Each file details the exact agent roles, pre-spawn hooks, ZUE constraints, dispatch prompts, and handoff contracts for that individual stage.
+   * **Single-Agent Stages**: Concise 15–20 line guide declaring the agent role, working directory, inputs, deliverable ingestion, and review gate (Template B).
+   * **Multi-Agent Relay / Loop Stages**: When a stage coordinates multiple subagent instances across an item collection (e.g. segments, chapters), author concise declarations defining the **Iteration Scope**, **Parameterized Workspaces** (`<stage_slug>/agents/<item_id>/<role>/`), and per-agent micro-specs (**Directory**, **Inputs**, **Handoff/Gate**) without prompt-inlining bloat (Template C).
 
 > **Golden Rule of WeaveMAS**: When authoring orchestrator guidelines, **never present abstract meta-options**. Inline the *exact, concrete directory structure, subagent paths, and hook templates* for that specific workflow.
 
 * **Context Root (`<context_slug>`)**: Specify the exact context directory: `output/<context_slug>/` (e.g. `output/show_09-10-2026_the_clash/` or `output/article_2026-10-12_ai_chips/`). Scoping everything to `output/<context_slug>/` isolates all intermediate drafts, subagent directories, logs, and deliverables into a clean sandbox, preventing root directory pollution and multi-run collisions.
 * **Subagent Working Directories**: Specify the exact relative path structure: `<stage_slug>/agents/<agent_identifier>/`.
+* **Agent Identifier Convention (`<agent_identifier>`)**: Every agent declared in `## Agent Roles` MUST be assigned an explicit, lowercase snake_case identifier slug:
+  - *Single-Instance Stages*: Semantic role slugs (`director`, `showrunner`, `youtube_sourcer`, `staging`).
+  - *Multi-Instance Stages*: Parameterized slugs with zero-padded coordinates (`architect_a<AA>_s<SS>`, `writer_a<AA>_s<SS>`, `factchecker_a<AA>_s<SS>`) or specialized roles (`writer_global_flow`).
+  - *Why Mandatory*: Unambiguously referenced throughout `## Execution`, passed directly as `Role: "<agent_identifier>"` in `invoke_subagent` for deterministic UI sidecar badges, and targeted in `send_message(Recipient: <id>)`.
 * **Pre-Spawn Hook**: Provide the exact MCP call the orchestrator must execute before invoking subagents.
 * **Deliverable Ingestion**: Specify the exact file path read from the agent's `deliverable` frontmatter upon completion.
 
@@ -124,16 +130,17 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
 
 ### Block D: Dispatch & Deliverable Ingestion Protocol
 1. **Dispatch (`invoke_subagent`)**:
+   * Dispatch via `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition).
    * **Assigned Working Directory**: Explicitly state:
      `Assigned Working Directory: output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`
    * **The Black Box Dispatch Constraint (No Prompt Over-Specification)**:
      - Treat subagents as autonomous black boxes.
-     - The dispatch prompt must provide **only**:
-       1. The target agent role definition file (e.g. `Act as the agent configured in .agent/agents/<stage>/agent_<role>.md`).
+     - The dispatch prompt must provide:
+       1. The role instruction file path to read (e.g. `Act as the <role> configured in <path>.\nRead <path> for your role instructions...`).
        2. The assigned working directory.
-       3. The staged inputs in that directory.
+       3. The staged inputs in that directory (Tier 1 parameters & Tier 3 asset references).
        4. The final required deliverable.
-     - **Strict Prohibition**: Never micromanage or dictate intermediate status transitions (e.g. `"update status to in_progress/xyz"`) or step-by-step reasoning in the dispatch prompt. All execution mechanics belong in the agent definition.
+     - Never micromanage intermediate status updates or internal reasoning in the prompt.
    * Do NOT poll in a loop; leverage reactive wakeups.
 2. **Completion & Deliverable Ingestion (Fail Fast)**:
    * When the agent finishes, query its status via `status_read` (`dir: "<absolute_subagent_dir>"`).
@@ -194,36 +201,72 @@ The pipeline executes through sequential stages. For each stage, the orchestrato
 * **Deliverable**: `02_<deliverable>.md`
 ```
 
-### Template B: Modular Stage Guide (`orchestration/<stage_slug>.md`)
+### Template B: Single-Agent Modular Stage Guide (`orchestration/<stage_slug>.md`)
 
 ```markdown
-# Stage <N>: <Stage Title> Orchestration Guide
+# Stage <N>: <Stage Title>
 
-You coordinate the execution of Stage <N> using the <Agent Name> agent.
+## Objective
+<1-sentence description of the stage's creative or technical goal>
 
-## Workspace Scoping
-* **Context Root**: `output/<context_slug>/`
-* **Master Status**: Advance master status (`status.md`) via WeaveMAS MCP tool to:
-  * `status: in_progress/<stage_slug>`
-  * `progress: Stage <N> in progress`
+## Agent Roles
+* `<agent_identifier>`: `.agent/agents/<stage>/agent_<role>.md` (Directory: `stage<NN>_<slug>/agents/<role_slug>/`)
 
-## Execution Sequence
-
-### Phase 1: Pre-Spawn Hook (Mandatory)
-1. Directory: Create `output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`.
-2. Status Hook: Initialize status (`status.md`) with `role: <role_slug>` (`status: not_started`).
-3. Tier 2 Staging: Copy prior stage deliverables directly into the agent directory.
-
-### Phase 2: Dispatch Subagent
-1. Dispatch subagent via `invoke_subagent`.
-2. Minimal prompt: working directory, Tier 1 parameters, Tier 3 assets. Do not micromanage reasoning.
-
-### Phase 3: Deliverable Ingestion & Validation (Fail Fast)
-1. Query subagent status via `status_read`.
-2. Verify `status: completed` and match `deliverable: "<deliverable_file>"`.
-3. Ingest verified deliverable to `output/<context_slug>/<stage_output_file>`.
-
-### Phase 4: User Review Gate (If Applicable)
-1. Publish UI Review Artifact to `<appDataDir>/brain/<conversation-id>/<deliverable_file>` with `RequestFeedback: true`.
-2. Pause for explicit user approval before proceeding to the next stage.
+## Execution
+1. **`<agent_identifier>`**:
+   - Inputs: Pass required parameters and staged prior deliverables / asset references.
+   - Execution: <Summary of execution action>
+2. **Deliverable Ingestion**:
+   - Ingest verified `<deliverable_name>.md` as stage deliverable `<NN>_<stage_deliverable>.md`.
+3. **User Review Gate** *(Optional)*:
+   - Present `<NN>_<stage_deliverable>.md` to the user for review approval.
+   - If not approved, route user feedback to `<agent_identifier>` via `send_message` for an additional iteration on its deliverable.
+   - Do not proceed to the next stage until the user grants explicit approval.
 ```
+
+### Template C: Multi-Agent Relay / Loop Stage Guide (`orchestration/<stage_slug>.md`)
+
+Use this template when a stage coordinates multiple subagent roles across a parameterized loop (e.g. per-segment, per-chapter, or per-item processing):
+
+```markdown
+# Stage <N>: <Stage Title>
+
+## Objective
+<1-sentence description of the stage's goal>
+
+## Agent Roles
+* `<role1>_<item_id>`: `.agent/agents/<stage>/agent_<role1>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role1_slug>/`)
+* `<role2>_<item_id>`: `.agent/agents/<stage>/agent_<role2>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role2_slug>/`)
+* `<role3>_<item_id>`: `.agent/agents/<stage>/agent_<role3>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role3_slug>/`)
+
+## Execution
+
+### 1. Upfront Scaffolding
+For each item (`<item_id>`) in `<prior_stage_deliverable>.md`:
+* Scaffold agent workspaces under `stage<NN>_<slug>/agents/<item_id>/`:
+  - `<role1_slug>/`: Stage `<input_files>`.
+  - `<role2_slug>/`: Stage `<input_files>`.
+  - `<role3_slug>/`: Empty (receives deliverable from `<role2>_<item_id>` during loop).
+
+### 2. <Item> Processing Loop
+For each `<item_id>`:
+
+1. **`<role1>_<item_id>`**:
+   - Inputs: Staged input files, item parameters.
+   - Handoff: Ingest verified `<deliverable_1>` and stage into `<role2>_<item_id>` workspace.
+
+2. **`<role2>_<item_id>`**:
+   - Inputs: Staged `<deliverable_1>` (from `<role1>_<item_id>`), runtime parameters.
+   - Handoff: Ingest verified `<deliverable_2>` and stage into `<role3>_<item_id>` workspace.
+
+3. **`<role3>_<item_id>`**:
+   - Inputs: Staged `<deliverable_2>` (from `<role2>_<item_id>`).
+   - Ingestion & Gate: Ingest verified `<deliverable_3>`. If revision requested (max 2 cycles), re-invoke `<role2>_<item_id>` via `send_message` before approving.
+
+### 3. Aggregation & Deliverable Compilation
+1. **Aggregation Pass** *(Optional)*:
+   - Spawn designated agent (e.g. `<role>_global_flow`) to review continuity across assembled items.
+2. **Deliverable Compilation**:
+   - Assemble finalized items into stage deliverable `<NN>_<stage_deliverable>.md`.
+```
+

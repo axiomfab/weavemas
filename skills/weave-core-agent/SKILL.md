@@ -17,6 +17,7 @@ Your current working directory (`.`) is your absolute execution boundary:
 * **Strict CWD Writes**: All file outputs, scratch notes, and final deliverables must be created strictly within your working directory.
 * **No Parent/Root Writes**: Never attempt to write to parent, sibling, or repository root directories.
 * **Absolute Path for Status Tools**: When invoking Weave status tools (`status_verify`, `status_update`), `dir` must strictly be the absolute path to your assigned working directory.
+* **Strict Ban on `view_file` for Status**: Never inspect `status.md`, `status_*.json`, or tool schema files via `view_file` or file-reading tools. Pre-flight verification and status lifecycle updates must strictly be performed by calling the WeaveMAS MCP status tools (`status_verify`, `status_update`) directly. Reading `status.md` manually wastes tokens and bypasses automated verification.
 
 ---
 
