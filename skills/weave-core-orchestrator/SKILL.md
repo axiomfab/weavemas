@@ -20,7 +20,20 @@ Your master execution root is `output/<context_slug>/`:
 
 ---
 
-## 2. Step 0: Upfront Stage Scaffolding & Master Status
+## 2. Universal Status Tooling Mandate
+
+Anytime an orchestration guide, stage script, or workflow directive refers to initializing status, advancing status, updating progress, or referencing `status.md`:
+
+* **Never Edit `status.md` Manually**: Do NOT use `write_to_file`, `replace_file_content`, or shell commands to touch `status.md`.
+* **Always Use WeaveMAS MCP Status Tools**:
+  - Whenever a guide says *"Initialize status (`status.md`)"* or *"Initialize master `status.md`"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_init"`).
+  - Whenever a guide says *"Advance master status (`status.md`)"* or *"Update status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_update"`).
+  - Whenever a guide says *"Verify status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_verify"`).
+* **Declarative Mapping**: Stage guides define status lifecycle events declaratively (referencing `status.md`); the orchestrator executing this skill is strictly responsible for translating these declarative directives into the appropriate WeaveMAS MCP status tool invocations.
+
+---
+
+## 3. Step 0: Upfront Stage Scaffolding & Master Status
 
 Before dispatching any subagents, perform these two immediate startup actions:
 
@@ -54,7 +67,7 @@ Initialize `status.md` at the root of `output/<context_slug>/`:
 
 ---
 
-## 3. Step 1: Pre-Spawn Subagent Scaffolding (Hook)
+## 4. Step 1: Pre-Spawn Subagent Scaffolding (Hook)
 
 Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hook:
 
@@ -79,7 +92,7 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
 
 ---
 
-## 4. Step 2: The Black-Box Dispatch Protocol
+## 5. Step 2: The Black-Box Dispatch Protocol
 
 Dispatch subagents as autonomous black boxes:
 
@@ -95,7 +108,7 @@ Dispatch subagents as autonomous black boxes:
 
 ---
 
-## 5. Step 3: Deliverable Ingestion & Verification (Fail Fast)
+## 6. Step 3: Deliverable Ingestion & Verification (Fail Fast)
 
 Upon subagent completion:
 1. Read the agent's `status.md`.
@@ -106,7 +119,7 @@ Upon subagent completion:
 
 ---
 
-## 6. Step 4: Stage Progression & Pipeline Completion
+## 7. Step 4: Stage Progression & Pipeline Completion
 
 ### Stage Transitions
 When advancing from one stage to the next, update the master `output/<context_slug>/status.md`:
