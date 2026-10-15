@@ -39,7 +39,7 @@ tools:
 Every WeaveMAS orchestrator prompt must include this mandatory binding statement verbatim:
 
 ```markdown
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
 ```
 
 ---
@@ -151,7 +151,7 @@ When one subagent audits or reviews another (e.g., Auditor auditing Writer):
 ```markdown
 # Orchestrator Guidelines: <Pipeline / Stage Name>
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
 
 ## Workspace Scoping & Startup Scaffolding
 * Your working directory is: `output/<context_slug>/`.
