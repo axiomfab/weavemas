@@ -17,7 +17,15 @@ const TOOLS = [
         },
         role: {
           type: 'string',
-          description: 'The expected role identifier (e.g. stage2_concept/agent_showrunner).'
+          description: 'The expected role identifier (e.g. stage2_concept/agent_showrunner or orchestrator).'
+        },
+        type: {
+          type: 'string',
+          description: 'Node type: "agent" or "orchestrator" (default: "agent").'
+        },
+        status: {
+          type: 'string',
+          description: 'Initial lifecycle status (default: "not_started").'
         }
       },
       required: ['role']
@@ -129,7 +137,9 @@ export function handleMessage(msg) {
         const targetDir = args.dir || process.cwd();
         const role = args.role;
         if (!role) throw new Error("CRITICAL: 'role' argument is required for status_init.");
-        const res = statusInit(targetDir, role);
+        const type = args.type || 'agent';
+        const initialStatus = args.status || 'not_started';
+        const res = statusInit(targetDir, role, type, initialStatus);
         resultText = res.message;
       } else if (name === 'status_update') {
         const targetDir = args.dir || process.cwd();

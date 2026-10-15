@@ -8,8 +8,8 @@ WeaveMAS separates state observability and execution into two coordinated tiers:
 
 | Level | File Location | Node Type | Reference Guide | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **Agent** | `<stage>/agents/<role>/status.md` | `agent` | [`weave_agent_protocol.md`](./weave_agent_protocol.md) | Universal WeaveMAS agent specification: CWD boundaries, read exceptions, ZUE, and lifecycle tracking. |
-| **Orchestrator** | `output/<context_slug>/status.md` | `orchestrator` | [`orchestrator_status_contract.md`](./orchestrator_status_contract.md) | End-to-end pipeline stage progression, stage handoffs, and final compiled deliverables. |
+| **Agent** | `<stage>/agents/<role>/status.md` | `agent` | [`weave-core-agent`](../../weave-core-agent/SKILL.md) | Universal WeaveMAS agent specification: CWD boundaries, read exceptions, ZUE, and lifecycle tracking. |
+| **Orchestrator** | `output/<context_slug>/status.md` | `orchestrator` | [`weave-core-orchestrator`](../../weave-core-orchestrator/SKILL.md) | End-to-end pipeline stage progression, stage handoffs, and final compiled deliverables. |
 
 ---
 

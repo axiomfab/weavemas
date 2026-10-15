@@ -81,6 +81,6 @@ python .agent/skills/weave-core/scripts/weave_status.py init \
 
 | Guide | Target | Reference File | Scope |
 | :--- | :--- | :--- | :--- |
-| **Agent Protocol** | Subagents | [`references/weave_agent_protocol.md`](./references/weave_agent_protocol.md) | Universal agent specification: CWD boundaries, read exceptions, ZUE, and lifecycle tracking. |
-| **Orchestrator Protocol** | Orchestrator | [`references/orchestrator_status_contract.md`](./references/orchestrator_status_contract.md) | Root pipeline frontmatter, stage progression stepper, stage handoff log. |
+| **Agent Protocol** | Subagents | [`weave-core-agent`](../weave-core-agent/SKILL.md) | Universal agent specification: CWD boundaries, read exceptions, ZUE, and lifecycle tracking. |
+| **Orchestrator Protocol** | Orchestrator | [`weave-core-orchestrator`](../weave-core-orchestrator/SKILL.md) | Upfront scaffolding, master pipeline progression, pre-spawn hooks, and deliverable ingestion. |
 | **Architecture Overview** | Shared | [`references/status_contract.md`](./references/status_contract.md) | Two-tier architecture overview and principles. |

@@ -1,0 +1,140 @@
+---
+name: weave-core-orchestrator
+description: >-
+  Standard WeaveMAS orchestrator execution protocol. Enforces upfront stage scaffolding,
+  master pipeline status tracking, pre-spawn subagent scaffolding, black-box dispatching,
+  and fail-fast deliverable ingestion via WeaveMAS MCP status tools.
+---
+
+# 👑 WeaveMAS Orchestrator Execution Protocol
+
+This protocol defines universal execution constraints, sandboxing boundaries, and deterministic lifecycle tracking for all root orchestrator agents in the WeaveMAS pipeline.
+
+---
+
+## 1. Workspace Scoping & Sandbox
+
+Your master execution root is `output/<context_slug>/`:
+* **Isolate Runs**: Every pipeline run is scoped to a dedicated entity or show directory (e.g. `output/show_09-10-2026_the_clash/` or `output/article_2026-10-12_ai_chips/`).
+* **No Root Directory Pollution**: Never write scratch files, intermediate drafts, or stage files to the workspace root (`./`). All outputs belong strictly within `output/<context_slug>/`.
+
+---
+
+## 2. Step 0: Upfront Stage Scaffolding & Master Status
+
+Before dispatching any subagents, perform these two immediate startup actions:
+
+### A. Pre-Create All Stage Directories Upfront
+Create all stage directories defined in the pipeline sequence (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`) in `output/<context_slug>/` immediately—even though they are initially empty.
+* **Why**: The WeaveMAS UI sidecar and file watchers inspect the workspace on day zero. Pre-creating stage folders renders the complete pipeline stepper immediately with zero detection delay or 404 warnings.
+
+### B. Initialize Master Pipeline Status
+Initialize `status.md` at the root of `output/<context_slug>/`:
+
+* **Using Native MCP Tool (Standard)**:
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_init"`
+  * `Arguments`:
+    ```json
+    {
+      "dir": "output/<context_slug>",
+      "role": "orchestrator",
+      "type": "orchestrator",
+      "status": "in_progress/<first_stage>"
+    }
+    ```
+* **Using CLI Tool (Fallback)**:
+  ```bash
+  python .agent/skills/weave-core/scripts/weave_status.py init \
+    --type orchestrator \
+    --status "in_progress/<first_stage>" \
+    --dir "output/<context_slug>"
+  ```
+
+---
+
+## 3. Step 1: Pre-Spawn Subagent Scaffolding (Hook)
+
+Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hook:
+
+1. **Scaffold Subagent Working Directory**:
+   Create `<stage_slug>/agents/<agent_identifier>/` inside `output/<context_slug>/`.
+2. **Initialize Subagent Status**:
+   * **Using Native MCP Tool (Standard)**:
+     Call `call_mcp_tool`:
+     * `ServerName`: `"weavemas_weave"`
+     * `ToolName`: `"status_init"`
+     * `Arguments`:
+       ```json
+       {
+         "dir": "output/<context_slug>/<stage_slug>/agents/<agent_identifier>",
+         "role": "<role_slug>"
+       }
+       ```
+3. **Stage Input Files (3-Tier Input Model)**:
+   * **Tier 1 (Directives & Parameters)**: Inline directly into the `invoke_subagent` prompt.
+   * **Tier 2 (Prior Stage Deliverables)**: Copy the prior stage deliverable directly into the subagent's folder (e.g. `<stage_slug>/agents/<agent_identifier>/01_setup.md`). Never summarize or inline prior deliverables into prompts.
+   * **Tier 3 (Bulk Read-Only Assets)**: Pass the external read-only directory path or manifest.
+
+---
+
+## 4. Step 2: The Black-Box Dispatch Protocol
+
+Dispatch subagents as autonomous black boxes:
+
+* **Dispatch Prompt Contents (Strictly Minimal)**:
+  1. The target agent role definition file.
+  2. The assigned working directory (e.g. `output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`).
+  3. The staged inputs in that directory.
+  4. The required final deliverable filename.
+* **Zero Prompt Micromanagement**:
+  Never dictate how the subagent conducts internal reasoning, pre-flight checks, or intermediate status updates in the prompt. All lifecycle mechanics belong inside the agent definition.
+* **Non-Polling Reactive Wait**:
+  Do NOT poll `status.md` in a loop; wait for subagent completion notifications.
+
+---
+
+## 5. Step 3: Deliverable Ingestion & Verification (Fail Fast)
+
+Upon subagent completion:
+1. Read the agent's `status.md`.
+2. Verify that `status` starts with `completed` (e.g., `completed` or `completed/<sub_state>`).
+3. Read the relative deliverable file path specified in the `deliverable` frontmatter field.
+4. If `deliverable` is `null`, missing, or points to an empty file: **fail fast** and log a blocker error immediately.
+5. If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
+
+---
+
+## 6. Step 4: Stage Progression & Pipeline Completion
+
+### Stage Transitions
+When advancing from one stage to the next, update the master `output/<context_slug>/status.md`:
+* **Using Native MCP Tool (Standard)**:
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_update"`
+  * `Arguments`:
+    ```json
+    {
+      "dir": "output/<context_slug>",
+      "status": "in_progress/<next_stage>",
+      "progress": "<Stage completion and handoff summary>"
+    }
+    ```
+
+### Final Pipeline Completion
+When the final pipeline stage completes:
+* **Using Native MCP Tool (Standard)**:
+  Call `call_mcp_tool`:
+  * `ServerName`: `"weavemas_weave"`
+  * `ToolName`: `"status_update"`
+  * `Arguments`:
+    ```json
+    {
+      "dir": "output/<context_slug>",
+      "status": "completed",
+      "deliverable": "<final_pipeline_deliverable_path>",
+      "progress": "<Final end-to-end execution summary>"
+    }
+    ```

@@ -38,46 +38,28 @@
         selectedShowDir = pipelineData.showDir;
       }
 
-      // Update show dropdown
-      updateShowSelector(pipelineData.availableShows || []);
-
       renderUI();
     } catch (err) {
       console.error('Error refreshing pipeline panel:', err);
     }
   }
 
-  function updateShowSelector(shows) {
-    const sel = document.getElementById('show-select');
-    if (!sel) return;
-
-    const norm = (p) => (p || '').replace(/\\/g, '/').toLowerCase();
-    const currentVal = norm(sel.value || selectedShowDir);
-    
-    // Check if currentVal matches any show
-    const hasMatch = shows.some(s => norm(s.path) === currentVal);
-    const activePath = hasMatch ? (sel.value || selectedShowDir) : (shows[0]?.path || null);
-    if (!hasMatch && activePath) {
-      selectedShowDir = activePath;
-    }
-
-    sel.innerHTML = shows.map(s => {
-      const isSel = norm(s.path) === norm(activePath);
-      const label = s.displayPath || s.title || (s.name ? `output\\${s.name}` : s.path);
-      return `<option value="${s.path}" ${isSel ? 'selected' : ''}>${label}</option>`;
-    }).join('');
-
-    if (shows.length === 0) {
-      sel.innerHTML = '<option value="">No shows in output/</option>';
-    }
-  }
-
   function renderUI() {
     if (!pipelineData) return;
 
-    // Header title
-    const titleEl = document.getElementById('show-title');
-    if (titleEl) titleEl.textContent = pipelineData.showTitle || 'WeaveMAS UI';
+    // Header component
+    const headerContainer = document.getElementById('header-root');
+    if (headerContainer && window.HeaderBar) {
+      window.HeaderBar.render(headerContainer, {
+        shows: pipelineData.availableShows || [],
+        activePath: selectedShowDir || pipelineData.showDir,
+        onSelectShow: (showPath) => {
+          selectedShowDir = showPath;
+          refreshData();
+        },
+        onSync: refreshData
+      });
+    }
 
     // Stepper row
     const stepperRow = document.getElementById('stages-stepper-row');
@@ -145,7 +127,8 @@
     }
 
     // Mount all discovered pipeline agents panel (filtered if a stage is selected)
-    const agentsContainer = document.getElementById('pipeline-agents-container');
+    // Mount all discovered pipeline agents panel (filtered if a stage is selected)
+    const agentsContainer = document.getElementById('agents-root') || document.getElementById('pipeline-agents-container');
     const panel = window.AgentPanel || window.ConceptTracker;
     if (agentsContainer && panel) {
       panel.render(agentsContainer, { stages: pipelineData.stageAgents || [] }, selectedStageNum);
@@ -167,17 +150,6 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
-    const syncBtn = document.getElementById('sync-btn');
-    if (syncBtn) syncBtn.addEventListener('click', refreshData);
-
-    const showSelect = document.getElementById('show-select');
-    if (showSelect) {
-      showSelect.addEventListener('change', (e) => {
-        selectedShowDir = e.target.value;
-        refreshData();
-      });
-    }
-
     refreshData();
     pollInterval = setInterval(refreshData, 4000);
   });

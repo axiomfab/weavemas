@@ -141,3 +141,29 @@ test('MCP Failure Path 4: invalid request format returns error -32600', () => {
   const res = captureResponse('invalid non-object');
   assert.equal(res.error.code, -32600);
 });
+
+test('MCP Tool Call - Happy Path 2: status_init initializes orchestrator node', () => {
+  const tmp = createTempDir();
+  const initReq = {
+    jsonrpc: '2.0',
+    id: 13,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: {
+        dir: tmp,
+        role: 'orchestrator',
+        type: 'orchestrator',
+        status: 'in_progress/stage01_setup'
+      }
+    }
+  };
+  const initRes = captureResponse(initReq);
+  assert.equal(initRes.id, 13);
+  assert.match(initRes.result.content[0].text, /STATUS_INIT_OK/);
+  const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
+  assert.match(fileContent, /type: "orchestrator"/);
+  assert.match(fileContent, /role: "orchestrator"/);
+  assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

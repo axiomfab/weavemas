@@ -168,17 +168,25 @@ describe('Pipeline Panel Stage Evaluation', () => {
     }
   });
 
-  it('UI Structure: index.html has WeaveMAS UI title, SVG logo, seamless stepper, and no summary drawer', () => {
+  it('UI Structure: index.html has semantic roots, loads header_bar.js, and no legacy summary drawer', () => {
     const htmlPath = resolve(__dirname, '..', 'sidecars', 'panel', 'index.html');
     const html = readFileSync(htmlPath, 'utf8');
+    const headerPath = resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'header_bar.js');
+    const headerJs = readFileSync(headerPath, 'utf8');
 
-    // Happy Path: Title and SVG logo
-    assert.match(html, /<h1[^>]*>WeaveMAS UI<\/h1>/);
-    assert.match(html, /<svg class="w-4\.5 h-4\.5 text-white"/);
-    assert.match(html, /<!-- Horizontal Pipeline Stepper \(Seamless \/ No Card\) -->/);
+    // Happy Path: Semantic container roots & scripts
+    assert.match(html, /<header id="header-root"><\/header>/);
+    assert.match(html, /<section id="stepper-root"/);
+    assert.match(html, /<main id="agents-root">/);
+    assert.match(html, /<script src="trackers\/header_bar\.js"><\/script>/);
+
+    // Happy Path: HeaderBar defines title and SVG logo
+    assert.match(headerJs, /<h1[^>]*>WeaveMAS UI<\/h1>/);
+    assert.match(headerJs, /<svg class="w-4\.5 h-4\.5 text-white"/);
 
     // Failure Path 1: Radio logo strictly removed
     assert.doesNotMatch(html, /📻/);
+    assert.doesNotMatch(headerJs, /📻/);
 
     // Failure Path 2: Stage summary drawer box strictly removed
     assert.doesNotMatch(html, /id="stage-summary-drawer"/);
@@ -186,6 +194,7 @@ describe('Pipeline Panel Stage Evaluation', () => {
 
     // Failure Path 3: Show: label prefix strictly removed
     assert.doesNotMatch(html, /Show:/);
+    assert.doesNotMatch(headerJs, /Show:/);
   });
 
   it('Stage Circle Flashing: styles.css and app.js implement stage-dot-flashing animation', () => {

@@ -86,6 +86,37 @@ test('statusInit - Failure Path 2: missing role throws TypeError', () => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+test('statusInit - Happy Path 2: initializes orchestrator status with custom initial status', () => {
+  const tmp = createTempDir();
+  const res = statusInit(tmp, 'orchestrator', 'orchestrator', 'in_progress/stage01_setup');
+  assert.equal(res.success, true);
+  assert.equal(fs.existsSync(res.path), true);
+  const fileContent = fs.readFileSync(res.path, 'utf-8');
+  assert.match(fileContent, /type: "orchestrator"/);
+  assert.match(fileContent, /role: "orchestrator"/);
+  assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
+  assert.match(fileContent, /Pipeline execution initialized/);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusInit - Failure Path 3: invalid type throws TypeError', () => {
+  const tmp = createTempDir();
+  assert.throws(() => statusInit(tmp, 'orchestrator', 'unsupported_type'), {
+    name: 'TypeError',
+    message: /CRITICAL: Type must be either "agent" or "orchestrator"/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusInit - Failure Path 4: invalid initialStatus throws TypeError', () => {
+  const tmp = createTempDir();
+  assert.throws(() => statusInit(tmp, 'orchestrator', 'orchestrator', ''), {
+    name: 'TypeError',
+    message: /CRITICAL: Initial status must be a non-empty string/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 test('statusUpdate - Happy Path: transitions state and appends progress', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'stage2_concept/agent_showrunner');

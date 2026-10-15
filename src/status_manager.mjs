@@ -67,14 +67,22 @@ export function serializeStatus(frontmatter, body) {
  * Initializes a new status.md in target directory.
  * @param {string} targetDir 
  * @param {string} role 
+ * @param {string} [type='agent']
+ * @param {string} [initialStatus='not_started']
  * @returns {{ success: boolean, message: string, path: string }}
  */
-export function statusInit(targetDir, role) {
+export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not_started') {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
   if (!role || typeof role !== 'string') {
     throw new TypeError('CRITICAL: Role identifier must be a non-empty string.');
+  }
+  if (!type || typeof type !== 'string' || (type !== 'agent' && type !== 'orchestrator')) {
+    throw new TypeError('CRITICAL: Type must be either "agent" or "orchestrator".');
+  }
+  if (!initialStatus || typeof initialStatus !== 'string') {
+    throw new TypeError('CRITICAL: Initial status must be a non-empty string.');
   }
   const resolvedDir = path.resolve(targetDir);
   if (!fs.existsSync(resolvedDir)) {
@@ -82,13 +90,15 @@ export function statusInit(targetDir, role) {
   }
   const statusPath = path.join(resolvedDir, 'status.md');
   const frontmatter = {
-    type: 'agent',
+    type: type.trim(),
     role: role.trim(),
-    status: 'not_started',
+    status: initialStatus.trim(),
     deliverable: null,
     updated_at: new Date().toISOString()
   };
-  const body = `Working directory initialized for ${role.trim()}.`;
+  const body = type === 'orchestrator'
+    ? 'Pipeline execution initialized.'
+    : `Working directory initialized for ${role.trim()}.`;
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, body), 'utf-8');
   return {
     success: true,
