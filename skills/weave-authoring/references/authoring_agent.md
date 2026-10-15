@@ -15,6 +15,7 @@ name: <agent_name>
 description: <agent_description>
 model: <flash | pro | inherit>
 subagent: true
+inheritCustomizations: true
 inheritMcp: true
 skills:
   - weave-core-agent
@@ -24,6 +25,7 @@ tools:
 ```
 
 * **`subagent: true`**: Registers the markdown definition as a delegatable subagent for `invoke_subagent`.
+* **`inheritCustomizations: true`**: Required for the subagent to discover and inherit skills from installed plugins (e.g. `weavemas`) and access plugin MCP services.
 * **`skills: [weave-core-agent]`**: Natively mounts the `weave-core-agent` skill into the subagent's execution environment.
 * **`inheritMcp: true`**: Automatically provides the subagent with the native Antigravity MCP dispatcher (`call_mcp_tool`) for mounted MCP servers (`weavemas_weave`).
 * **`tools: [...]`**: Strictly whitelists **built-in core tools** (e.g. `view_file`, `write_to_file`, `search_web`, `run_command`).
@@ -64,24 +66,12 @@ This is a [N]-step process:
 [Specific instructions for Step 2]
 ```
 
-### Automatic Step-Slug Mapping
-The `weave-core-agent` protocol maps these step names directly into `in_progress/<step_slug>` transitions via the WeaveMAS MCP tool:
+### Zero Tool-Calling Boilerplate Mandate
+Agent definitions must NEVER instruct the agent on how to call specific MCP tools (e.g. `call_mcp_tool`, JSON payloads, or server names). Keep agent definitions clean, concise, and purely declarative. 
 
-```json
-call_mcp_tool({
-  "ServerName": "weavemas_weave",
-  "ToolName": "status_update",
-  "Arguments": {
-    "status": "in_progress/<step_slug>",
-    "progress": "<Concise summary of progress and decisions>",
-    "dir": "<working_directory>"
-  }
-})
-```
+The mounted `weave-core-agent` skill natively defines all mechanics of how to invoke the MCP status tools (`status_verify`, `status_update`). The agent definition simply declares its high-level numbered workflow steps and its required deliverable—the skill handles tool invocation.
 
 * For single-step or atomic tasks where decomposition into multiple phases is unnecessary, use a single clear state (e.g. `in_progress/drafting` or `in_progress/synthesizing`).
-
----
 
 ## 📦 3. Role Specifics & Deliverables
 
@@ -93,15 +83,11 @@ Every agent definition must explicitly declare its deliverable and any read auth
 * **Input Authorizations (if applicable)**: You are authorized to read [specific external paths, e.g., prompts/personas/*.md or 01_setup.md].
 ```
 
----
-
 ## 📁 4. File Organization
 
 * Store agent definitions under `.agent/agents/[<stage>/]<role>.md`.
 * For multi-stage pipelines, group agents by stage folder (e.g. `.agent/agents/stage1_setup/agent_director.md`, `.agent/agents/stage3_writing/agent_writer.md`).
 * For flat or single-stage workflows, place roles directly in `.agent/agents/<role>.md`.
-
----
 
 ## ✍️ 5. Concrete Role Templates (Examples)
 
@@ -112,6 +98,7 @@ name: stage3_writer
 description: agent that writes spoken broadcast prose for assigned radio segments
 model: flash
 subagent: true
+inheritCustomizations: true
 inheritMcp: true
 skills:
   - weave-core-agent
@@ -159,6 +146,7 @@ name: stage3_factchecker
 description: agent that audits drafted segment prose against historical records
 model: flash_lite
 subagent: true
+inheritCustomizations: true
 inheritMcp: true
 skills:
   - weave-core-agent
@@ -207,6 +195,7 @@ name: stage1_director
 description: agent that selects a writer persona and defines showrunner guidelines
 model: flash
 subagent: true
+inheritCustomizations: true
 inheritMcp: true
 skills:
   - weave-core-agent
