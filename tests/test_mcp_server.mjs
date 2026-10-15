@@ -230,7 +230,7 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
     method: 'tools/call',
     params: {
       name: 'status_read',
-      arguments: { dir: tmp }
+      arguments: { dir: tmp, expected_deliverable: 'setup.md', expected_status: 'completed' }
     }
   };
   const readRes = captureResponse(readReq);
@@ -241,9 +241,7 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
   assert.equal(data.role, 'stage1_setup/agent_director');
   assert.equal(data.status, 'completed');
   assert.equal(data.deliverable, 'setup.md');
-  assert.equal(data.deliverable_exists, true);
-  assert.ok(data.deliverable_size > 0);
-  assert.equal(data.is_completed, true);
+  assert.equal(data.type, 'agent');
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

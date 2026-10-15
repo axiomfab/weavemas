@@ -101,7 +101,9 @@ export function handleMessage(msg) {
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
-        const res = statusRead(targetDir);
+        const expectedDeliverable = args.expected_deliverable !== undefined ? args.expected_deliverable : undefined;
+        const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
+        const res = statusRead(targetDir, expectedDeliverable, expectedStatus);
         resultText = JSON.stringify(res, null, 2);
       } else {
         return sendLine({

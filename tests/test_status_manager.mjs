@@ -210,7 +210,7 @@ test('statusVerify - Failure Path 3: relative targetDir throws Error', () => {
   });
 });
 
-test('statusRead - Happy Path: reads status and verifies completed deliverable metadata', () => {
+test('statusRead - Happy Path: reads status and matches expected deliverable', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'stage1_setup/agent_director', 'agent', 'not_started');
 
@@ -220,8 +220,7 @@ test('statusRead - Happy Path: reads status and verifies completed deliverable m
   assert.equal(initial.role, 'stage1_setup/agent_director');
   assert.equal(initial.status, 'not_started');
   assert.equal(initial.deliverable, null);
-  assert.equal(initial.deliverable_exists, false);
-  assert.equal(initial.is_completed, false);
+  assert.equal(initial.type, 'agent');
 
   // Create deliverable and complete status
   fs.writeFileSync(path.join(tmp, 'setup.md'), '# Creative Setup Deliverable', 'utf-8');
@@ -232,11 +231,23 @@ test('statusRead - Happy Path: reads status and verifies completed deliverable m
   assert.equal(completed.role, 'stage1_setup/agent_director');
   assert.equal(completed.status, 'completed/setup_ready');
   assert.equal(completed.deliverable, 'setup.md');
-  assert.equal(completed.deliverable_exists, true);
-  assert.ok(completed.deliverable_size > 0);
-  assert.equal(completed.is_completed, true);
-  assert.equal(completed.deliverable_path, path.join(tmp, 'setup.md'));
 
+  // Verify with expected deliverable & status matching
+  const matched = statusRead(tmp, 'setup.md', 'completed');
+  assert.equal(matched.deliverable, 'setup.md');
+  assert.equal(matched.status, 'completed/setup_ready');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusRead - Happy Path 2: reads agent status with null deliverable', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'stage3_writing/agent_factchecker', 'agent', 'not_started');
+  // Complete status without deliverable (e.g. auditor)
+  statusUpdate(tmp, 'waiting/input', 'Waiting for draft', null);
+  const readNull = statusRead(tmp, null);
+  assert.equal(readNull.deliverable, null);
+  assert.equal(readNull.status, 'waiting/input');
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -262,4 +273,17 @@ test('statusRead - Failure Path 3: non-string targetDir throws TypeError', () =>
     message: /CRITICAL: Target directory must be a non-empty string/
   });
 });
+
+test('statusRead - Failure Path 4: deliverable mismatch throws Error', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'test_role');
+  fs.writeFileSync(path.join(tmp, 'setup.md'), 'content', 'utf-8');
+  statusUpdate(tmp, 'completed', 'done', 'setup.md');
+  assert.throws(() => statusRead(tmp, 'wrong_name.md'), {
+    name: 'Error',
+    message: /CRITICAL: Deliverable mismatch/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 

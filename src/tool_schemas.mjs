@@ -75,13 +75,21 @@ export const TOOLS = [
   },
   {
     name: 'status_read',
-    description: 'Read and verify status metadata and deliverable existence from a WeaveMAS status.md without reading full markdown.',
+    description: 'Read and verify status metadata from a WeaveMAS status.md without reading full markdown.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
           description: 'Absolute path to the target directory containing status.md.'
+        },
+        expected_deliverable: {
+          type: ['string', 'null'],
+          description: 'Optional expected deliverable filename (e.g. "setup.md") or null if agent produces no deliverable.'
+        },
+        expected_status: {
+          type: 'string',
+          description: 'Optional expected status prefix to verify (e.g. "completed").'
         }
       },
       required: ['dir']

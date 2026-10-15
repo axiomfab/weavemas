@@ -128,10 +128,11 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
    * Do NOT poll in a loop; leverage reactive wakeups.
 2. **Completion & Deliverable Ingestion (Fail Fast)**:
    * When the agent finishes, query its status via `status_read` (`dir: "<absolute_subagent_dir>"`).
-   * Verify `is_completed` is `true` (status starts with `completed`).
-   * Verify `deliverable_exists` is `true` and deliverable file is non-empty.
-   * If `is_completed` is `false`, `deliverable` is `null`, or deliverable is missing/empty, **fail fast** and log a blocker error immediately.
-   * Ingest the verified deliverable from `deliverable_path`. Never use `view_file` to read `status.md`.
+   * Verify `status` indicates `completed` (or starts with `completed`).
+   * Match the subagent's actual `deliverable` against orchestrator expectations (e.g. `deliverable: "setup.md"` or `deliverable: null` for agents producing no file).
+   * If a deliverable file is expected, verify it exists on disk and is non-empty.
+   * If `status` is not completed or deliverable does not match expectations, **fail fast** and log a blocker error immediately.
+   * Ingest the verified deliverable. Never use `view_file` to inspect `status.md`.
 
 ---
 
@@ -172,8 +173,9 @@ For each agent in the workflow:
 
 ### Phase 2: Ingestion & Verification
 1. Read agent status via `status_read` (`dir: "<subagent_dir>"`).
-2. Verify `is_completed: true`, `deliverable_exists: true`, and `deliverable_size > 0`.
-3. Validate deliverable contents against stage requirements.
+2. Verify `status: completed` and match `deliverable` against expectations (e.g. `deliverable: "setup.md"` or `deliverable: null`).
+3. If deliverable is expected, verify the file exists on disk and is non-empty.
+4. Validate deliverable contents against stage requirements.
 
 ### Phase 3: Stage Handoff & Pipeline Completion
 1. Compile stage deliverable into `output/<context_slug>/<stage_output_file>`.

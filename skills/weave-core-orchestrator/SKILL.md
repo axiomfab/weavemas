@@ -118,14 +118,15 @@ Upon subagent completion notification:
    Call `call_mcp_tool`:
    * `ServerName`: `"weavemas_weave"`
    * `ToolName`: `"status_read"`
-   * `Arguments`: `{ "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>" }`
-2. **Validate Completion Metadata**:
-   - Verify `is_completed` is `true` (status starts with `completed`).
-   - Verify `deliverable_exists` is `true` and `deliverable_size > 0`.
+   * `Arguments`: `{ "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>", "expected_status": "completed", "expected_deliverable": "<expected_filename_or_null>" }`
+2. **Verify Status & Deliverable**:
+   - Verify `status` indicates `completed` (or starts with `completed`).
+   - Match the subagent's actual `deliverable` against orchestrator expectations (e.g. `setup.md`, or `null` if the agent produces no deliverable file).
+   - If a deliverable file is specified, verify it exists on disk and is non-empty.
 3. **Fail Fast**:
-   - If `is_completed` is `false`, `deliverable` is `null`, or `deliverable_exists` is `false`: **halt immediately** and log a critical blocker error.
+   - If `status` is not completed or the deliverable does not match the orchestrator's expectation: **halt immediately** and log a critical blocker error.
 4. **Ingest Deliverable**:
-   - Copy or compile the verified deliverable file from `deliverable_path` into the canonical stage handoff location (e.g. `output/<context_slug>/01_setup.md`).
+   - Copy or compile the verified deliverable file into the canonical stage handoff location (e.g. `output/<context_slug>/01_setup.md`).
 5. **Handle Auditing/Revision**:
    - If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
 
