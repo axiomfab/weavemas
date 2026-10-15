@@ -16,6 +16,7 @@ This protocol provides universal execution rules and deterministic status lifecy
 Your current working directory (`.`) is your absolute execution boundary:
 * **Strict CWD Writes**: All file outputs, scratch notes, and final deliverables must be created strictly within your working directory.
 * **No Parent/Root Writes**: Never attempt to write to parent, sibling, or repository root directories.
+* **Absolute Path for Status Tools**: When invoking Weave status tools (`status_verify`, `status_update`), `dir` must strictly be the absolute path to your assigned working directory.
 
 ---
 
@@ -39,7 +40,7 @@ Before starting any task work, verify that your assigned working directory and p
     ```json
     {
       "expected_role": "<role_slug>",
-      "dir": "<working_directory>"
+      "dir": "<absolute_working_directory>"
     }
     ```
 * **Using CLI Tool (Fallback)**:
@@ -64,7 +65,7 @@ As you proceed through each step outlined in your role instructions, update `sta
     {
       "status": "in_progress/<step_slug>",
       "progress": "<Summary of current step progress>",
-      "dir": "<working_directory>"
+      "dir": "<absolute_working_directory>"
     }
     ```
 * **Using CLI Tool (Fallback)**:
@@ -93,7 +94,7 @@ When your required deliverable (e.g., `setup.md`) has been fully written to disk
       "status": "completed",
       "deliverable": "<deliverable_filename>",
       "progress": "<Final executive summary of output>",
-      "dir": "<working_directory>"
+      "dir": "<absolute_working_directory>"
     }
     ```
 * **Using CLI Tool (Fallback)**:

@@ -13,7 +13,7 @@ const TOOLS = [
       properties: {
         dir: {
           type: 'string',
-          description: 'Target directory path to initialize status.md in (default: current directory).'
+          description: 'Absolute path to the target directory to initialize status.md in.'
         },
         role: {
           type: 'string',
@@ -28,7 +28,7 @@ const TOOLS = [
           description: 'Initial lifecycle status (default: "not_started").'
         }
       },
-      required: ['role']
+      required: ['dir', 'role']
     }
   },
   {
@@ -37,6 +37,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        dir: {
+          type: 'string',
+          description: 'Absolute path to the target directory containing status.md.'
+        },
         status: {
           type: 'string',
           description: 'Target lifecycle status (e.g. in_progress/step_name, waiting/reason, completed, blocked/reason).'
@@ -48,13 +52,9 @@ const TOOLS = [
         deliverable: {
           type: 'string',
           description: 'Relative path to output deliverable (required if status is completed).'
-        },
-        dir: {
-          type: 'string',
-          description: 'Target directory containing status.md (default: current working directory).'
         }
       },
-      required: ['status']
+      required: ['dir', 'status']
     }
   },
   {
@@ -63,16 +63,16 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        dir: {
+          type: 'string',
+          description: 'Absolute path to the target directory containing status.md.'
+        },
         expected_role: {
           type: 'string',
           description: 'The expected role identifier for pre-flight verification.'
-        },
-        dir: {
-          type: 'string',
-          description: 'Target directory containing status.md (default: current working directory).'
         }
       },
-      required: ['expected_role']
+      required: ['dir', 'expected_role']
     }
   }
 ];
@@ -134,7 +134,10 @@ export function handleMessage(msg) {
     try {
       let resultText = '';
       if (name === 'status_init') {
-        const targetDir = args.dir || process.cwd();
+        const targetDir = args.dir;
+        if (!targetDir || typeof targetDir !== 'string') {
+          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        }
         const role = args.role;
         if (!role) throw new Error("CRITICAL: 'role' argument is required for status_init.");
         const type = args.type || 'agent';
@@ -142,7 +145,10 @@ export function handleMessage(msg) {
         const res = statusInit(targetDir, role, type, initialStatus);
         resultText = res.message;
       } else if (name === 'status_update') {
-        const targetDir = args.dir || process.cwd();
+        const targetDir = args.dir;
+        if (!targetDir || typeof targetDir !== 'string') {
+          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        }
         const status = args.status;
         const progress = args.progress || null;
         const deliverable = args.deliverable || null;
@@ -150,7 +156,10 @@ export function handleMessage(msg) {
         const res = statusUpdate(targetDir, status, progress, deliverable);
         resultText = res.message;
       } else if (name === 'status_verify') {
-        const targetDir = args.dir || process.cwd();
+        const targetDir = args.dir;
+        if (!targetDir || typeof targetDir !== 'string') {
+          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        }
         const expectedRole = args.expected_role;
         if (!expectedRole) throw new Error("CRITICAL: 'expected_role' argument is required for status_verify.");
         const res = statusVerify(targetDir, expectedRole);

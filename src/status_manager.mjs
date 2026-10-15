@@ -75,6 +75,9 @@ export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
+  if (!path.isAbsolute(targetDir)) {
+    throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
+  }
   if (!role || typeof role !== 'string') {
     throw new TypeError('CRITICAL: Role identifier must be a non-empty string.');
   }
@@ -118,6 +121,9 @@ export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not
 export function statusUpdate(targetDir, status, progress, deliverable) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
+  }
+  if (!path.isAbsolute(targetDir)) {
+    throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
   }
   if (!status || typeof status !== 'string') {
     throw new TypeError('CRITICAL: Status must be a non-empty string.');
@@ -179,6 +185,9 @@ export function statusUpdate(targetDir, status, progress, deliverable) {
 export function statusVerify(targetDir, expectedRole) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
+  }
+  if (!path.isAbsolute(targetDir)) {
+    throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
   }
   if (!expectedRole || typeof expectedRole !== 'string') {
     throw new TypeError('CRITICAL: Expected role must be a non-empty string.');

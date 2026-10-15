@@ -187,3 +187,24 @@ test('statusVerify - Failure Path 2: missing status.md throws Error', () => {
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('statusInit - Failure Path 5: relative targetDir throws Error', () => {
+  assert.throws(() => statusInit('relative/path', 'test_role'), {
+    name: 'Error',
+    message: /CRITICAL: Target directory must be an absolute path/
+  });
+});
+
+test('statusUpdate - Failure Path 4: relative targetDir throws Error', () => {
+  assert.throws(() => statusUpdate('relative/path', 'in_progress/step'), {
+    name: 'Error',
+    message: /CRITICAL: Target directory must be an absolute path/
+  });
+});
+
+test('statusVerify - Failure Path 3: relative targetDir throws Error', () => {
+  assert.throws(() => statusVerify('relative/path', 'test_role'), {
+    name: 'Error',
+    message: /CRITICAL: Target directory must be an absolute path/
+  });
+});

@@ -167,3 +167,35 @@ test('MCP Tool Call - Happy Path 2: status_init initializes orchestrator node', 
   assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('MCP Failure Path 5: status_init without dir returns isError: true result', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 14,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: { role: 'stage1_setup/agent_director' }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 14);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: 'dir' argument is required and must be an absolute path/);
+});
+
+test('MCP Failure Path 6: status_init with relative dir returns isError: true result', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 15,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: { dir: 'relative/dir', role: 'stage1_setup/agent_director' }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 15);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
+});

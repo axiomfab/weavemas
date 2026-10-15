@@ -29,6 +29,7 @@ Anytime an orchestration guide, stage script, or workflow directive refers to in
   - Whenever a guide says *"Initialize status (`status.md`)"* or *"Initialize master `status.md`"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_init"`).
   - Whenever a guide says *"Advance master status (`status.md`)"* or *"Update status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_update"`).
   - Whenever a guide says *"Verify status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_verify"`).
+* **Absolute Path Requirement (`dir`)**: The `dir` argument passed to all status MCP tools (`status_init`, `status_update`, `status_verify`) **must strictly be an absolute path** (e.g. `<workspace_root>/output/<context_slug>`). Relative paths will fail fast immediately to prevent working directory collisions.
 * **Declarative Mapping**: Stage guides define status lifecycle events declaratively (referencing `status.md`); the orchestrator executing this skill is strictly responsible for translating these declarative directives into the appropriate WeaveMAS MCP status tool invocations.
 
 ---
@@ -51,7 +52,7 @@ Initialize `status.md` at the root of `output/<context_slug>/`:
   * `Arguments`:
     ```json
     {
-      "dir": "output/<context_slug>",
+      "dir": "<workspace_root>/output/<context_slug>",
       "role": "orchestrator",
       "type": "orchestrator",
       "status": "in_progress/<first_stage>"
@@ -81,7 +82,7 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
      * `Arguments`:
        ```json
        {
-         "dir": "output/<context_slug>/<stage_slug>/agents/<agent_identifier>",
+         "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>",
          "role": "<role_slug>"
        }
        ```
@@ -130,7 +131,7 @@ When advancing from one stage to the next, update the master `output/<context_sl
   * `Arguments`:
     ```json
     {
-      "dir": "output/<context_slug>",
+      "dir": "<workspace_root>/output/<context_slug>",
       "status": "in_progress/<next_stage>",
       "progress": "<Stage completion and handoff summary>"
     }
@@ -145,7 +146,7 @@ When the final pipeline stage completes:
   * `Arguments`:
     ```json
     {
-      "dir": "output/<context_slug>",
+      "dir": "<workspace_root>/output/<context_slug>",
       "status": "completed",
       "deliverable": "<final_pipeline_deliverable_path>",
       "progress": "<Final end-to-end execution summary>"
