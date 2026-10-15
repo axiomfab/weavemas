@@ -2,7 +2,7 @@
 name: weave-core-agent
 description: >-
   Standard WeaveMAS subagent execution protocol. Enforces CWD sandboxing,
-  pre-flight verification, step-by-step lifecycle tracking, and deliverable verification via WeaveMAS MCP status tools.
+  pre-flight verification, task lifecycle tracking, and deliverable verification via WeaveMAS MCP status tools.
 ---
 
 # 🤖 WeaveMAS Subagent Execution Protocol
@@ -52,31 +52,53 @@ If verification fails, fail fast and report the error immediately.
 
 ---
 
-## 4. Multi-Step Lifecycle Tracking
+## 4. Task Lifecycle Tracking
 
-As you proceed through each step outlined in your role instructions, update `status.md` with the step slug:
+As you proceed through each task outlined in your role instructions, update `status.md`:
 
-* **Using Native MCP Tool (Standard)**:
-  Call `call_mcp_tool`:
-  * `ServerName`: `"weavemas_weave"`
-  * `ToolName`: `"status_update"`
-  * `Arguments`:
-    ```json
-    {
-      "status": "in_progress/<step_slug>",
-      "progress": "<Summary of current step progress>",
-      "dir": "<absolute_working_directory>"
-    }
+* **Multi-Task Agents (`# Tasks`)**:
+  Derive `<task_slug>` directly from your `## Task: [slug_name]` sections (e.g., `01_reading_personas`, `02_selecting_persona`, `03_factual_research`):
+  * **Using Native MCP Tool (Standard)**:
+    Call `call_mcp_tool`:
+    * `ServerName`: `"weavemas_weave"`
+    * `ToolName`: `"status_update"`
+    * `Arguments`:
+      ```json
+      {
+        "status": "in_progress/<task_slug>",
+        "progress": "<Summary of current task progress>",
+        "dir": "<absolute_working_directory>"
+      }
+      ```
+  * **Using CLI Tool (Fallback)**:
+    ```bash
+    python .agent/skills/weave-core/scripts/weave_status.py update \
+      --status "in_progress/<task_slug>" \
+      --progress "<Summary of current task progress>"
     ```
-* **Using CLI Tool (Fallback)**:
-  ```bash
-  python .agent/skills/weave-core/scripts/weave_status.py update \
-    --status "in_progress/<step_slug>" \
-    --progress "<Summary of current step progress>"
-  ```
 
-* Derive `<step_slug>` directly from your role's step titles (e.g., `reading_personas`, `selecting_persona`, `factual_research`).
-* Always include a meaningful `progress` message detailing what was discovered or decided.
+* **Single-Purpose Agents**:
+  If your role has a single unified purpose without a `# Tasks` section, simply use `status: "in_progress"` without a sub-slug:
+  * **Using Native MCP Tool (Standard)**:
+    Call `call_mcp_tool`:
+    * `ServerName`: `"weavemas_weave"`
+    * `ToolName`: `"status_update"`
+    * `Arguments`:
+      ```json
+      {
+        "status": "in_progress",
+        "progress": "<Summary of current progress>",
+        "dir": "<absolute_working_directory>"
+      }
+      ```
+  * **Using CLI Tool (Fallback)**:
+    ```bash
+    python .agent/skills/weave-core/scripts/weave_status.py update \
+      --status "in_progress" \
+      --progress "<Summary of current progress>"
+    ```
+
+* Always include a meaningful `progress` message detailing what was discovered, decided, or produced.
 
 ---
 

@@ -31,6 +31,7 @@ tools:
 * **`tools: [...]`**: Strictly whitelists **built-in core tools** (e.g. `view_file`, `write_to_file`, `search_web`, `run_command`).
   * ⚠️ **CRITICAL RULE**: **NEVER** list `call_mcp_tool` or `weave__*` in the `tools:` array. Listing MCP tools in `tools:` causes executor component registry failures (`tool not found in registry`). MCP tool access is granted solely via `inheritMcp: true`.
   * When shell execution is not required by the role, **strictly omit `run_command`**.
+* **Arbitrary Keys, Skills, and Tools**: The frontmatter is fully extensible. You may include an arbitrary number of additional keys (custom configuration parameters, domain flags), supplementary skills under `skills:`, and built-in tools under `tools:` as required by the agent.
 
 ### Prompt Binding Statement
 Every WeaveMAS agent prompt must include this mandatory binding statement verbatim:
@@ -38,6 +39,8 @@ Every WeaveMAS agent prompt must include this mandatory binding statement verbat
 ```markdown
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 ```
+
+* **Placement**: Place this statement near the beginning of the prompt body—ideally right after the agent's title and high-level role summary, before `# Role Specifics`, `# Lifecycle`, or `# Tasks`.
 
 By binding to `weave-core-agent`, the agent automatically inherits:
 1. **Directory Sandboxing**: Operating strictly within its assigned working directory (`.`).
@@ -48,37 +51,63 @@ By binding to `weave-core-agent`, the agent automatically inherits:
 
 ---
 
-## 🪜 2. Explicit Multi-Step Workflow Convention
+## 🪜 2. Tasks & Lifecycle Workflow Convention
 
-When an agent's task involves multiple logical phases (e.g. reading inputs, selecting strategy, researching, drafting, reviewing), define them as explicit numbered steps in the introduction, followed by dedicated `## Step N: [Step Name]` sections:
+When an agent's workflow involves multiple logical operations (e.g. ingesting inputs, factual research, drafting prose, auditing), organize the workflow into explicit `# Tasks` and `# Lifecycle` sections:
 
 ```markdown
-This is a [N]-step process:
-1. **Step 1: [Step Name]**: [Action description]
-2. **Step 2: [Step Name]**: [Action description]
-3. **Step 3: [Step Name]**: [Action description]
-...
+# Role Specifics
+* **Deliverable Target**: Save your finalized [deliverable type] to `<filename>`.
+* **Input Authorizations (if applicable)**: ...
 
-## Step 1: [Step Name]
-[Specific instructions for Step 1]
+# Tasks
 
-## Step 2: [Step Name]
-[Specific instructions for Step 2]
+## Task: 01_<task_slug>
+[Specific instructions for task 01]
+
+## Task: 02_<task_slug>
+[Specific instructions for task 02]
+
+## Task: 03_<task_slug>
+[Specific instructions for task 03]
+
+# Lifecycle
+Tasks are executed sequentially:
+1. `01_<task_slug>`
+2. `02_<task_slug>`
+3. `03_<task_slug>`
 ```
+
+### The `# Tasks` Section
+* Group all task definitions under a dedicated `# Tasks` section.
+* Declare each task with a subsection heading: `## Task: [slug_name]`.
+* **Slug Naming Practice**:
+  * **Short & Punchy Slugs**: Keep slug names as short and concise as possible (typically 1–2 words, e.g., `01_personas`, `02_research`, `03_draft`, `04_verify`). Avoid verbose phrases (e.g. use `05_guidelines` instead of `05_draft_showrunner_guidelines`). Short slugs produce clean, readable status strings that render well in UI dashboards without truncation.
+  * **Zero-Padded Numbering**: For sequential workflows, prefix slug names with zero-padded numbers (`01_`, `02_`, etc.) to enforce an unambiguous execution sequence and produce sortable status strings (`status: in_progress/01_personas`).
+  * Keep slug names strictly lowercase and snake_cased.
+
+### The `# Lifecycle` Section
+* Accompany `# Tasks` with an explicit `# Lifecycle` section describing execution flow:
+  * **Sequential Workflows**: Explicitly state that tasks are executed sequentially and reiterate all task slug names in an ordered list to reinforce the mandatory execution sequence.
+  * **Dynamic / Branching Workflows**: Outline state transitions, branching rules, retry loops, or conditional handoffs (e.g., transitioning between drafting, auditing, and revising).
+
+### Non-Mandatory / Single-Purpose Agents
+* The `# Tasks` and `# Lifecycle` sections are **not mandatory**.
+* For a single-purpose or atomic agent whose objective is fulfilled in a single unified operation, define the task directly in the initial role overview and simply use `status: "in_progress"`, omitting `# Tasks` and `# Lifecycle` entirely.
 
 ### Zero Tool-Calling Boilerplate Mandate
 Agent definitions must NEVER instruct the agent on how to call specific MCP tools (e.g. `call_mcp_tool`, JSON payloads, or server names). Keep agent definitions clean, concise, and purely declarative. 
 
-The mounted `weave-core-agent` skill natively defines all mechanics of how to invoke the MCP status tools (`status_verify`, `status_update`). The agent definition simply declares its high-level numbered workflow steps and its required deliverable—the skill handles tool invocation.
+The mounted `weave-core-agent` skill natively defines all mechanics of how to invoke the MCP status tools (`status_verify`, `status_update`). The agent definition simply declares its high-level tasks and required deliverable—the skill handles tool invocation.
 
-* For single-step or atomic tasks where decomposition into multiple phases is unnecessary, use a single clear state (e.g. `in_progress/drafting` or `in_progress/synthesizing`).
+---
 
 ## 📦 3. Role Specifics & Deliverables
 
-Every agent definition must explicitly declare its deliverable and any read authorizations under a dedicated section:
+Every agent definition must explicitly declare its deliverable and any read authorizations under a dedicated `# Role Specifics` section:
 
 ```markdown
-## Role Specifics
+# Role Specifics
 * **Deliverable Target**: Save your finalized [deliverable type] to `<filename>`.
 * **Input Authorizations (if applicable)**: You are authorized to read [specific external paths, e.g., prompts/personas/*.md or 01_setup.md].
 ```
@@ -111,30 +140,27 @@ tools:
 
 You write broadcast-ready radio prose for assigned segments within your dedicated working directory.
 
-This is a three-step process:
-1. **Step 1: Analyze Beats**: Ingest segment beats and character voice directives from your prompt.
-2. **Step 2: Draft Prose**: Write evocative, rhythmic spoken prose tailored to the target duration.
-3. **Step 3: Review & Refine**: Verify pacing, pronunciation notes, and timing constraints.
-
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
-## Role Specifics
+# Role Specifics
 * **Deliverable Target**: Save your completed prose to `draft.md`.
 
----
+# Tasks
 
-## Step 1: Analyze Beats
+## Task: 01_beats
 Review the assigned scene context, beat outlines, tone tags, and music transitions provided in your prompt.
 
----
-
-## Step 2: Draft Prose
+## Task: 02_draft
 Write continuous spoken broadcast prose adhering strictly to the selected persona's cadence, vocabulary, and WPM rate.
 
----
-
-## Step 3: Review & Refine
+## Task: 03_refine
 Check the target segment duration and ensure word count aligns with the target. Save your deliverable to `draft.md`.
+
+# Lifecycle
+Tasks are executed sequentially:
+1. `01_beats`
+2. `02_draft`
+3. `03_refine`
 ```
 
 ---
@@ -160,30 +186,27 @@ tools:
 
 You audit drafted segment prose against historical records within your dedicated working directory.
 
-This is a three-step process:
-1. **Step 1: Extract Claims**: Identify all verifiable dates, quotes, names, and historical claims in the draft.
-2. **Step 2: Verify Facts**: Conduct targeted web research for each claim.
-3. **Step 3: Draft Audit Report**: Compile verified cards and corrections into your deliverable.
-
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
-## Role Specifics
+# Role Specifics
 * **Deliverable Target**: Save your audit findings to `audit_report.md`.
 
----
+# Tasks
 
-## Step 1: Extract Claims
+## Task: 01_extract
 Read the drafted segment and isolate all factual assertions (dates, locations, band lineups, song release years).
 
----
-
-## Step 2: Verify Facts
+## Task: 02_verify
 Run targeted factual web searches for each extracted claim. Strictly exclude tonal or stylistic queries.
 
----
-
-## Step 3: Draft Audit Report
+## Task: 03_report
 Compile your findings into `audit_report.md` detailing verified claims, flagged discrepancies, and recommended corrections.
+
+# Lifecycle
+Tasks are executed sequentially:
+1. `01_extract`
+2. `02_verify`
+3. `03_report`
 ```
 
 ---
@@ -209,41 +232,34 @@ tools:
 
 You provide high-level creative direction and establish the core showrunner guidelines.
 
-This is a five-step process:
-1. **Step 1: Reading Personas**: Batch inspect all writer persona definitions.
-2. **Step 2: Selecting Persona**: Analyze topic match and duration to pick the optimal writer persona.
-3. **Step 3: Factual Research**: Gather comprehensive facts, dates, timeline, and sources.
-4. **Step 4: Determine Structural Archetype**: Select the narrative archetype and pacing strategy.
-5. **Step 5: Draft Showrunner Guidelines**: Synthesize the creative blueprint into `setup.md`.
-
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
-## Role Specifics
+# Role Specifics
 * **Deliverable Target**: Save your finalized setup document to `setup.md`.
 * **Persona Library Ingestion**: You are authorized to inspect writer persona definitions from `prompts/personas/*.md` in a single batch read.
 
----
+# Tasks
 
-## Step 1: Reading Personas
+## Task: 01_personas
 Batch inspect all personas in `prompts/personas/*.md` in a single command.
 
----
-
-## Step 2: Selecting Persona
+## Task: 02_select_persona
 Evaluate tone, genre affinity, and WPM rate against the show topic to select the best persona.
 
----
-
-## Step 3: Factual Research
+## Task: 03_research
 Run 3-5 distinct factual web searches to compile verified historical dates, milestones, and personnel.
 
----
-
-## Step 4: Determine Structural Archetype
+## Task: 04_archetype
 Select the narrative structure (e.g., Linear, Circular, Thematic, Cold Open, Parallel) supporting the topic.
 
----
-
-## Step 5: Draft Showrunner Guidelines (`setup.md`)
+## Task: 05_guidelines
 Synthesize persona selection, structural archetype, and showrunner guidelines into `setup.md`.
+
+# Lifecycle
+Tasks are executed sequentially:
+1. `01_personas`
+2. `02_select_persona`
+3. `03_research`
+4. `04_archetype`
+5. `05_guidelines`
 ```

@@ -17,6 +17,7 @@ This protocol defines universal execution constraints, sandboxing boundaries, an
 Your master execution root is `output/<context_slug>/`:
 * **Isolate Runs**: Every pipeline run is scoped to a dedicated entity or show directory (e.g. `output/show_09-10-2026_the_clash/` or `output/article_2026-10-12_ai_chips/`).
 * **No Root Directory Pollution**: Never write scratch files, intermediate drafts, or stage files to the workspace root (`./`). All outputs belong strictly within `output/<context_slug>/`.
+* **Zero Runtime Code Creation**: Under no circumstances should the orchestrator or any subagents write, create, generate, or modify code files, python scripts, batch runner scripts, helper modules, or unit tests (including test files under `tests/` or scratch scripts under `scratch/`) during a pipeline run. Multi-step batch tasks must use native sequential shell loops (e.g. PowerShell `foreach`) calling pre-established CLI tools directly.
 
 ---
 
@@ -41,11 +42,11 @@ Anytime an orchestration guide, stage script, or workflow directive refers to in
 Before dispatching any subagents, perform these two immediate startup actions:
 
 ### A. Pre-Create All Stage Directories Upfront
-Create all stage directories defined in the pipeline sequence (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`) in `output/<context_slug>/` immediately—even though they are initially empty.
+Parse the stages declared in the pipeline sequence (e.g. under `## Execution` or `## Stages` in the orchestration guide). Read each stage's declared `Execution Directory` (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`) and create all stage directories in `output/<context_slug>/` upfront immediately—even though they are initially empty.
 * **Why**: The WeaveMAS UI sidecar and file watchers inspect the workspace on day zero. Pre-creating stage folders renders the complete pipeline stepper immediately with zero detection delay or 404 warnings.
 
 ### B. Initialize Master Pipeline Status
-Initialize `status.md` at the root of `output/<context_slug>/`:
+Initialize master `status.md` at the root of `output/<context_slug>/` strictly via the WeaveMAS MCP status tool:
 
 * **Using Native MCP Tool (Standard)**:
   Call `call_mcp_tool`:
@@ -99,6 +100,8 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
 
 Dispatch subagents as autonomous black boxes:
 
+* **Mandatory Subagent Delegation (No Orchestrator Overstepping)**:
+  The orchestrator coordinates, stages inputs, and verifies deliverables—it must never execute domain tasks (such as writing prose, conducting research, calculating parameters, or generating media) directly in its own context. Every stage task must be dispatched to its designated subagents via `invoke_subagent`. Do not combine separate subagent roles into single ad-hoc monolithic agents or invent intermediary coordinator agents unless explicitly declared in the pipeline specification.
 * **Dispatch Prompt Contents (Strictly Minimal)**:
   1. The target agent role definition file.
   2. The assigned working directory (e.g. `output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`).
@@ -129,13 +132,18 @@ Upon subagent completion notification:
    - Copy or compile the verified deliverable file into the canonical stage handoff location (e.g. `output/<context_slug>/01_setup.md`).
 5. **Handle Auditing/Revision**:
    - If the subagent reports `status: blocked/revision_requested` during an audit, manage bounded revision loops with a hard cap (maximum 2 revision iterations) before escalating.
+6. **Subagent Session Continuity & In-Place Iteration**:
+   - `invoke_subagent` is strictly reserved for the initial instantiation of an agent role within a stage.
+   - When review gates, user feedback, or downstream revision loops occur, the orchestrator MUST send instructions directly to the existing subagent instance using `send_message(Recipient: <conversationId>, Message: ...)`. Spawning duplicate subagent instances for an already active or idle role is strictly prohibited.
+   - Never delete or reset existing deliverable or status files on revision; subagents inspect and refine their deliverables in place.
 
 ---
 
 ## 7. Step 4: Stage Progression & Pipeline Completion
 
 ### Stage Transitions
-When advancing from one stage to the next, update the master `output/<context_slug>/status.md`:
+When advancing from one stage to the next, announce the transition and update master status:
+* **Stage Start UI Tracker Link**: At the start of every stage (and upon advancing master status), the orchestrator must announce the beginning of the stage and provide a clickable chip to the pipeline tracker: `[WeaveMAS UI](sidecar://weavemas/panel/)`.
 * **Using Native MCP Tool (Standard)**:
   Call `call_mcp_tool`:
   * `ServerName`: `"weavemas_weave"`

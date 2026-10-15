@@ -48,7 +48,12 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 
 ### Orchestration Documentation Hierarchy
 Every multi-stage WeaveMAS pipeline structures its orchestration documentation into two coordinated tiers:
-1. **Master Orchestrator Guide (`orchestration_guide.md`)**: The root specification at the workspace root. Defines pipeline inputs, overall output structure, strict execution constraints, and the global sequence connecting all stages.
+1. **Master Orchestrator Guide (`orchestration_guide.md`)**: The root specification at the workspace root. Defines pipeline inputs, output context root scoping (`output/<context_slug>/`), and the declarative `## Execution` section. For each stage, it specifies:
+   * **`Execution Directory`**: The stage directory slug (e.g. `stage01_setup/`).
+   * **`Protocol`**: Link to the dedicated stage guide (e.g. `[orchestration/stage1_setup.md](orchestration/stage1_setup.md)`).
+   * **`Deliverable`**: Canonical stage deliverable ingested into the root (e.g. `01_setup.md`).
+   * **`Gate`** *(Optional)*: Explicit review approval required before unlocking the next stage.
+   * *Anti-Pattern*: Never duplicate subagent action steps, prompts, or internal reasoning in the master guide. The master guide is strictly a high-level contract; stage guides govern stage details.
 2. **Modular Stage Guides (`orchestration/[<stage_slug>].md`)**: Dedicated guideline files residing in the `orchestration/` folder (e.g., `orchestration/stage1_setup.md`, `orchestration/stage2_concept.md`, `orchestration/stage3_writing.md`, etc.). Each file details the exact agent roles, pre-spawn hooks, ZUE constraints, dispatch prompts, and handoff contracts for that individual stage.
 
 > **Golden Rule of WeaveMAS**: When authoring orchestrator guidelines, **never present abstract meta-options**. Inline the *exact, concrete directory structure, subagent paths, and hook templates* for that specific workflow.
@@ -155,36 +160,70 @@ When an agent needs revision (e.g. from user review gates, Showrunner adjustment
 
 ---
 
-## ✍️ 5. Concrete Orchestrator Guideline Template
+## ✍️ 5. Concrete Orchestrator Guideline Templates
+
+### Template A: Master Orchestrator Guide (`orchestration_guide.md`)
 
 ```markdown
-# Orchestrator Guidelines: <Pipeline / Stage Name>
+# Multi-Agent <Pipeline Name> Orchestration Guide
 
 Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
 
-## Workspace Scoping & Startup Scaffolding
-* Your working directory is: `output/<context_slug>/`.
-* **Startup Scaffolding**:
-  1. Pre-create all stage directories upfront in `output/<context_slug>/` (`stage01_setup/`, `stage02_concept/`, etc.).
-  2. Initialize master `status.md` using `status_init` (`type: "orchestrator"`, `role: "orchestrator"`, `status: "in_progress/<first_stage>"`).
+## Inputs
+- `param1`: ...
+- `param2`: ...
+
+## Output Structure
+Every run is scoped to a dedicated context directory matching:
+`output/<context_slug>/` (referred to as `SHOW_DIR` or context root).
+
+All stage directories, agent workspaces, status tracking files, and final compiled deliverables live strictly inside this context root.
+
+## Execution
+The pipeline executes through sequential stages. For each stage, the orchestrator follows the referenced protocol guide to manage pre-spawn hooks, subagent dispatch, and deliverable verification:
+
+### Stage 1: <Stage Title> (<Agent Roles>)
+* **Execution Directory**: `stage01_<slug>/`
+* **Protocol**: [orchestration/stage1_<slug>.md](orchestration/stage1_<slug>.md)
+* **Deliverable**: `01_<deliverable>.md`
+* **Gate**: Explicit user review approval required before unlocking Stage 2.
+
+### Stage 2: <Stage Title> (<Agent Roles>)
+* **Execution Directory**: `stage02_<slug>/`
+* **Protocol**: [orchestration/stage2_<slug>.md](orchestration/stage2_<slug>.md)
+* **Deliverable**: `02_<deliverable>.md`
+```
+
+### Template B: Modular Stage Guide (`orchestration/<stage_slug>.md`)
+
+```markdown
+# Stage <N>: <Stage Title> Orchestration Guide
+
+You coordinate the execution of Stage <N> using the <Agent Name> agent.
+
+## Workspace Scoping
+* **Context Root**: `output/<context_slug>/`
+* **Master Status**: Advance master status (`status.md`) via WeaveMAS MCP tool to:
+  * `status: in_progress/<stage_slug>`
+  * `progress: Stage <N> in progress`
 
 ## Execution Sequence
 
-### Phase 1: Pre-Spawn & Dispatch
-For each agent in the workflow:
-1. Create directory: `<stage_slug>/agents/<agent_identifier>/`.
-2. Initialize status via `status_init` (`dir: "<subagent_dir>"`, `role: "<role_slug>"`).
-3. Stage Tier 2 deliverables into the subagent directory.
-4. Dispatch agent via `invoke_subagent`, passing assigned working directory and required deliverable.
+### Phase 1: Pre-Spawn Hook (Mandatory)
+1. Directory: Create `output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`.
+2. Status Hook: Initialize status (`status.md`) with `role: <role_slug>` (`status: not_started`).
+3. Tier 2 Staging: Copy prior stage deliverables directly into the agent directory.
 
-### Phase 2: Ingestion & Verification
-1. Read agent status via `status_read` (`dir: "<subagent_dir>"`).
-2. Verify `status: completed` and match `deliverable` against expectations (e.g. `deliverable: "setup.md"` or `deliverable: null`).
-3. If deliverable is expected, verify the file exists on disk and is non-empty.
-4. Validate deliverable contents against stage requirements.
+### Phase 2: Dispatch Subagent
+1. Dispatch subagent via `invoke_subagent`.
+2. Minimal prompt: working directory, Tier 1 parameters, Tier 3 assets. Do not micromanage reasoning.
 
-### Phase 3: Stage Handoff & Pipeline Completion
-1. Compile stage deliverable into `output/<context_slug>/<stage_output_file>`.
-2. Advance master `status.md` via `status_update` (`status: "in_progress/<next_stage>"`, `progress: "<handoff_summary>"`).
-3. On final stage completion: update master `status.md` via `status_update` (`status: "completed"`, `deliverable: "<final_deliverable_path>"`).
+### Phase 3: Deliverable Ingestion & Validation (Fail Fast)
+1. Query subagent status via `status_read`.
+2. Verify `status: completed` and match `deliverable: "<deliverable_file>"`.
+3. Ingest verified deliverable to `output/<context_slug>/<stage_output_file>`.
+
+### Phase 4: User Review Gate (If Applicable)
+1. Publish UI Review Artifact to `<appDataDir>/brain/<conversation-id>/<deliverable_file>` with `RequestFeedback: true`.
+2. Pause for explicit user approval before proceeding to the next stage.
 ```
