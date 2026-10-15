@@ -39,7 +39,7 @@ tools:
 Every WeaveMAS orchestrator prompt must include this mandatory binding statement verbatim:
 
 ```markdown
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage your status and lifecycle at every step.
 ```
 
 ---
@@ -69,7 +69,7 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 
 > [!IMPORTANT]
 > **Orchestrator Startup Initialization & Upfront Stage Scaffolding**:
-> Once orchestration starts, **the orchestrator performs two immediate scaffolding actions before dispatching subagents (resolved via `weave-core-orchestrator`)**:
+> Once orchestration starts, **the orchestrator performs two immediate scaffolding actions before dispatching subagents**:
 > 1. **Pre-Create All Stage Directories Upfront**: Create a directory in the output directory for each stage defined in the pipeline (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`)—**even though they are initially empty**.
 >    * *Why Mandatory*: The WeaveMAS UI tracker sidecar discovers the full pipeline topology on day zero, rendering the complete stage stepper without 404s or delayed detection.
 > 2. **Initialize status (`status.md`)**:
@@ -151,7 +151,7 @@ When one subagent audits or reviews another (e.g., Auditor auditing Writer):
 ```markdown
 # Orchestrator Guidelines: <Pipeline / Stage Name>
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage your status and lifecycle at every step.
 
 ## Workspace Scoping & Startup Scaffolding
 * Your working directory is: `output/<context_slug>/`.
