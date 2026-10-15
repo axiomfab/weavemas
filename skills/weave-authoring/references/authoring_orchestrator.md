@@ -69,23 +69,15 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 
 > [!IMPORTANT]
 > **Orchestrator Startup Initialization & Upfront Stage Scaffolding**:
-> Once orchestration starts, **the orchestrator must perform two immediate scaffolding actions before dispatching subagents**:
+> Once orchestration starts, **the orchestrator performs two immediate scaffolding actions before dispatching subagents (resolved via `weave-core-orchestrator`)**:
 > 1. **Pre-Create All Stage Directories Upfront**: Create a directory in the output directory for each stage defined in the pipeline (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`)—**even though they are initially empty**.
 >    * *Why Mandatory*: The WeaveMAS UI tracker sidecar discovers the full pipeline topology on day zero, rendering the complete stage stepper without 404s or delayed detection.
 > 2. **Initialize Master `status.md`**:
->    Call native MCP tool `status_init`:
->    ```json
->    call_mcp_tool({
->      "ServerName": "weavemas_weave",
->      "ToolName": "status_init",
->      "Arguments": {
->        "dir": "output/<context_slug>",
->        "role": "orchestrator",
->        "type": "orchestrator",
->        "status": "in_progress/<first_stage>"
->      }
->    })
->    ```
+>    Declare the initial master status:
+>    * `role: orchestrator`, `type: orchestrator`
+>    * `status: in_progress/<first_stage>`
+>    * `deliverable: null`
+>    *(The `weave-core-orchestrator` skill executes the underlying `status_init` MCP tool call).*
 
 * **`type`**: Always `orchestrator`.
 * **`status`**: Current pipeline stage (`in_progress/<stage_name>`, `completed`, `blocked/<reason>`).
@@ -94,25 +86,15 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 ---
 
 ### Block B: The Mandatory Pre-Spawn Hook
-Before dispatching any subagent via `invoke_subagent`, the orchestrator **must** execute this pre-spawn hook:
+Before dispatching any subagent via `invoke_subagent`, the orchestrator **must** execute this pre-spawn hook (resolved via `weave-core-orchestrator`):
 
 1. Create the dedicated subagent directory: `<stage_slug>/agents/<agent_identifier>/`.
-2. Initialize `status.md` inside that directory using native MCP tool:
-   ```json
-   call_mcp_tool({
-     "ServerName": "weavemas_weave",
-     "ToolName": "status_init",
-     "Arguments": {
-       "dir": "output/<context_slug>/<stage_slug>/agents/<agent_identifier>",
-       "role": "<role_slug>"
-     }
-   })
-   ```
+2. Initialize subagent status with `role: "<role_slug>"` (`status: not_started`).
+3. Stage required Tier 2 deliverables directly into the subagent directory.
 
 > [!IMPORTANT]
-> **Why the Pre-Spawn Hook is Critical**:
-> * **Zero Race Conditions**: The UI tracker and sidecar observe `status: not_started` immediately, preventing missing-node flicker or 404s.
-> * **Pre-Flight Validation**: Subagents can run their pre-flight check on startup to verify they are in the correct directory with the matching `role` before executing.
+> **Declarative Authoring Mandate**:
+> In stage guides, write clean, declarative directives (e.g. *"Pre-spawn Showrunner in `...` (`role: ...`)"*). Never paste raw `call_mcp_tool` JSON boilerplate into individual stage guidelines; the `weave-core-orchestrator` skill handles the technical tool execution.
 
 ---
 
