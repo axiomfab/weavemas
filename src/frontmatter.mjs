@@ -2,6 +2,14 @@
  * Frontmatter parser and serializer for WeaveMAS status.md files.
  */
 
+export const ALLOWED_FRONTMATTER_KEYS = new Set([
+  'type',
+  'role',
+  'status',
+  'deliverable',
+  'updated_at'
+]);
+
 /**
  * Parses frontmatter from a markdown string.
  * @param {string} content 
@@ -41,7 +49,7 @@ export function parseFrontmatter(content) {
 }
 
 /**
- * Serializes frontmatter and markdown body.
+ * Serializes frontmatter and markdown body. Enforces strict closed schema.
  * @param {Record<string, unknown>} frontmatter 
  * @param {string} body 
  * @returns {string}
@@ -49,6 +57,11 @@ export function parseFrontmatter(content) {
 export function serializeStatus(frontmatter, body) {
   if (!frontmatter || typeof frontmatter !== 'object') {
     throw new TypeError('CRITICAL: Frontmatter must be a non-null object.');
+  }
+  for (const key of Object.keys(frontmatter)) {
+    if (!ALLOWED_FRONTMATTER_KEYS.has(key)) {
+      throw new Error(`CRITICAL: Forbidden frontmatter key '${key}'. The status.md schema is strictly closed to: ${Array.from(ALLOWED_FRONTMATTER_KEYS).join(', ')}`);
+    }
   }
   const lines = ['---'];
   for (const [key, val] of Object.entries(frontmatter)) {

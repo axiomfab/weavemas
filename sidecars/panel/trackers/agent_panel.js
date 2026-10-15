@@ -84,14 +84,16 @@
     const convId = fm.conversation_id;
     const updatedAt = fm.updated_at ? new Date(fm.updated_at).toLocaleTimeString() : null;
     const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
+    const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || (typeof RuntimeTracker !== 'undefined' ? RuntimeTracker : null);
+    const runtimeBadge = rtTracker ? rtTracker.getRuntimeBadgeHtml(body, status) : '';
 
     let headerActionHtml = '', mainContentHtml = '';
     if (viewMode === 'deliverable' && fm.deliverable) {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-400 font-bold">📄 ${escapeHtml(fm.deliverable)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span></div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-400 font-bold">📄 ${escapeHtml(fm.deliverable)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
       const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(fm.deliverable)}) has not been generated yet.`);
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
     } else {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedAt ? `Updated: ${escapeHtml(updatedAt)}` : ''}</div>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedAt ? `Updated: ${escapeHtml(updatedAt)}` : ''}</div>`;
       mainContentHtml = body ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(body)}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
     }
 

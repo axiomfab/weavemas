@@ -1,0 +1,20 @@
+# 🛡️ Antigravity Rule: Minimal & Closed YAML Frontmatter
+**Context:** Creating, reading, serializing, or modifying YAML frontmatter in any markdown file (e.g., `status.md`, guidelines, agents, deliverables).
+**Goal:** Prevent parameter bloat, token waste, and AI-hallucinated metadata.
+## 1. The "Closed Schema" Constraint
+* Frontmatter schemas are **strictly closed**. 
+* You are **strictly forbidden** from adding new frontmatter keys (e.g., `is_completed`, `progress`, `success`, `retry_count`, `flags`) unless John explicitly requests them in the prompt.
+* If you believe a new key is genuinely needed, you must STOP and ask:
+  > *"I propose adding `[key_name]` to frontmatter for [reason]. May I add this parameter?"*
+## 2. Minimalist Frontmatter Philosophy
+Frontmatter is strictly for **identity and routing**, NEVER for derived state or narrative logs:
+* ❌ **NO Derived Booleans**: Never invent booleans like `is_completed`, `has_deliverable`, or `file_exists`. The consuming code or agent must derive state directly from the raw values (`status: "completed"`, `deliverable: "file.md"`).
+* ❌ **NO Narrative / Progress Logs**: Never put descriptions, progress notes, or summaries into frontmatter. Narrative logs belong exclusively in the Markdown body.
+* ❌ **NO Meta Wrappers**: Never add wrapper keys like `success: true` or `error: null`.
+## 3. WeaveMAS `status.md` Immutable 5-Key Contract
+For any WeaveMAS status file, the frontmatter contains EXACTLY these 5 keys and NO others:
+1. `type`: ("agent" | "orchestrator")
+2. `role`: (string identifier)
+3. `status`: (lifecycle slug)
+4. `deliverable`: (relative path string or `null`)
+5. `updated_at`: (ISO 8601 timestamp string)

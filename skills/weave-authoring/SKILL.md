@@ -24,7 +24,11 @@ Load only the specific guide for the entity you are authoring:
 
 ---
 
-## 🏛️ The Three WeaveMAS Pillars
+## 🏛️ The Four WeaveMAS Pillars
 1. **Directory as Sandbox**: Every agent's workspace is an isolated subfolder. The orchestrator operates at `output/<context_slug>/`; subagents run in relative directories with their `Cwd` scoped to their assigned folder.
 2. **File as State Machine**: All state, logs, and handoffs are serialized into canonical `status.md` files. Zero fragile inter-process tool calls.
 3. **Concrete Inlining (Zero Meta-Optionality)**: Each agent's instructions contain only its exact role-specific deliverable and states—never abstract menus of options.
+4. **Strictly Closed 5-Key Frontmatter Standard**: All `status.md` files are strictly locked to EXACTLY 5 frontmatter keys: `type`, `role`, `status`, `deliverable`, `updated_at`.
+   - **Mandatory User Approval Rule**: Every time the author/assistant wants to introduce or modify a frontmatter parameter, it **MUST explicitly ask the user** for permission first. Adding unapproved parameters (e.g. `is_completed`, `progress`, `success`, `deliverable_exists`) is strictly forbidden.
+   - **No Derived State in Frontmatter**: State is derived directly from raw values (`status: "completed"`, `deliverable: "file.md"`). Never invent synthetic booleans.
+   - **No Narrative Logs in Frontmatter**: Progress summaries and step logs belong exclusively in the Markdown body, never in YAML frontmatter.

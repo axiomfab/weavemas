@@ -15,6 +15,7 @@ const readLocal = (rel) => readFileSync(join(HERE, rel), 'utf8');
 app.page('/', () => readLocal('index.html'));
 app.page('/app.js', () => readLocal('app.js'));
 app.page('/trackers/header_bar.js', () => readLocal('trackers/header_bar.js'));
+app.page('/trackers/runtime_tracker.js', () => readLocal('trackers/runtime_tracker.js'));
 app.page('/trackers/agent_panel.js', () => readLocal('trackers/agent_panel.js'));
 app.page('/trackers/stage_panel.js', () => readLocal('trackers/stage_panel.js'));
 app.page('/trackers/concept_tracker.js', () => readLocal('trackers/concept_tracker.js'));

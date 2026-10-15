@@ -81,6 +81,10 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 * **`type`**: Always `orchestrator`.
 * **`status`**: Current pipeline stage (`in_progress/<stage_name>`, `completed`, `blocked/<reason>`).
 * **`deliverable`**: Relative path to the final compiled result of the entire pipeline, or `null` while in progress.
+* **`updated_at`**: ISO 8601 timestamp string.
+
+> [!CAUTION]
+> **Closed Frontmatter Schema**: The `status.md` frontmatter schema is strictly closed to these 5 fields (`type`, `role`, `status`, `deliverable`, `updated_at`). Every time an author wants to introduce a new frontmatter parameter, it **MUST explicitly ask the user first**. Adding unapproved fields is strictly prohibited.
 
 ---
 

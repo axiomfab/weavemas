@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFrontmatter, serializeStatus } from './frontmatter.mjs';
+import { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS } from './frontmatter.mjs';
 
-export { parseFrontmatter, serializeStatus };
+export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS };
 
 /**
  * Initializes a new status.md in target directory.
@@ -42,8 +42,8 @@ export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not
   };
 
   const initialBody = type === 'orchestrator'
-    ? `# Pipeline Status\n\n- ${now}: Pipeline execution initialized (\`${initialStatus}\`).\n`
-    : `# ${role} Status\n\n- ${now}: Initialized status as \`${initialStatus}\`.\n`;
+    ? `# Pipeline Status\n\n- ${now}: \`${initialStatus}\` - Pipeline execution initialized\n`
+    : `# ${role} Status\n\n- ${now}: \`${initialStatus}\` - Initialized status\n`;
 
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, initialBody), 'utf-8');
 

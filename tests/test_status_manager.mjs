@@ -9,7 +9,8 @@ import {
   statusInit,
   statusUpdate,
   statusVerify,
-  statusRead
+  statusRead,
+  ALLOWED_FRONTMATTER_KEYS
 } from '../src/status_manager.mjs';
 
 function createTempDir() {
@@ -58,6 +59,27 @@ test('serializeStatus - Failure Path 2: non-object frontmatter throws TypeError'
     name: 'TypeError',
     message: /CRITICAL: Frontmatter must be a non-null object/
   });
+});
+
+test('serializeStatus - Failure Path 3: forbidden frontmatter key throws Error', () => {
+  const invalid = {
+    type: 'agent',
+    role: 'test_role',
+    status: 'not_started',
+    deliverable: null,
+    updated_at: new Date().toISOString(),
+    is_completed: true // Forbidden key
+  };
+  assert.throws(() => serializeStatus(invalid, 'body'), {
+    name: 'Error',
+    message: /CRITICAL: Forbidden frontmatter key 'is_completed'/
+  });
+});
+
+test('Frontmatter Contract - Integrity Canary: exactly 5 closed keys', () => {
+  const EXPECTED_KEYS = ['deliverable', 'role', 'status', 'type', 'updated_at'];
+  assert.deepEqual(Array.from(ALLOWED_FRONTMATTER_KEYS).sort(), EXPECTED_KEYS);
+  assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 5);
 });
 
 test('statusInit - Happy Path: creates directory and status.md with not_started', () => {
