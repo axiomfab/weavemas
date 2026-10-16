@@ -61,12 +61,15 @@ When it is necessary to avoid these shortcomings for specific use cases, we must
 
 WeaveMAS bridges this gap by providing the strict discipline of an industrial asset pipeline while remaining **100% declarative Markdown**:
 
-* **Predictability**: Every execution follows a repeatable, well-defined workflow without unexpected detours or skipped steps—enforced through defined stages, pre-spawn file staging, deterministic output directory structures (`output/<context_slug>/`), and mandatory agent status checklists.
+* **Determinism**: Every execution follows a repeatable, well-defined workflow without unexpected detours or skipped steps—enforced through defined stages, pre-spawn file staging, deterministic output directory structures (`output/<context_slug>/`), and mandatory agent status checklists. Because every intermediate handoff is physically persisted on disk rather than summarized in chat, every run leaves behind a complete provenance trail to immediately pinpoint which stage or agent introduced an issue.
 * **Standardization**: Inputs, outputs, folder layouts, and deliverable schemas adhere to uniform, machine-verifiable contracts across runs through strict directory sandboxing, canonical deliverable naming conventions, and physical file-based handoffs.
+* **Localized Fault Recovery**: Because every stage and agent output is saved as a verified file on disk (`draft.md`, `01_editorial_approved.md`) and subagent sessions remain active within their stage, failures and revisions are localized—allowing you to revise or retry a downstream step (such as regenerating Stage 2's illustration) without re-running or re-paying for upstream stages.
 * **Observability**: Built-in sidecar UI (`sidecar://weavemas/panel/`) connects directly to filesystem events to render live stage steppers, agent status cards, elapsed timers, and progress bars in real time—with zero custom telemetry or dashboard code.
 * **Comprehensibility**: Orchestrators and agents are defined entirely in plain, human-readable Markdown (`# Role Specifics`, `# Tasks`, `# Lifecycle`), allowing domain experts and engineers alike to audit a workflow in 30 seconds and tweak instructions directly in plain English.
 * **Prototyping**: The `weave-authoring` skill scaffolds a complete, runnable multi-agent pipeline from a single natural-language prompt, letting teams rapidly experiment with agent division of labor and handoffs with minimal setup overhead.
 * **Interactivity**: While human interaction is a native capability of `agy`, WeaveMAS elevates it into structured **Human Review Gates**—pausing execution at milestone deliverables (`01_editorial_approved.md`) so you can inspect text and planned assets before unlocking costly downstream stages.
+
+While code-based frameworks such as **LangGraph** also cover several of these capabilities (such as deterministic state routing, checkpointed recovery, and human-in-the-loop interrupts), they do not cover all of them out of the box—particularly single-prompt pipeline generation, plain-Markdown comprehensibility, and a zero-config workspace UI. WeaveMAS unites all of these properties without writing code because it is built natively on top of **`agy`**, directly leveraging `agy`'s subagent dispatch, tool ecosystem, workspace isolation, and sidecar panels.
 
 ### The Landscape: Where WeaveMAS Fits
 
