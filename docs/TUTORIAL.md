@@ -1,52 +1,85 @@
 # WeaveMAS: User Guide, Tutorials & Technical Reference
 
-**WeaveMAS** is a plugin for **Google Antigravity 2.0** that makes it effortless to create and run reliable, observable multi-agent systems without writing custom coordination code.
+**WeaveMAS** is a plugin for **Google Antigravity (`agy`)** that turns dynamic AI agent dispatch into structured multi-agent pipelines without writing custom coordination or UI code.
 
 This guide is split into two parts:
-* **[Part 1: Overview, Core Concepts & Single-Prompt Tutorials](#part-1-overview-core-concepts--single-prompt-tutorials)** *(Non-Technical)* — Understand what WeaveMAS is for, how **Orchestrators**, **Agents**, and **Stages** interact, the core declarative principles, and two hands-on tutorials (**without stages** and **with stages**).
-* **[Part 2: Technical Deep Dive — Under the Hood](#part-2-technical-deep-dive--under-the-hood)** *(Technical Reference)* — Explore the internal architecture, the 5-key `status.md` state machine, sandboxing rules, and MCP tool specifications.
+* **[Part 1: User Guide](#part-1-user-guide)** — Understand Multi-Agent Systems, why WeaveMAS is needed over barebones Antigravity, how **Orchestrators**, **Agents**, and **Stages** interact, and two hands-on tutorials (**without stages** and **with stages**).
+* **[Part 2: Technical Guide](#part-2-technical-guide)** — Explore the internal architecture, the 5-key `status.md` state machine, sandboxing rules, and MCP tool specifications.
 
 ---
 
-# Part 1: Overview, Core Concepts & Single-Prompt Tutorials
+# Part 1: User Guide
 
-## 1. What is the Scope of WeaveMAS? (Multi-Agent Asset Generation)
+## 1. Multi-Agent Systems: Why Go Beyond a Single LLM?
 
-WeaveMAS is purpose-built for **multi-agent asset and content generation**—workflows where a team of specialized AI agents collaborates step-by-step to produce tangible files and media (such as illustrated articles, research reports, radio broadcasts, or marketing packages).
+Before diving into WeaveMAS, it is important to understand what a **Multi-Agent System (MAS)** is and why the quality of results produced by a team of specialized agents can be significantly higher than a single large language model (LLM) call, particularly for complex and multi-faceted problems.
 
-### Why Use a Multi-Agent Pipeline Instead of a Single LLM Call?
+When you ask a single LLM to perform a complex creative or analytical job, it must juggle multiple competing objectives in a single prompt: tone, structure, factual accuracy, stylistic formatting, image planning, and self-critique. For trivial questions, a single prompt works well. But as soon as you produce rich, multi-part assets, single-LLM generation runs into hard limits:
 
-1. **Scale & Divide-and-Conquer (When Tasks Are Too Big for One LLM)**:
-   Many real-world asset generation jobs are simply too large for a single LLM call—as context windows fill up, models lose track of instructions, skip sections, or hit output token limits. WeaveMAS lets an orchestrator break a massive project into independent units and dispatch an **army of agents**:
-   * *Example — Full Course or Book Generation*: An *Outline Architect* designs a 12-chapter syllabus, and the orchestrator spawns 12 parallel *Chapter Writer* agents and 12 *Interactive Quiz Designer* agents, each working in its own isolated folder before compiling the complete book.
-   * *Example — AI Radio Broadcast Production*: A *Showrunner* plans a 10-song radio show, then dispatches specialized *Music Sourcer*, *DJ Scriptwriter*, and *Audio TTS Producer* agents for every single segment.
-2. **Model & Tool Specialization**:
-   Instead of giving one massive prompt access to every tool in your workspace, each agent gets only the exact model (`flash` for fast drafting, `pro` for deep planning) and tools (`search_web`, `image-generator`, CLI compilers) its specific job requires.
-3. **Higher Quality & Zero Hallucinations (Even on Small Tasks)**:
-   Even on a minimal task—like our tutorial's **KidsWiki** pipeline, which is small enough that a single LLM call *could* write the whole article—asking one LLM call to juggle competing goals causes subtle hallucinations. When a top LLM was asked to write a 4-year-old's "Rocket" article in a single pass, trying to sound playful and storybook-like made it write:
-   > *"A rocket is a super-strong space boat that flies all the way to the stars!"*
+* **Context Bloat & Token Degradation (Tasks Too Big for One LLM)**:
+  As conversation history and generated tokens accumulate in a single context window, LLMs suffer from "attention dilution." Models lose track of subtle negative constraints, skip required sections, hallucinate missing details, or hit hard output token caps before completing the job.
+* **Specialization of Models and Tools**:
+  Different tasks require different strengths. A research phase might need real-time web search and an analytical model (`gemini-pro`); drafting text benefits from balanced throughput (`gemini-flash`); quick extractions or summarizations can be handled cost-effectively by ultra-light models (`gemini-flash-lite`); and illustration requires dedicated image generation tools. A multi-agent architecture gives each specialist agent **only the exact tools and model tier** its role requires, avoiding bloated tool descriptions and wasted compute.
+* **Quality & Hallucination Elimination (Separation of Concerns)**:
+  Even for modest tasks, single prompts often sacrifice factual truth for narrative flow. For instance, in our tutorial's **KidsWiki** project, when a state-of-the-art LLM was prompted in a single shot to write an article explaining "Rockets" to a 4-year-old, its desire to sound whimsical made it generate: *"A rocket is a super-strong space boat that flies all the way to the stars!"* It sounds charming—and it is **scientifically false** (rockets visit orbit, the Moon, or solar system planets; none has ever reached another star). By decoupling the **Writer** (focused 100% on age-appropriate vocabulary) from an independent **Fact Checker** (focused 100% on factual claims), an automated revision loop catches and corrects these slips before publication.
+* **Tangible Intermediate Deliverables vs. A "Black Box Brain"**:
+  In a single prompt, all intermediate reasoning happens invisibly inside the model's latent space. You cannot inspect preliminary drafts, verify image descriptions, or alter the direction until the entire prompt finishes—and if something is wrong, you must discard and regenerate everything. In a multi-agent system, **every agent writes a real, tangible file to disk** (`draft.md`, `audit.md`, `illustration.png`). You gain full transparency into intermediate milestones as they are created.
 
-   It sounds cute—and it is **completely false** (no rocket has ever flown to the stars; rockets fly into Earth orbit, to the Moon, or to planets in our solar system). By separating the **Writer** (focused 100% on age-appropriate storytelling) from the **Fact Checker** (focused 100% on factual truth) and the **Illustrator**, even a minimal pipeline produces much higher quality than a single prompt.
-4. **Reviewing Tangible Assets Along the Way (vs. A "Black Box Brain" LLM)**:
-   When a single LLM attempts a complex task, everything happens invisibly inside its internal "brain." You have zero visibility into intermediate reasoning, drafts, or visual ideas until the final output is generated—and if something is wrong, you have to regenerate the whole thing. In a well-defined pipeline, **every agent writes a real, tangible file on disk** (`draft.md`, `audit.md`, `01_editorial_approved.md`, `rocket.png`). You can inspect intermediate assets along the way, review the planned illustration description, and steer the generation process as it happens.
-
-### The Trade-Off: Speed vs. Quality, Simplicity & Maintainability
+### The Trade-Off: Speed vs. Quality & Control
 
 It is important to be upfront about the trade-off: **multi-agent systems are much slower than a single LLM prompt**. 
 
 A single prompt returns in 5 to 10 seconds. A multi-agent pipeline that spawns subagents, writes files to disk, verifies status checklists, runs revision loops, and pauses for review gates will take **minutes instead of seconds**.
 
-**This extra time is the price you pay for quality and control.**
-
-WeaveMAS deliberately does not prioritize raw execution speed. Instead, it prioritizes:
-* **Simplicity & Zero Code (vs. Code-Heavy Frameworks like LangGraph)**: Unlike traditional multi-agent frameworks (LangGraph, CrewAI, AutoGen) that require writing Python/TypeScript boilerplate, Pydantic schemas, and complex graph wiring, WeaveMAS pipelines are **100% declarative Markdown**. Non-technical stakeholders and engineers alike can audit, create, or tweak pipeline behavior without touching code or managing build dependencies.
-* **Prototyping to Productionization Bridge**: WeaveMAS provides a rapid, code-free harness to scaffold, test, and battle-test agent division of labor, review gates, and prompt handoffs in minutes. Once your pipeline logic is proven, you can either keep running it natively within WeaveMAS or transpile its exact file-contract blueprint into a code-based production graph like LangGraph when headless, high-throughput microservices are required.
-* **Maintainability & Debuggability**: If an article contains a factual slip, you adjust the Fact Checker's prompt—you don't have to fight a massive 3,000-word prompt where fixing one behavior breaks three others.
-* **Extensibility**: Adding new capabilities (such as an audio narrator, translator, or quiz designer) simply means adding a new agent file—leaving existing stages completely untouched.
+**This extra time is the deliberate price you pay for quality, consistency, and control.**
 
 ---
 
-## 2. Key Building Blocks: Orchestrator, Agents & Stages
+## 2. Why WeaveMAS? Structured Pipelines on a Flexible Foundation
+
+### Why Antigravity (`agy`) is Dynamic by Design
+
+General-purpose agent engines like barebones **Google Antigravity (`agy`)** natively support autonomous subagents. However, `agy` is intentionally designed for open-ended, dynamic problem-solving:
+
+* **Maximum Flexibility**: A general-purpose AI platform like `agy` is built to adapt fluidly to non-linear workflows—such as debugging complex codebases, exploring unfamiliar repositories, and conducting open-ended research where each step depends on the previous discovery.
+* **Maximum Versatility**: Because `agy` provides an unconstrained, dynamic foundation, it can be guided, structured, and shaped into specialized, deterministic pipelines for specific domains. A flexible, dynamic system can always adopt structure; a rigid, hardcoded system cannot bend to unexpected tasks.
+
+Ultimately, the commercial goal of maximizing flexibility and versatility is to empower a broad, diverse user base across different domains solving a vast variety of problems. This is why `agy` offers two complementary user surfaces: a traditional code-centric developer interface (the Antigravity IDE) and an interface that does not treat code as a primary citizen, focusing instead on abstract *projects* and autonomous workflows (Antigravity 2.0).
+
+### The Limitation: Where Dynamic Flexibility Fails to Deliver Consistent Quality
+
+While fluid dispatch is ideal for interactive coding and exploratory tasks, relying purely on open-ended flexibility breaks down demanding consistent, reproducible quality and uniform standards across repeated runs:
+
+* **Unpredictability Across Runs**: Without strict guardrails, every single run takes a different path. One run creates a subfolder called `drafts/`, another leaves files in the root, a third summarizes steps in chat without saving files, and a fourth skips validation steps entirely.
+* **Lossy Prompt Summarization ("Brevity Bias")**: When unconstrained orchestrators pass data between agents via conversational chat summaries, the LLM inevitably trims details, discarding formatting specifications, critical citations, or visual descriptions.
+* **Lack of Uniform Formatting & Contracts**: Downstream consumers and publication workflows require predictable file naming, metadata schemas, and verified deliverables—guarantees that free-form dynamic dispatch cannot provide.
+* **Unbounded Exploration & Token Burn**: Left to their own devices, autonomous subagents frequently run wide directory scans (`ls`, `dir`), inspect unrelated project files, or get trapped in repetitive status chatter.
+
+When it is necessary to avoid these shortcomings for specific use cases, we must transition from loose, open-ended agent interaction into a well-defined asset production pipeline that enforces strict contracts, stage gates, and deterministic deliverables.
+
+### The WeaveMAS Solution: Predictability Without Code
+
+WeaveMAS bridges this gap by providing the strict discipline of an industrial asset pipeline while remaining **100% declarative Markdown**:
+
+* **Predictability**: In a multi-agent system, predictability means ensuring that every execution follows a proven, well-defined workflow without unexpected detours, skipped steps, or arbitrary agent behaviors. WeaveMAS achieves this through defined stages, pre-spawn file staging, deterministic output directory structures (`output/<context_slug>/`), and a strictly enforced 5-key `status.md` state machine.
+* **Standardization**: In complex workflows, standardization guarantees that inputs, outputs, folder layouts, and deliverable schemas adhere to uniform, machine-verifiable contracts across runs so downstream consumers can reliably automate processing. WeaveMAS enforces this through strict directory sandboxing, canonical deliverable naming conventions, and physical file-based handoffs.
+* **Observability**: Observability provides complete, real-time visibility into active stages, subagent tasks, elapsed durations, and intermediate deliverables without forcing developers to dig through raw execution logs or chat transcripts. WeaveMAS delivers this through a built-in sidecar UI (`sidecar://weavemas/panel/`) that connects directly to filesystem events to render live stage steppers, agent status cards, and progress bars—with zero custom telemetry or dashboard code.
+* **Comprehensibility**: Comprehensibility ensures that human stakeholders, domain experts, and engineers can immediately understand, audit, and modify agent roles, editorial criteria, and handoffs without a steep technical learning curve. WeaveMAS accomplishes this by defining orchestrators and agents entirely in plain, human-readable Markdown (`# Role Specifics`, `# Tasks`, `# Lifecycle`), allowing anyone to audit the workflow in 30 seconds and tweak instructions directly in plain English.
+* **Prototyping**: Fast prototyping allows teams to rapidly experiment with agent division of labor, test handoffs, and refine prompt instructions with minimal setup overhead before committing to a permanent production architecture. WeaveMAS enables this via the `weave-authoring` skill, which generates a fully compliant, runnable multi-agent system from a single prompt for instant interactive testing.
+* **Interactivity**: Interactivity keeps humans in the loop at critical decision points to steer direction, provide feedback, and approve intermediate states before triggering costly or irreversible downstream steps. While human interaction is a native capability of `agy` and general MAS frameworks, WeaveMAS elevates it to a first-class architectural citizen through structured **Human Review Gates**, pausing execution at milestone deliverables (`01_editorial_approved.md`) so you can inspect text and planned assets before unlocking the next stage.
+
+### The Landscape: Where WeaveMAS Fits
+
+To understand where WeaveMAS belongs in your toolchain, consider how it compares across the AI landscape:
+
+* **vs. Code-Based Frameworks (LangGraph, CrewAI, AutoGen)**:
+  Code-based frameworks provide compile-time type safety and headless graph execution for high-throughput microservices. However, they carry a steep learning curve, heavy dependency management, and high maintenance friction. WeaveMAS exists because for many asset generation workflows, the overhead of compiled code is unnecessary. WeaveMAS delivers structured predictability with zero code overhead and instant human readability.
+* **vs. Autonomous Agent Tools & Frameworks (Claude Code, Goose, etc.)**:
+  Tools like **Claude Code** share a similar design philosophy with `agy`: they are built to be highly general, flexible autonomous agents, with Claude Code naturally focusing on software engineering as its name suggests. Other open frameworks like Block's **Goose** prioritize broad versatility by integrating flexibly across multiple LLM providers and open tool ecosystems. While Goose is an impressive framework for general autonomous tasks, WeaveMAS does not aim to be a provider-agnostic, open-ended CLI. Instead, because it is purpose-built as an `agy` plugin, WeaveMAS directly harnesses `agy`'s native platform architecture—combining CLI flexibility with `agy 2.0`'s native review artifacts, sandboxed subagent dispatch, and sidecar dashboards—to turn agent execution into structured, observable asset pipelines.
+
+---
+
+## 3. Key Building Blocks: Orchestrator, Agents & Stages
 
 Every WeaveMAS system is built from two required building blocks (**Orchestrator** and **Agents**) and one optional organizational layer (**Stages**):
 
@@ -81,7 +114,7 @@ flowchart LR
 
 ---
 
-## 3. The Core Principle: Conventions & Declarative Structure
+## 4. The Core Principle: Conventions & Declarative Structure
 
 The guiding philosophy of WeaveMAS is **Convention over Configuration**. You never write orchestration code, state-management scripts, or tool-calling boilerplate. Instead, WeaveMAS works because every pipeline follows the same predictable, **declarative conventions**:
 
@@ -96,7 +129,7 @@ The guiding philosophy of WeaveMAS is **Convention over Configuration**. You nev
 
 ---
 
-## 4. Tutorial A: Build a Minimal Text-Only Pipeline *Without Stages* (Writer + Fact Checker)
+## 5. Tutorial A: Build a Minimal Text-Only Pipeline *Without Stages* (Writer + Fact Checker)
 
 Let's start with the simplest possible setup: building a minimal, text-only **KidsWiki** pipeline with just **two agents** (**Writer** and **Fact Checker**) for **ages 3 to 12** (defaulting to **4 years old**) **without stages or illustrations**.
 
@@ -138,7 +171,7 @@ When you run `"Write a KidsWiki article about 'Rocket' for a 4yo"`, the Writer d
 
 ---
 
-## 5. Tutorial B: Evolving to Stages & Human Review (Adding the Illustrator)
+## 6. Tutorial B: Evolving to Stages & Human Review (Adding the Illustrator)
 
 Now suppose you want to enhance your KidsWiki pipeline with illustrations. 
 
@@ -247,7 +280,7 @@ Rockets carry satellites and astronauts high above the clouds to orbit the Earth
 
 ---
 
-# Part 2: Technical Deep Dive — Under the Hood
+# Part 2: Technical Guide
 
 This section covers the engineering mechanics behind WeaveMAS for developers who want to understand how state tracking, sandboxing, and MCP tool execution work under the hood.
 
