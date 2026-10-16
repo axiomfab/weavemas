@@ -2,7 +2,7 @@
 (function() {
   let pipelineData = null;
   let selectedStageNum = null;
-  let selectedShowDir = null;
+  let selectedContextDir = null;
   let pollInterval = null;
 
   async function getParams() {
@@ -15,8 +15,9 @@
         console.warn('Workspace URI lookup failed:', e);
       }
     }
-    if (selectedShowDir) {
-      parts.push(`showDir=${encodeURIComponent(selectedShowDir)}`);
+    if (selectedContextDir) {
+      parts.push(`contextDir=${encodeURIComponent(selectedContextDir)}`);
+      parts.push(`showDir=${encodeURIComponent(selectedContextDir)}`);
     }
     return parts.length > 0 ? `?${parts.join('&')}` : '';
   }
@@ -34,8 +35,9 @@
     try {
       pipelineData = await fetchJSON('/api/pipeline');
       
-      if (!selectedShowDir && pipelineData && pipelineData.showDir) {
-        selectedShowDir = pipelineData.showDir;
+      const activeDir = pipelineData ? (pipelineData.contextDir || pipelineData.showDir) : null;
+      if (!selectedContextDir && activeDir) {
+        selectedContextDir = activeDir;
       }
 
       renderUI();
@@ -50,11 +52,18 @@
     // Header component
     const headerContainer = document.getElementById('header-root');
     if (headerContainer && window.HeaderBar) {
+      const runs = pipelineData.availableContexts || pipelineData.availableShows || [];
+      const activeDir = selectedContextDir || pipelineData.contextDir || pipelineData.showDir;
       window.HeaderBar.render(headerContainer, {
-        shows: pipelineData.availableShows || [],
-        activePath: selectedShowDir || pipelineData.showDir,
-        onSelectShow: (showPath) => {
-          selectedShowDir = showPath;
+        shows: runs,
+        contexts: runs,
+        activePath: activeDir,
+        onSelectShow: (dirPath) => {
+          selectedContextDir = dirPath;
+          refreshData();
+        },
+        onSelectContext: (dirPath) => {
+          selectedContextDir = dirPath;
           refreshData();
         },
         onSync: refreshData

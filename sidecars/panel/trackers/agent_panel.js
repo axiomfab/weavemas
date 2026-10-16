@@ -105,12 +105,27 @@
     return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
+  function getNodeCreationTime(node) {
+    if (!node) return 0;
+    if (typeof node.createdAt === 'number' && node.createdAt > 0) return node.createdAt;
+    if (node.type === 'group' && Array.isArray(node.children) && node.children.length > 0) {
+      return Math.min(...node.children.map(getNodeCreationTime));
+    }
+    return 0;
+  }
+
   function renderNode(node, stageNum) {
     if (node.type === 'group') {
       const groupId = `grp_s${stageNum}_${node.id}`;
       const isExpanded = expandedGroups.has(groupId);
       const title = formatAgentTitle(node.name || node.id);
-      return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${(node.children || []).map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
+      const sortedChildren = (node.children || []).slice().sort((a, b) => {
+        const ta = getNodeCreationTime(a);
+        const tb = getNodeCreationTime(b);
+        if (ta && tb && ta !== tb) return ta - tb;
+        return (a.name || a.id).localeCompare(b.name || b.id);
+      });
+      return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = `card_s${stageNum}_${node.id}`;
     const title = formatAgentTitle(node.name || node.id);
@@ -133,6 +148,12 @@
     } else {
       contentHtml = stageList.map(st => {
         const nodeList = (st.nodes || Object.values(st.agents || {})).filter(n => n.type === 'group' || !n.frontmatter?.type || n.frontmatter.type === 'agent');
+        nodeList.sort((a, b) => {
+          const ta = getNodeCreationTime(a);
+          const tb = getNodeCreationTime(b);
+          if (ta && tb && ta !== tb) return ta - tb;
+          return (a.name || a.id).localeCompare(b.name || b.id);
+        });
         const activeCount = nodeList.reduce((acc, n) => acc + countLeaves(n), 0);
         if (nodeList.length === 0 || activeCount === 0) return '';
         return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2"><div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span></div><div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div><div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div></div>`;

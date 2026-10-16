@@ -18,10 +18,8 @@
       throw new TypeError('CRITICAL: options object is required and must be an object');
     }
 
-    const { shows = [], activePath = null, onSelectShow, onSync } = options;
-    if (!Array.isArray(shows)) {
-      throw new TypeError('CRITICAL: shows must be an array');
-    }
+    const { shows = [], contexts = shows, activePath = null, onSelectShow, onSelectContext = onSelectShow, onSync } = options;
+    const availableItems = (Array.isArray(contexts) && contexts.length > 0) ? contexts : (Array.isArray(shows) ? shows : []);
 
     let headerEl = container.querySelector ? container.querySelector('header') : null;
     if (!headerEl) {
@@ -47,7 +45,7 @@
               </div>
               <div class="mt-1 flex items-center">
                 <select id="show-select" class="bg-slate-900 border border-slate-700 text-slate-200 rounded px-1.5 py-0.5 text-[11px] max-w-[220px] md:max-w-[320px] truncate focus:outline-hidden focus:border-indigo-500">
-                  <option value="">Detecting shows...</option>
+                  <option value="">Detecting runs...</option>
                 </select>
               </div>
             </div>
@@ -59,8 +57,9 @@
       `;
 
       const sel = container.querySelector ? container.querySelector('#show-select') : null;
-      if (sel && typeof onSelectShow === 'function' && sel.addEventListener) {
-        sel.addEventListener('change', (e) => onSelectShow(e.target.value));
+      const selectCallback = (typeof onSelectContext === 'function') ? onSelectContext : onSelectShow;
+      if (sel && typeof selectCallback === 'function' && sel.addEventListener) {
+        sel.addEventListener('change', (e) => selectCallback(e.target.value));
       }
       const syncBtn = container.querySelector ? container.querySelector('#sync-btn') : null;
       if (syncBtn && typeof onSync === 'function' && syncBtn.addEventListener) {
@@ -73,10 +72,10 @@
       const norm = (p) => (p || '').replace(/\\/g, '/').toLowerCase();
       const currentVal = norm(activePath || sel.value);
 
-      if (shows.length === 0) {
-        sel.innerHTML = '<option value="">No shows in output/</option>';
+      if (availableItems.length === 0) {
+        sel.innerHTML = '<option value="">No runs in output/</option>';
       } else {
-        sel.innerHTML = shows.map(s => {
+        sel.innerHTML = availableItems.map(s => {
           const isSel = norm(s.path) === currentVal;
           const label = s.displayPath || s.title || (s.name ? `output\\${s.name}` : s.path);
           return `<option value="${escapeHtml(s.path)}" ${isSel ? 'selected' : ''}>${escapeHtml(label)}</option>`;

@@ -34,26 +34,32 @@ function resolveWorkspace(data) {
   return ws;
 }
 
-function resolveShowDir(ws, data) {
+function resolveContextDir(ws, data) {
+  if (data && data.contextDir && existsSync(data.contextDir)) return data.contextDir;
   if (data && data.showDir && existsSync(data.showDir)) return data.showDir;
-  if (data && data.showId) {
-    const candidate = join(ws, 'output', data.showId);
+  if (data && (data.contextId || data.showId)) {
+    const id = data.contextId || data.showId;
+    const candidate = join(ws, 'output', id);
     if (existsSync(candidate)) return candidate;
   }
   return getActiveShowDir(ws);
 }
 
-// API: Pipeline status across all 7 stages
+const resolveShowDir = resolveContextDir;
+
+// API: Pipeline status across all stages
 app.api('/api/pipeline', (data) => {
   const ws = resolveWorkspace(data);
   const availableShows = getAllShowDirs(ws);
-  const showDir = resolveShowDir(ws, data);
+  const showDir = resolveContextDir(ws, data);
 
   if (!showDir) {
     return {
-      error: 'No show directories found under output/',
-      showTitle: 'The Tune Machine',
+      error: 'No pipeline directories found under output/',
+      showTitle: 'WeaveMAS Pipeline',
+      contextTitle: 'WeaveMAS Pipeline',
       availableShows: [],
+      availableContexts: [],
       activeStageNum: 1,
       stages: {},
       stageAgents: []
@@ -65,7 +71,8 @@ app.api('/api/pipeline', (data) => {
   return {
     ...result,
     stageAgents,
-    availableShows
+    availableShows,
+    availableContexts: availableShows
   };
 }, 'GET');
 

@@ -39,10 +39,11 @@ Anytime an orchestration guide, stage script, or workflow directive refers to in
 
 ## 3. Step 0: Upfront Stage Scaffolding & Master Status
 
-Before dispatching any subagents, perform these two immediate startup actions:
+Before dispatching any subagents, perform these startup actions:
 
-### A. Pre-Create All Stage Directories Upfront
-Parse the stages declared in the pipeline sequence (e.g. under `## Execution` or `## Stages` in the orchestration guide). Read each stage's declared `Execution Directory` (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`) and create all stage directories in `output/<context_slug>/` upfront immediately—even though they are initially empty.
+### A. Pre-Create All Stage Directories Upfront (When Stages Are Declared)
+If the pipeline declares stages (e.g. under `## Execution` in `orchestrator.md` with modular protocols in `orchestrator/`), read each stage's declared `Execution Directory` (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`) and create all stage directories in `output/<context_slug>/` upfront immediately—even though they are initially empty.
+* **Single-File / Stageless Pipelines**: If `orchestrator.md` defines `## Agents` and `## Execution` directly without stages, skip stage folder creation (subagent directories will be created under `output/<context_slug>/agents/<agent_identifier>/`).
 * **Why**: The WeaveMAS UI sidecar and file watchers inspect the workspace on day zero. Pre-creating stage folders renders the complete pipeline stepper immediately with zero detection delay or 404 warnings.
 
 ### B. Initialize Master Pipeline Status
@@ -58,14 +59,14 @@ Initialize master `status.md` at the root of `output/<context_slug>/` strictly v
       "dir": "<workspace_root>/output/<context_slug>",
       "role": "orchestrator",
       "type": "orchestrator",
-      "status": "in_progress/<first_stage>"
+      "status": "in_progress/<first_stage_or_step>"
     }
     ```
 * **Using CLI Tool (Fallback)**:
   ```bash
   python .agent/skills/weave-core/scripts/weave_status.py init \
     --type orchestrator \
-    --status "in_progress/<first_stage>" \
+    --status "in_progress/<first_stage_or_step>" \
     --dir "output/<context_slug>"
   ```
 
@@ -76,7 +77,7 @@ Initialize master `status.md` at the root of `output/<context_slug>/` strictly v
 Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hook:
 
 1. **Scaffold Subagent Working Directory**:
-   Create `<stage_slug>/agents/<agent_identifier>/` inside `output/<context_slug>/`.
+   Create the agent's declared `Working Directory` (e.g. `<stage_slug>/agents/<agent_identifier>/` for multi-stage pipelines, or `agents/<agent_identifier>/` for single-file stageless pipelines) inside `output/<context_slug>/`.
 2. **Initialize Subagent Status**:
    * **Using Native MCP Tool (Standard)**:
      Call `call_mcp_tool`:
@@ -85,7 +86,7 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
      * `Arguments`:
        ```json
        {
-         "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>",
+         "dir": "<workspace_root>/output/<context_slug>/<agent_working_directory>",
          "role": "<role_slug>"
        }
        ```
@@ -103,7 +104,7 @@ Dispatch subagents as autonomous black boxes:
 * **Mandatory Subagent Delegation (No Orchestrator Overstepping)**:
   The orchestrator coordinates, stages inputs, and verifies deliverables—it must never execute domain tasks (such as writing prose, conducting research, calculating parameters, or generating media) directly in its own context. Every stage task must be dispatched to its designated subagents via `invoke_subagent`. Do not combine separate subagent roles into single ad-hoc monolithic agents or invent intermediary coordinator agents unless explicitly declared in the pipeline specification.
 * **Dispatch via `TypeName: "self"` (`invoke_subagent`)**:
-  Dispatch the subagent with `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition) and `Role: "<agent_identifier>"` matching the exact slug defined in `## Agent Roles` (e.g. `Role: "director"`, `Role: "showrunner"`, or parameterized `Role: "architect_a01_s01"`). This ensures deterministic UI badges and unambiguous routing for `send_message`.
+  Dispatch the subagent with `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition) and `Role: "<agent_identifier>"` matching the exact slug defined in `## Agents` (e.g. `Role: "director"`, `Role: "showrunner"`, or parameterized `Role: "architect_a01_s01"`). This ensures deterministic UI badges and unambiguous routing for `send_message`.
 * **Dispatch Prompt Contents**:
   The prompt instructs the agent to adopt its role and read its instruction file, followed by the sandboxed paths and inputs:
   ```markdown

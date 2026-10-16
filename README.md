@@ -73,9 +73,16 @@ WeaveMAS includes a real-time reactive auxiliary side pane observer:
 
 ---
 
+## Documentation & Tutorials
+
+* **[Architecture Guide & Multi-Agent Tutorial](docs/TUTORIAL.md)**: Comprehensive deep dive into WeaveMAS architecture, state contracts, CWD sandboxing, and an end-to-end tutorial creating an illustrated **KidsWiki** multi-agent pipeline (Writer, Fact Checker, Illustrator) with age parameterization and image referencing.
+
+---
+
 ## 🧪 Testing
 
 Run native test suite:
 ```bash
 npm test
 ```
+

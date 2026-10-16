@@ -1,42 +1,38 @@
 # Authoring Guide: WeaveMAS Orchestrators
 
-This guide details how to author **Orchestrator Guidelines** (defined across `orchestration_guide.md` and modular stage files in the `orchestration/` folder) by weaving concrete workspace paths, upfront stage directory scaffolding, pre-spawn hooks, state supervision, and fail-fast deliverable ingestion directly into orchestrator instructions.
+This guide details how to author **Orchestrator Guidelines**—comprising the workspace trigger rule (`.agent/rules/orchestrator_trigger.md`), the master orchestrator guide (`orchestrator.md`), and optional modular stage files in the `orchestrator/` folder—by weaving concrete workspace paths, upfront directory scaffolding, pre-spawn hooks, state supervision, and fail-fast deliverable ingestion directly into orchestrator instructions.
 
 ---
 
 ## 🎯 1. The Standard Orchestrator Binding Contract
 
-### Frontmatter Configuration
-When defining an orchestrator agent (`.agent/agents/orchestrator.md` or root prompt frontmatter), declare:
+### A. Workspace Trigger Rule (`.agent/rules/orchestrator_trigger.md`)
+In Antigravity, the primary agent operates in the main conversation and transitions into a WeaveMAS orchestrator when triggered by a workspace rule in `.agent/rules/`:
 
-```yaml
+```markdown
 ---
-name: pipeline_orchestrator
-description: Master orchestrator for <pipeline_name>
-model: pro
-subagent: false
-inheritMcp: true
-skills:
-  - weave-core-orchestrator
-tools:
-  - invoke_subagent
-  - view_file
-  - write_to_file
-  # strictly omit run_command unless shell compilation or binary asset manipulation is required
+trigger: always_on
 ---
+
+# <Pipeline Name> Protocol
+
+**Trigger:** Any request containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
+**Action:** Before invoking any subagents or running commands, you must first read `orchestrator.md` (and follow the modular stage guidelines under `orchestrator/` if present).
 ```
 
-* **`subagent: false`**: Orchestrators act as parent agents, not leaf workers.
-* **`skills: [weave-core-orchestrator]`**: Natively mounts the orchestrator execution protocol.
-* **`inheritMcp: true`**: Grants access to WeaveMAS MCP status tools (`status_init`, `status_update`, `status_verify`, `status_read`).
-* **Least-Privilege `tools:`**:
-  * **`invoke_subagent`**: Mandatory for spawning and coordinating stage agents.
-  * **`view_file`**: Mandatory for inspecting deliverables and checking stage outputs.
-  * **`write_to_file`**: Mandatory for input staging (Tier 2 handoffs) and assembling final compiled deliverables.
-  * **`run_command`**: **Strictly omit** by default. Only include if the orchestrator itself must run shell compilation tools or binary asset CLI commands.
+* **Why Mandatory**: Without this rule, the primary agent does not automatically know to read `orchestrator.md` when a user asks to run the pipeline.
+* **`.agent/rules/` Write Protection & Mandatory Red Chat Alert**: Because Antigravity blocks agents from writing directly into `.agent/rules/`, you **MUST** write the rule file to the workspace root as `orchestrator_trigger.md` and include the following **RED** (`[!CAUTION]`) alert block at the top or bottom of your final chat response so the user cannot miss it:
+  ```markdown
+  > [!CAUTION]
+  > 🔴 **IMPORTANT — MANUAL STEP REQUIRED TO ACTIVATE PIPELINE**
+  > Antigravity prevents agents from writing directly to `.agent/rules/`. To enable automatic pipeline triggering, move the generated `orchestrator_trigger.md` file into `.agent/rules/orchestrator_trigger.md`:
+  > ```powershell
+  > New-Item -ItemType Directory -Force -Path .agent/rules | Out-Null; Move-Item -Force orchestrator_trigger.md .agent/rules/orchestrator_trigger.md
+  > ```
+  ```
 
-### Prompt Binding Statement
-Every WeaveMAS orchestrator prompt must include this mandatory binding statement verbatim:
+### B. Master Prompt Binding Statement (`orchestrator.md`)
+Every `orchestrator.md` file must include this mandatory binding statement verbatim near the top of the document:
 
 ```markdown
 Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
@@ -44,27 +40,31 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 
 ---
 
-## 🏛️ 2. Orchestration Architecture & The Concrete Weaving Principle
+## 🏛️ 2. Orchestrator Architecture & The Concrete Weaving Principle
 
-### Orchestration Documentation Hierarchy
-Every multi-stage WeaveMAS pipeline structures its orchestration documentation into two coordinated tiers:
-1. **Master Orchestrator Guide (`orchestration_guide.md`)**: The root specification at the workspace root. Defines pipeline inputs, output context root scoping (`output/<context_slug>/`), and the declarative `## Execution` section. For each stage, it specifies:
-   * **`Execution Directory`**: The stage directory slug (e.g. `stage01_setup/`).
-   * **`Protocol`**: Link to the dedicated stage guide (e.g. `[orchestration/stage1_setup.md](orchestration/stage1_setup.md)`).
-   * **`Deliverable`**: Canonical stage deliverable ingested into the root (e.g. `01_setup.md`).
-   * **`Gate`** *(Optional)*: Explicit review approval required before unlocking the next stage.
-   * *Anti-Pattern*: Never duplicate subagent action steps, prompts, or internal reasoning in the master guide. The master guide is strictly a high-level contract; stage guides govern stage details.
-2. **Modular Stage Guides (`orchestration/[<stage_slug>].md`)**: Dedicated guideline files residing in the `orchestration/` folder (e.g., `orchestration/stage1_setup.md`, `orchestration/stage2_concept.md`, `orchestration/stage3_writing.md`, etc.). Each file details the exact agent roles, pre-spawn hooks, ZUE constraints, dispatch prompts, and handoff contracts for that individual stage.
-   * **Single-Agent Stages**: Concise 15–20 line guide declaring the agent role, working directory, inputs, deliverable ingestion, and review gate (Template B).
-   * **Multi-Agent Relay / Loop Stages**: When a stage coordinates multiple subagent instances across an item collection (e.g. segments, chapters), author concise declarations defining the **Iteration Scope**, **Parameterized Workspaces** (`<stage_slug>/agents/<item_id>/<role>/`), and per-agent micro-specs (**Directory**, **Inputs**, **Handoff/Gate**) without prompt-inlining bloat (Template C).
+### Two Structural Modes (Stages are Optional)
+WeaveMAS supports both **Multi-Stage Modular** pipelines and **Single-File (Stageless)** pipelines:
+
+1. **Mode 1: Multi-Stage Modular Pipeline (`orchestrator.md` + `orchestrator/stage<N>_<slug>.md`)**:
+   * **Master Orchestrator Guide (`orchestrator.md`)**: Resides at the workspace root. Defines pipeline inputs, output context root scoping (`output/<context_slug>/`), and the declarative `## Execution` section listing each stage:
+     * **`Execution Directory`**: The stage directory slug (e.g. `stage01_setup/`).
+     * **`Protocol`**: Link to the dedicated stage guide (e.g. `[orchestrator/stage1_setup.md](orchestrator/stage1_setup.md)`).
+     * **`Deliverable`**: Canonical stage deliverable ingested into the context root (e.g. `01_setup.md`).
+     * **`Gate`** *(Optional)*: Explicit review approval required before unlocking the next stage.
+     * *Anti-Pattern*: Never duplicate subagent action steps, prompts, or internal reasoning in the master guide when using modular stage guides.
+   * **Modular Stage Guides (`orchestrator/[<stage_slug>].md`)**: Dedicated guideline files residing in the `orchestrator/` folder (e.g. `orchestrator/stage1_setup.md`, `orchestrator/stage2_concept.md`). Each file details `## Objective`, `## Agents`, and `## Execution` for that stage.
+2. **Mode 2: Single-File / Stageless Pipeline (`orchestrator.md` only)**:
+   * For simpler workflows that do not require separate stage files, omit the `orchestrator/` folder entirely.
+   * Define `## Inputs`, `## Output Structure`, `## Agents`, and the complete `## Execution` steps directly inside `orchestrator.md`.
+   * Subagent working directories live directly at `output/<context_slug>/agents/<agent_identifier>/` (or under stage folders if declared inline).
 
 > **Golden Rule of WeaveMAS**: When authoring orchestrator guidelines, **never present abstract meta-options**. Inline the *exact, concrete directory structure, subagent paths, and hook templates* for that specific workflow.
 
 * **Context Root (`<context_slug>`)**: Specify the exact context directory: `output/<context_slug>/` (e.g. `output/show_09-10-2026_the_clash/` or `output/article_2026-10-12_ai_chips/`). Scoping everything to `output/<context_slug>/` isolates all intermediate drafts, subagent directories, logs, and deliverables into a clean sandbox, preventing root directory pollution and multi-run collisions.
-* **Subagent Working Directories**: Specify the exact relative path structure: `<stage_slug>/agents/<agent_identifier>/`.
-* **Agent Identifier Convention (`<agent_identifier>`)**: Every agent declared in `## Agent Roles` MUST be assigned an explicit, lowercase snake_case identifier slug:
-  - *Single-Instance Stages*: Semantic role slugs (`director`, `showrunner`, `youtube_sourcer`, `staging`).
-  - *Multi-Instance Stages*: Parameterized slugs with zero-padded coordinates (`architect_a<AA>_s<SS>`, `writer_a<AA>_s<SS>`, `factchecker_a<AA>_s<SS>`) or specialized roles (`writer_global_flow`).
+* **Subagent Working Directories**: Specify the exact relative path structure: `<stage_slug>/agents/<agent_identifier>/` (multi-stage) or `agents/<agent_identifier>/` (single-file stageless).
+* **Agent Identifier Convention (`<agent_identifier>`)**: Every agent declared in `## Agents` MUST be assigned an explicit, lowercase snake_case identifier slug:
+  - *Single-Instance Agents*: Semantic role slugs (`director`, `showrunner`, `youtube_sourcer`, `staging`).
+  - *Multi-Instance Agents*: Parameterized slugs with zero-padded coordinates (`architect_a<AA>_s<SS>`, `writer_a<AA>_s<SS>`, `factchecker_a<AA>_s<SS>`) or specialized roles (`writer_global_flow`).
   - *Why Mandatory*: Unambiguously referenced throughout `## Execution`, passed directly as `Role: "<agent_identifier>"` in `invoke_subagent` for deterministic UI sidecar badges, and targeted in `send_message(Recipient: <id>)`.
 * **Pre-Spawn Hook**: Provide the exact MCP call the orchestrator must execute before invoking subagents.
 * **Deliverable Ingestion**: Specify the exact file path read from the agent's `deliverable` frontmatter upon completion.
@@ -169,10 +169,23 @@ When an agent needs revision (e.g. from user review gates, Showrunner adjustment
 
 ## ✍️ 5. Concrete Orchestrator Guideline Templates
 
-### Template A: Master Orchestrator Guide (`orchestration_guide.md`)
+### Template A1: Workspace Trigger Rule (`.agent/rules/orchestrator.md`)
 
 ```markdown
-# Multi-Agent <Pipeline Name> Orchestration Guide
+---
+trigger: always_on
+---
+
+# <Pipeline Name> Protocol
+
+**Trigger:** Any request containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
+**Action:** Before invoking any subagents or running commands, you must first read `orchestrator.md` and follow the modular guidelines under `orchestrator/` (if present).
+```
+
+### Template A2: Master Orchestrator Guide — Multi-Stage (`orchestrator.md`)
+
+```markdown
+# Multi-Agent <Pipeline Name> Orchestrator Guide
 
 Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
 
@@ -182,26 +195,61 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 
 ## Output Structure
 Every run is scoped to a dedicated context directory matching:
-`output/<context_slug>/` (referred to as `SHOW_DIR` or context root).
+`output/<context_slug>/` (referred to as context root).
 
 All stage directories, agent workspaces, status tracking files, and final compiled deliverables live strictly inside this context root.
 
 ## Execution
 The pipeline executes through sequential stages. For each stage, the orchestrator follows the referenced protocol guide to manage pre-spawn hooks, subagent dispatch, and deliverable verification:
 
-### Stage 1: <Stage Title> (<Agent Roles>)
+### Stage 1: <Stage Title> (<Agent Names>)
 * **Execution Directory**: `stage01_<slug>/`
-* **Protocol**: [orchestration/stage1_<slug>.md](orchestration/stage1_<slug>.md)
+* **Protocol**: [orchestrator/stage1_<slug>.md](orchestrator/stage1_<slug>.md)
 * **Deliverable**: `01_<deliverable>.md`
 * **Gate**: Explicit user review approval required before unlocking Stage 2.
 
-### Stage 2: <Stage Title> (<Agent Roles>)
+### Stage 2: <Stage Title> (<Agent Names>)
 * **Execution Directory**: `stage02_<slug>/`
-* **Protocol**: [orchestration/stage2_<slug>.md](orchestration/stage2_<slug>.md)
+* **Protocol**: [orchestrator/stage2_<slug>.md](orchestrator/stage2_<slug>.md)
 * **Deliverable**: `02_<deliverable>.md`
 ```
 
-### Template B: Single-Agent Modular Stage Guide (`orchestration/<stage_slug>.md`)
+### Template A3: Master Orchestrator Guide — Single-File / Stageless (`orchestrator.md`)
+
+Use this self-contained template when a pipeline does not need separate `orchestrator/stage*.md` files:
+
+```markdown
+# Multi-Agent <Pipeline Name> Orchestrator Guide
+
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+
+## Inputs
+- `param1`: ...
+
+## Output Structure
+Every run is scoped to a dedicated context directory matching:
+`output/<context_slug>/`.
+
+## Agents
+
+### <Role 1> Agent: `<agent_id_1>`
+* **Instructions**: [agent_<role1>.md](.agent/agents/agent_<role1>.md)
+* **Working Directory**: `agents/<agent_id_1>/`
+
+### <Role 2> Agent: `<agent_id_2>`
+* **Instructions**: [agent_<role2>.md](.agent/agents/agent_<role2>.md)
+* **Working Directory**: `agents/<agent_id_2>/`
+
+## Execution
+1. **`<agent_id_1>`**:
+   - Inputs: Pass required parameters and staged inputs.
+   - Handoff: Ingest verified `<deliverable_1>.md` and stage into `<agent_id_2>` workspace.
+2. **`<agent_id_2>`**:
+   - Inputs: Staged `<deliverable_1>.md`.
+   - Deliverable Ingestion: Ingest verified `<deliverable_2>.md` as final deliverable `<final_deliverable>.md` at context root.
+```
+
+### Template B: Single-Agent Modular Stage Guide (`orchestrator/<stage_slug>.md`)
 
 ```markdown
 # Stage <N>: <Stage Title>
@@ -209,8 +257,11 @@ The pipeline executes through sequential stages. For each stage, the orchestrato
 ## Objective
 <1-sentence description of the stage's creative or technical goal>
 
-## Agent Roles
-* `<agent_identifier>`: `.agent/agents/<stage>/agent_<role>.md` (Directory: `stage<NN>_<slug>/agents/<role_slug>/`)
+## Agents
+
+### <Role Title> Agent: `<agent_identifier>`
+* **Instructions**: [agent_<role>.md](.agent/agents/<stage>/agent_<role>.md)
+* **Working Directory**: `stage<NN>_<slug>/agents/<role_slug>/`
 
 ## Execution
 1. **`<agent_identifier>`**:
@@ -224,7 +275,7 @@ The pipeline executes through sequential stages. For each stage, the orchestrato
    - Do not proceed to the next stage until the user grants explicit approval.
 ```
 
-### Template C: Multi-Agent Relay / Loop Stage Guide (`orchestration/<stage_slug>.md`)
+### Template C: Multi-Agent Relay / Loop Stage Guide (`orchestrator/<stage_slug>.md`)
 
 Use this template when a stage coordinates multiple subagent roles across a parameterized loop (e.g. per-segment, per-chapter, or per-item processing):
 
@@ -234,10 +285,19 @@ Use this template when a stage coordinates multiple subagent roles across a para
 ## Objective
 <1-sentence description of the stage's goal>
 
-## Agent Roles
-* `<role1>_<item_id>`: `.agent/agents/<stage>/agent_<role1>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role1_slug>/`)
-* `<role2>_<item_id>`: `.agent/agents/<stage>/agent_<role2>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role2_slug>/`)
-* `<role3>_<item_id>`: `.agent/agents/<stage>/agent_<role3>.md` (Directory: `stage<NN>_<slug>/agents/<item_id>/<role3_slug>/`)
+## Agents
+
+### <Role 1> Agents: `<role1>_<item_id>`
+* **Instructions**: [agent_<role1>.md](.agent/agents/<stage>/agent_<role1>.md)
+* **Working Directory**: `stage<NN>_<slug>/agents/<item_id>/<role1_slug>/`
+
+### <Role 2> Agents: `<role2>_<item_id>`
+* **Instructions**: [agent_<role2>.md](.agent/agents/<stage>/agent_<role2>.md)
+* **Working Directory**: `stage<NN>_<slug>/agents/<item_id>/<role2_slug>/`
+
+### <Role 3> Agents: `<role3>_<item_id>`
+* **Instructions**: [agent_<role3>.md](.agent/agents/<stage>/agent_<role3>.md)
+* **Working Directory**: `stage<NN>_<slug>/agents/<item_id>/<role3_slug>/`
 
 ## Execution
 

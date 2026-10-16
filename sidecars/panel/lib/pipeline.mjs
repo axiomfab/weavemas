@@ -14,7 +14,7 @@ export function formatStageName(rawName) {
     .join(' ');
 }
 
-export function getAllShowDirs(workspaceDir) {
+export function getAllContextDirs(workspaceDir) {
   if (!workspaceDir || typeof workspaceDir !== 'string') {
     throw new Error('CRITICAL: Workspace directory is required and must be a string');
   }
@@ -23,11 +23,11 @@ export function getAllShowDirs(workspaceDir) {
 
   const entries = readdirSync(outputDir, { withFileTypes: true })
     .filter(d => {
-      if (!d.isDirectory() || !d.name.startsWith('show_')) return false;
+      if (!d.isDirectory()) return false;
       const fullPath = join(outputDir, d.name);
       try {
         const subEntries = readdirSync(fullPath, { withFileTypes: true });
-        return subEntries.some(sub => sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name));
+        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'status.md');
       } catch {
         return false;
       }
@@ -49,47 +49,74 @@ export function getAllShowDirs(workspaceDir) {
   return entries;
 }
 
-export function getActiveShowDir(workspaceDir) {
-  const all = getAllShowDirs(workspaceDir);
+export const getAllShowDirs = getAllContextDirs;
+
+export function getActiveContextDir(workspaceDir) {
+  const all = getAllContextDirs(workspaceDir);
   return all.length > 0 ? all[0].path : null;
 }
 
-export function extractShowTitle(showDir) {
-  if (!showDir) return 'The Tune Machine';
-  const conceptCandidates = [
-    join(showDir, 'stage02_concept', 'concept.md'),
-    join(showDir, '02_concept.md')
-  ];
-  for (const c of conceptCandidates) {
-    if (existsSync(c)) {
-      const text = readFileSync(c, 'utf8');
-      const match = text.match(/^#\s+(?:Show Concept:\s*)?(.+)$/m);
-      if (match) return match[1].trim();
-    }
-  }
+export const getActiveShowDir = getActiveContextDir;
 
-  const setupCandidates = [
-    join(showDir, 'stage01_setup', 'setup.md'),
-    join(showDir, 'stage01_setup', 'agents', 'director', 'setup.md'),
-    join(showDir, '01_setup.md')
+export function extractContextTitle(showDir) {
+  if (!showDir) return 'WeaveMAS Pipeline';
+
+  // 1. Check direct deliverables at context root
+  const directCandidates = [
+    join(showDir, '02_final_article.md'),
+    join(showDir, '01_verified_draft.md'),
+    join(showDir, 'final_article.md'),
+    join(showDir, '02_concept.md'),
+    join(showDir, '01_setup.md'),
+    join(showDir, 'concept.md'),
+    join(showDir, 'setup.md')
   ];
-  for (const s of setupCandidates) {
-    if (existsSync(s)) {
-      const text = readFileSync(s, 'utf8');
-      const topicMatch = text.match(/\*\s+\*\*Topic\*\*:\s*(.+)/);
-      if (topicMatch) return topicMatch[1].trim();
-      const h1Match = text.match(/^#\s+(?:Director Setup & Guidelines:\s*|Show Setup:\s*)?(.+)$/m);
+  for (const cand of directCandidates) {
+    if (existsSync(cand)) {
+      const text = readFileSync(cand, 'utf8');
+      const h1Match = text.match(/^#\s+(?:(?:Show\s+)?Concept:\s*|(?:Director\s+)?Setup(?:\s*&\s*Guidelines)?:\s*|Article:\s*)?(.+)$/m);
       if (h1Match) return h1Match[1].trim();
     }
   }
 
-  const base = basename(showDir);
-  const slugMatch = base.match(/^show_\d{2}-\d{2}-\d{4}_(.+)$/);
-  if (slugMatch) {
-    return slugMatch[1].split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  // 2. Check stage subfolders
+  const stageCandidates = [
+    join(showDir, 'stage02_concept', 'concept.md'),
+    join(showDir, 'stage01_setup', 'setup.md'),
+    join(showDir, 'stage01_setup', 'agents', 'director', 'setup.md'),
+    join(showDir, 'stage01_drafting', 'agents', 'writer', 'draft.md')
+  ];
+  for (const s of stageCandidates) {
+    if (existsSync(s)) {
+      const text = readFileSync(s, 'utf8');
+      const topicMatch = text.match(/\*\s+\*\*Topic\*\*:\s*(.+)/i);
+      if (topicMatch) return topicMatch[1].trim();
+      const h1Match = text.match(/^#\s+(?:(?:Show\s+)?Concept:\s*|(?:Director\s+)?Setup(?:\s*&\s*Guidelines)?:\s*|Article:\s*)?(.+)$/m);
+      if (h1Match) return h1Match[1].trim();
+    }
   }
-  return base || 'The Tune Machine Broadcast';
+
+  // 3. Check status.md
+  const statusPath = join(showDir, 'status.md');
+  if (existsSync(statusPath)) {
+    const text = readFileSync(statusPath, 'utf8');
+    const topicMatch = text.match(/topic:\s*"?([^"\r\n]+)"?/i);
+    if (topicMatch) return topicMatch[1].trim();
+  }
+
+  const base = basename(showDir);
+  const slugWithDateMatch = base.match(/^[a-z]+_\d{2,4}[-_]\d{2}[-_]\d{2,4}_(.+)$/i);
+  if (slugWithDateMatch) {
+    return slugWithDateMatch[1].split(/[-_]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+  const prefixMatch = base.match(/^[a-z]+_(.+)$/i);
+  if (prefixMatch) {
+    return prefixMatch[1].split(/[-_]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+  return base || 'WeaveMAS Pipeline';
 }
+
+export const extractShowTitle = extractContextTitle;
 
 export function parseOrchestratorState(showDir) {
   if (!showDir || typeof showDir !== 'string') {
@@ -147,7 +174,11 @@ export function evaluatePipelineStages(showDir) {
     let status = 'pending';
     let tag = `STAGE ${s.num}: PENDING`;
 
-    if (orchState && orchState.stageNum !== null) {
+    if (orchState && orchState.isCompleted) {
+      isCompleted = true;
+      status = 'completed';
+      tag = `STAGE ${s.num}: COMPLETED`;
+    } else if (orchState && orchState.stageNum !== null) {
       // Orchestrator status file is the source of truth
       if (s.num < orchState.stageNum) {
         isCompleted = true;
@@ -218,7 +249,9 @@ export function evaluatePipelineStages(showDir) {
 
   return {
     showTitle: extractShowTitle(showDir),
+    contextTitle: extractContextTitle(showDir),
     showDir,
+    contextDir: showDir,
     activeStageNum,
     stages,
     stageList

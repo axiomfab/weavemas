@@ -115,6 +115,15 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
       return {};
     }
   }
+  function getNodeTime(n) {
+    if (!n) return 0;
+    if (typeof n.createdAt === 'number' && n.createdAt > 0) return n.createdAt;
+    if (n.type === 'group' && Array.isArray(n.children) && n.children.length > 0) {
+      return Math.min(...n.children.map(getNodeTime));
+    }
+    return 0;
+  }
+
   function scanDir(dir, rel = '') {
     const statusFile = path.join(dir, 'status.md');
     if (rel && fs.existsSync(statusFile)) {
@@ -123,6 +132,15 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
       const fm = parsed.frontmatter;
       if (fm && (!fm.type || fm.type === 'agent')) {
         const deliverableContent = readDeliverableContent(dir, fm.deliverable, workspaceRoot, showDir, stageName);
+        let createdAt = 0;
+        try {
+          const stat = fs.statSync(statusFile);
+          const dirStat = fs.statSync(dir);
+          const candidates = [stat.birthtimeMs, dirStat.birthtimeMs, stat.ctimeMs, dirStat.ctimeMs].filter(t => typeof t === 'number' && t > 0);
+          createdAt = candidates.length > 0 ? Math.min(...candidates) : 0;
+        } catch {
+          // fallback
+        }
         return {
           type: 'agent',
           id: rel.replace(/\//g, '_'),
@@ -130,7 +148,8 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
           filename: 'status.md',
           frontmatter: fm,
           body: parsed.body.trim(),
-          deliverableContent
+          deliverableContent,
+          createdAt
         };
       }
     }
@@ -141,12 +160,20 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
     if (!rel) {
       for (const ent of entries) {
         if (ent.isFile() && ent.name.endsWith('.md') && ent.name !== 'status.md') {
-          const raw = fs.readFileSync(path.join(dir, ent.name), 'utf-8');
+          const filePath = path.join(dir, ent.name);
+          const raw = fs.readFileSync(filePath, 'utf-8');
           const parsed = parseFrontmatter(raw);
           const fm = parsed.frontmatter;
           if (fm && (fm.type === 'agent' || fm.status)) {
             const key = path.basename(ent.name, '.md');
             const deliverableContent = readDeliverableContent(dir, fm.deliverable, workspaceRoot, showDir, stageName);
+            let createdAt = 0;
+            try {
+              const stat = fs.statSync(filePath);
+              createdAt = stat.birthtimeMs || stat.ctimeMs || 0;
+            } catch {
+              // fallback
+            }
             children.push({
               type: 'agent',
               id: key,
@@ -154,7 +181,8 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
               filename: ent.name,
               frontmatter: fm,
               body: parsed.body.trim(),
-              deliverableContent
+              deliverableContent,
+              createdAt
             });
           }
         }
@@ -171,17 +199,29 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
     }
 
     if (children.length === 0) return null;
+    children.sort((a, b) => {
+      const ta = getNodeTime(a);
+      const tb = getNodeTime(b);
+      if (ta && tb && ta !== tb) return ta - tb;
+      return (a.name || a.id).localeCompare(b.name || b.id);
+    });
     if (!rel) return children;
 
     return {
       type: 'group',
       id: rel.replace(/\//g, '_'),
       name: path.basename(dir),
-      children
+      children,
+      createdAt: getNodeTime({ children })
     };
   }
 
-  const rootNodes = scanDir(agentsDir) || [];
+  const rootNodes = (scanDir(agentsDir) || []).sort((a, b) => {
+    const ta = getNodeTime(a);
+    const tb = getNodeTime(b);
+    if (ta && tb && ta !== tb) return ta - tb;
+    return (a.name || a.id).localeCompare(b.name || b.id);
+  });
   const map = {};
   function indexNode(node) {
     map[node.id] = node;
