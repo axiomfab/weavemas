@@ -87,14 +87,14 @@ WeaveMAS supports both **Multi-Stage Modular** pipelines and **Single-File (Stag
 
 ## 📋 3. Prescriptive Orchestrator Building Blocks
 
-Every WeaveMAS orchestrator guideline must specify four core mechanisms:
+Every WeaveMAS orchestrator relies on four core runtime mechanisms (enforced natively by the mounted `weave-core-orchestrator` skill—**do not write these as procedural text into `orchestrator.md`**):
 
 ### Block A: Master Orchestrator Status Contract & Upfront Stage Scaffolding
 The orchestrator maintains the master `status.md` at the root of `output/<context_slug>/`.
 
 > [!IMPORTANT]
-> **Orchestrator Startup Initialization & Upfront Stage Scaffolding**:
-> Once orchestration starts, **the orchestrator performs two immediate scaffolding actions before dispatching subagents**:
+> **Orchestrator Startup Initialization & Upfront Stage Scaffolding (Executed by Skill)**:
+> Once orchestration starts, **the orchestrator executes two immediate scaffolding actions before dispatching subagents**:
 > 1. **Pre-Create All Stage Directories Upfront**: Create a directory in the output directory for each stage defined in the pipeline (e.g. `stage01_setup/`, `stage02_concept/`, `stage03_writing/`)—**even though they are initially empty**.
 >    * *Why Mandatory*: The WeaveMAS UI tracker sidecar discovers the full pipeline topology on day zero, rendering the complete stage stepper without 404s or delayed detection.
 > 2. **Initialize status (`status.md`)**:
@@ -102,6 +102,9 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 >    * `role: orchestrator`, `type: orchestrator`
 >    * `status: in_progress/<first_stage>`
 >    * `deliverable: null`
+>
+> > [!NOTE]
+> > **Do NOT Author "Step 0" into `orchestrator.md`**: Pre-creating stage folders and initializing master `status.md` are universal runtime obligations of the mounted `weave-core-orchestrator` skill. Writing a literal `### Step 0: Upfront Scaffolding` section in `orchestrator.md` is redundant boilerplate. In `orchestrator.md`, `## Execution` jumps directly to `### Stage 1: ...`.
 
 * **`type`**: Always `orchestrator`.
 * **`status`**: Current pipeline stage (`in_progress/<stage_name>`, `completed`, `blocked/<reason>`).
@@ -211,6 +214,9 @@ trigger: always_on
 ```
 
 ### Template A2: Master Orchestrator Guide — Multi-Stage (`orchestrator.md`)
+
+> [!TIP]
+> **No "Step 0" Section**: Notice that `## Execution` below transitions immediately into `### Stage 1: ...`. Never insert a `Step 0` or startup scaffolding step between `## Execution` and `### Stage 1`—all startup stage directory creation and master `status.md` initialization are handled automatically by `weave-core-orchestrator`.
 
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
