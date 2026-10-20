@@ -20,30 +20,30 @@ In WeaveMAS, **Sub-Orchestrators** and **Parallel Execution** are two completely
 
 | | **Sequential Execution** | **Parallel Execution** |
 | :--- | :--- | :--- |
-| **Direct Agents** | **Standard Sequential Agents**<br/>Root coordinates agents one by one.<br/>*Example*: Setup $\rightarrow$ Master Concept $\rightarrow$ Compilation | **Direct Parallel Agents**<br/>Root runs workers concurrently.<br/>*Example*: Run all 5 architects in parallel; or run sourcer, stylist, and playlist curator in parallel. |
+| **Direct Agents** | **Standard Sequential Agents**<br/>Root coordinates agents one by one.<br/>*Example*: Setup $\rightarrow$ Master Concept $\rightarrow$ Compilation | **Direct Parallel Agents**<br/>Root runs agents concurrently.<br/>*Example*: Run all 5 architects in parallel; or run sourcer, stylist, and playlist curator in parallel. |
 | **Sub-Orchestrators** | **Sequential Sub-Orchestrators**<br/>Root runs sub-orchestrators one by one.<br/>*Example*: Segment 2 depends on Segment 1, but each segment has an internal Writer ⇆ Fact-Checker loop. | **Parallel Sub-Orchestrators**<br/>Root runs sub-orchestrators concurrently.<br/>*Example*: 10 independent talk segments, each running its local architect $\rightarrow$ writer $\rightleftarrows$ checker trio in parallel. |
 
 ---
 
 ## 📦 3. Concept 1: Sub-Orchestrators (Encapsulation)
 
-A Sub-Orchestrator is an ephemeral coordinator that manages a localized team of worker agents.
+A Sub-Orchestrator is an ephemeral coordinator that manages a localized team of agents.
 
 ### Why Use a Sub-Orchestrator?
-* **Local Revision Encapsulation**: When workers have iterative critique loops (e.g., Writer ⇆ Fact-Checker), having the root orchestrator mediate every draft and critique floods the root context window with intermediate noise. A sub-orchestrator handles these feedback cycles locally via `send_message`.
+* **Local Revision Encapsulation**: When agents have iterative critique loops (e.g., Writer ⇆ Fact-Checker), having the root orchestrator mediate every draft and critique floods the root context window with intermediate noise. A sub-orchestrator handles these feedback cycles locally via `send_message`.
 * **Clean Root Context**: The root orchestrator only sees the final verified handoff, keeping its context lean for subsequent stages.
 
 ### The Ephemeral Sub-Orchestrator Protocol
 Sub-orchestrators follow strict execution rules:
-1. **Never Listed in `## Agents`**: The `## Agents` section of a stage guideline is strictly reserved for concrete leaf worker agents with physical directories and `status.md` files. Sub-orchestrators are declared solely in `## Execution` (e.g. `For each <item>, cluster into a sub-orchestrator...`).
+1. **Never Listed in `## Agents`**: The `## Agents` section of a stage guideline is strictly reserved for concrete leaf agents with physical directories and `status.md` files. Sub-orchestrators are declared solely in `## Execution` (e.g. `For each <item>, cluster into a sub-orchestrator...`).
 2. **Shared Context Root**: Operates directly in the shared context root (`output/<context_slug>/`).
 3. **Zero `status.md` Creation (Master State Integrity & Clean UI)**:
    * Sub-orchestrators **MUST NEVER create a `status.md` for themselves and MUST NEVER touch root `status.md`**.
    * *Why*: The root `status.md` belongs exclusively to the Root Orchestrator. Because the Sub-Orchestrator writes no `status.md`, the WeaveMAS sidecar UI dashboard remains 100% focused on actual content producers, with zero redundant "ghost manager" cards.
-4. **Standard Worker Paths**:
-   * Worker agents reside in their standard stage directories (e.g. `stage03_writing/agents/architect_a01_s01/`).
+4. **Standard Agent Paths**:
+   * Agents reside in their standard stage directories (e.g. `stage03_writing/agents/architect_a01_s01/`).
    * **DO NOT invent artificial nested `<unit_id>/` subfolders on disk**. The sub-orchestrator is simply parameterized via its prompt with the specific agent slugs it supervises.
-5. **Local Revision Loops**: Downstream critiques (e.g. from Fact-Checker) are sent directly to the upstream worker (e.g. Writer) via `send_message` up to an explicit hard cap (max 2 cycles).
+5. **Local Revision Loops**: Downstream critiques (e.g. from Fact-Checker) are sent directly to the upstream agent (e.g. Writer) via `send_message` up to an explicit hard cap (max 2 cycles).
 6. **Declarative Authoring Mandate**: Do NOT duplicate these runtime rules into individual stage markdown files. They are automatically enforced by the `weave-core-orchestrator` execution skill. Keep stage files purely declarative.
 
 ### Execution Modes for Sub-Orchestrators
@@ -66,10 +66,10 @@ Sub-orchestrators follow strict execution rules:
 
 ## ⚡ 4. Concept 2: Parallel Execution (Concurrency Modifier)
 
-Parallel execution can be applied to either direct worker agents or to clustered sub-orchestrators.
+Parallel execution can be applied to either direct agents or to clustered sub-orchestrators.
 
 ### Form A: Parallel Execution Applied to Direct Agents
-The root orchestrator dispatches and manages multiple worker agents concurrently in a single turn.
+The root orchestrator dispatches and manages multiple agents concurrently in a single turn.
 
 1. **Parameterized Loop (Homogeneous Roles)**:
    ```markdown
@@ -123,7 +123,7 @@ The root orchestrator dispatches and runs multiple sub-orchestrators concurrentl
 
 ## ⚖️ 5. Summary Decision Guide
 
-1. **Do workers need iterative feedback loops (e.g. Writer ⇆ Checker)?**
+1. **Do agents need iterative feedback loops (e.g. Writer ⇆ Checker)?**
    * **Yes**: Cluster them into a **Sub-Orchestrator** to encapsulate the revisions.
    * **No**: Use **Direct Agents**.
 2. **Can the units of work run concurrently?**

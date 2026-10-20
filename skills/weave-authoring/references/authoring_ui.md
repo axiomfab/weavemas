@@ -7,7 +7,7 @@ This guide details how to build **Sidecar Extensions, Web Panels, and Real-Time 
 ## 🏗️ 1. Architecture: The Decoupled State Pattern
 
 In WeaveMAS, the UI is completely decoupled from agent execution:
-* **Agents write to disk**: Orchestrator and worker subagents update canonical `status.md` files.
+* **Agents write to disk**: Orchestrator and leaf subagents update canonical `status.md` files.
 * **UI observes disk**: A Node.js Sidecar (using `SidecarApp` from `sidecar_sdk`) scans `output/<context_slug>/` and serves a reactive web view to the IDE side pane.
 
 ---

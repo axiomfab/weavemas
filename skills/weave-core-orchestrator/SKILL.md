@@ -213,7 +213,7 @@ When the final pipeline stage completes:
 WeaveMAS orchestrators support two independent execution mechanics: **Sub-Orchestrators** (for encapsulating multi-agent sub-workflows and revision loops) and **Parallel Execution** (running multiple agents or sub-orchestrators concurrently).
 
 ### Protocol A: Executing Direct Parallel Agents
-Used when a stage specifies running individual worker agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
+Used when a stage specifies running individual agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
 
 1. **Batch Pre-Spawn Scaffolding & Batch Status Init**:
    **Initialize all agent workspaces and status files in a single batch call** via `call_mcp_tool` (`status_init` with `items: [{ dir, role }, ...]`). This automatically creates all agent working directories recursively without needing separate `mkdir` commands. Then stage required Tier 2 inputs.
@@ -229,8 +229,8 @@ Used when a stage specifies running individual worker agents concurrently (e.g. 
 ### Protocol B: Executing Sub-Orchestrators (Sequential or Parallel)
 Used when a multi-agent loop or multi-track workflow is clustered into an ephemeral sub-orchestrator (e.g. `For each <item>, cluster into a sub-orchestrator [and execute in parallel]:` or `Cluster each track into a sub-orchestrator [and execute in parallel]:`):
 
-1. **Upfront Worker Scaffolding**:
-   The root orchestrator initializes all worker workspaces via batch `status_init` (`items: [...]`), which automatically creates all worker agent working directories across clusters before dispatching sub-orchestrators. Stage initial inputs into the created workspaces.
+1. **Upfront Agent Scaffolding**:
+   The root orchestrator initializes all agent workspaces via batch `status_init` (`items: [...]`), which automatically creates all agent working directories across clusters before dispatching sub-orchestrators. Stage initial inputs into the created workspaces.
 2. **Sub-Orchestrator Dispatch (Sequential vs. Parallel)**:
    * **Parallel Dispatch**: If declared with `execute in parallel`, batch-dispatch all $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`).
    * **Sequential Dispatch**: If declared without `execute in parallel`, dispatch one sub-orchestrator at a time, waiting for its deliverable before dispatching the next unit.
@@ -239,8 +239,8 @@ Used when a multi-agent loop or multi-track workflow is clustered into an epheme
    Each sub-orchestrator operates under strict execution constraints:
    * **Shared Execution Root**: Operates in the shared context root (`output/<context_slug>/`).
    * **Zero `status.md` Creation**: Sub-orchestrators **MUST NEVER create a `status.md` for themselves and MUST NEVER touch root `status.md`**. The master status file belongs strictly to the root orchestrator.
-   * **Standard Worker Paths**: Child workers live in their standard stage directories (e.g. `stage<NN>_<slug>/agents/<agent_identifier>/`). No artificial nested `<unit_id>/` directories are created.
-   * **Local Revision Encapsulation**: The sub-orchestrator supervises its assigned workers sequentially. If a downstream worker (e.g. Fact-Checker) requests changes, the sub-orchestrator coordinates revisions directly with the upstream worker (e.g. Writer) via `send_message(Recipient: <id>)` (max 2 cycles). Zero intermediate drafts or critique noise reach the root orchestrator.
+   * **Standard Agent Paths**: Child agents live in their standard stage directories (e.g. `stage<NN>_<slug>/agents/<agent_identifier>/`). No artificial nested `<unit_id>/` directories are created.
+   * **Local Revision Encapsulation**: The sub-orchestrator supervises its assigned agents sequentially. If a downstream agent (e.g. Fact-Checker) requests changes, the sub-orchestrator coordinates revisions directly with the upstream agent (e.g. Writer) via `send_message(Recipient: <id>)` (max 2 cycles). Zero intermediate drafts or critique noise reach the root orchestrator.
    * **Deliverable Finalization**: Once verified via `status_read`, the sub-orchestrator writes or copies the final unit deliverable and finishes its turn.
 4. **Root Ingestion**:
    The root orchestrator waits for sub-orchestrator completion (reactively for parallel batches, or sequentially per turn), verifies the finalized deliverables on disk, and proceeds.
