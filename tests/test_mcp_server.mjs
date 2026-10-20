@@ -277,3 +277,48 @@ test('MCP Failure Path 8: status_read with relative dir returns isError: true re
   assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
 });
 
+test('MCP Tool Call - Happy Path 4: status_init with batch items', () => {
+  const tmpRoot = createTempDir();
+  const dir1 = path.join(tmpRoot, 'agent_1');
+  const dir2 = path.join(tmpRoot, 'agent_2');
+  const req = {
+    jsonrpc: '2.0',
+    id: 21,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: {
+        items: [
+          { dir: dir1, role: 'stage3_writer_01' },
+          { dir: dir2, role: 'stage3_checker_01' }
+        ]
+      }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 21);
+  assert.equal(res.result.isError, undefined);
+  assert.match(res.result.content[0].text, /STATUS_INIT_OK: Batch initialized 2 status.md files/);
+  assert.equal(fs.existsSync(path.join(dir1, 'status.md')), true);
+  assert.equal(fs.existsSync(path.join(dir2, 'status.md')), true);
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 9: status_init with invalid batch items returns isError: true', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 22,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: {
+        items: []
+      }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 22);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: 'items' argument must be a non-empty array of objects/);
+});
+

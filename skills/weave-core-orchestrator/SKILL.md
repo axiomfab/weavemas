@@ -78,21 +78,37 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
 
 1. **Scaffold Subagent Working Directory**:
    Create the agent's declared `Working Directory` (e.g. `<stage_slug>/agents/<agent_identifier>/` for multi-stage pipelines, or `agents/<agent_identifier>/` for single-file stageless pipelines) inside `output/<context_slug>/`.
-2. **Initialize Subagent Status**:
-   * **Using Native MCP Tool (Standard)**:
-     Call `call_mcp_tool`:
-     * `ServerName`: `"weavemas_weave"`
-     * `ToolName`: `"status_init"`
-     * `Arguments`:
-       ```json
-       {
-         "dir": "<workspace_root>/output/<context_slug>/<agent_working_directory>",
-         "role": "<role_slug>"
-       }
-       ```
+2. **Initialize Subagent Status (Single or Batch)**:
+   * **Single Subagent**:
+     Call `call_mcp_tool` (`status_init`):
+     ```json
+     {
+       "dir": "<workspace_root>/output/<context_slug>/<agent_working_directory>",
+       "role": "<role_slug>"
+     }
+     ```
+   * **Batch Initialization (Preferred When Scaffolding Multiple Agents)**:
+     Whenever multiple agents need to be initialized (e.g. at the beginning of a wave, multi-agent stage, or loop), **batch initialization is strictly preferred** over issuing separate round-trips. Pass `items` to `status_init` in a single call:
+     ```json
+     {
+       "items": [
+         {
+           "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_1>",
+           "role": "<role_1>"
+         },
+         {
+           "dir": "<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_2>",
+           "role": "<role_2>"
+         }
+       ]
+     }
+     ```
 3. **Stage Input Files (3-Tier Input Model)**:
    * **Tier 1 (Directives & Parameters)**: Inline directly into the `invoke_subagent` prompt.
-   * **Tier 2 (Prior Stage Deliverables)**: Copy the prior stage deliverable directly into the subagent's folder (e.g. `<stage_slug>/agents/<agent_identifier>/01_setup.md`). Never summarize or inline prior deliverables into prompts.
+   * **Tier 2 (Prior Stage Deliverables & Handoffs)**: The orchestrator inspects the agent's declared `* **Inputs**:` under `## Agents` and stages them into the subagent's working directory:
+     - **Whole-File Staging (`- Source: <path> (staged as: <name>)`)**: Copy the source file directly into the subagent's working directory with filename `<name>`.
+     - **Section Extraction (`- Source: <path> (extract section <section_id>) (staged as: <name>)`)**: Read the source file, extract the designated section heading and content block (up to the next heading of equal or higher level), and write it directly to `<name>` inside the subagent's working directory.
+     - **Strict Rule**: Never summarize or inline prior deliverables into prompts. Always stage concrete files into the subagent's workspace.
    * **Tier 3 (Bulk Read-Only Assets)**: Pass the external read-only directory path or manifest.
 
 ---
@@ -200,8 +216,8 @@ WeaveMAS orchestrators support two independent execution mechanics: **Sub-Orches
 ### Protocol A: Executing Direct Parallel Agents
 Used when a stage specifies running individual worker agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
 
-1. **Batch Pre-Spawn Scaffolding**:
-   Pre-scaffold the declared working directory for every agent in the parallel set and call `call_mcp_tool` (`status_init`) on each before dispatching. Stage required Tier 2 inputs.
+1. **Batch Pre-Spawn Scaffolding & Batch Status Init**:
+   Pre-scaffold the declared working directory for every agent in the parallel set. **Initialize all agent statuses in a single batch call** via `call_mcp_tool` (`status_init` with `items: [{ dir, role }, ...]`) before dispatching. Stage required Tier 2 inputs.
 2. **Concurrent Batch Dispatch**:
    Dispatch all parallel agents concurrently in a single turn using `invoke_subagent` (`TypeName: "self"`).
 3. **Reactive Barrier Synchronization**:

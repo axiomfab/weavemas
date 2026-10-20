@@ -7,6 +7,7 @@ import {
   parseFrontmatter,
   serializeStatus,
   statusInit,
+  statusInitBatch,
   statusUpdate,
   statusVerify,
   statusRead,
@@ -216,6 +217,79 @@ test('statusInit - Failure Path 5: relative targetDir throws Error', () => {
     name: 'Error',
     message: /CRITICAL: Target directory must be an absolute path/
   });
+});
+
+test('statusInitBatch - Happy Path: initializes multiple status.md files in batch', () => {
+  const tmpRoot = createTempDir();
+  const dirA = path.join(tmpRoot, 'agent_a');
+  const dirB = path.join(tmpRoot, 'agent_b');
+  const items = [
+    { dir: dirA, role: 'writer_a01' },
+    { dir: dirB, role: 'checker_a01', status: 'not_started' }
+  ];
+
+  const res = statusInitBatch(items);
+  assert.equal(res.success, true);
+  assert.equal(res.count, 2);
+  assert.equal(fs.existsSync(path.join(dirA, 'status.md')), true);
+  assert.equal(fs.existsSync(path.join(dirB, 'status.md')), true);
+
+  const contentA = fs.readFileSync(path.join(dirA, 'status.md'), 'utf-8');
+  assert.match(contentA, /role: "writer_a01"/);
+  assert.match(contentA, /status: "not_started"/);
+
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
+});
+
+test('statusInit - Happy Path Polymorphic: accepts { items: [...] } object', () => {
+  const tmpRoot = createTempDir();
+  const dir1 = path.join(tmpRoot, 'agent_1');
+  const dir2 = path.join(tmpRoot, 'agent_2');
+  const res = statusInit({
+    items: [
+      { dir: dir1, role: 'architect_01' },
+      { dir: dir2, role: 'writer_01' }
+    ]
+  });
+  assert.equal(res.success, true);
+  assert.equal(res.count, 2);
+  assert.equal(fs.existsSync(path.join(dir1, 'status.md')), true);
+  assert.equal(fs.existsSync(path.join(dir2, 'status.md')), true);
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
+});
+
+test('statusInitBatch - Failure Path 1: relative path in any item throws Error before writing', () => {
+  const tmpRoot = createTempDir();
+  const dirValid = path.join(tmpRoot, 'valid');
+  assert.throws(() => statusInitBatch([
+    { dir: dirValid, role: 'role1' },
+    { dir: 'relative/dir', role: 'role2' }
+  ]), {
+    name: 'Error',
+    message: /CRITICAL: Item at index 1 has relative path/
+  });
+  // Verify strict fail-fast pre-validation did not write the first item
+  assert.equal(fs.existsSync(path.join(dirValid, 'status.md')), false);
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
+});
+
+test('statusInitBatch - Failure Path 2: missing role or invalid items throws TypeError', () => {
+  const tmpRoot = createTempDir();
+  assert.throws(() => statusInitBatch([]), {
+    name: 'TypeError',
+    message: /CRITICAL: items must be a non-empty array/
+  });
+  assert.throws(() => statusInitBatch(null), {
+    name: 'TypeError',
+    message: /CRITICAL: items must be a non-empty array/
+  });
+  assert.throws(() => statusInitBatch([
+    { dir: tmpRoot, role: '' }
+  ]), {
+    name: 'TypeError',
+    message: /CRITICAL: Item at index 0 must have a non-empty string 'role'/
+  });
+  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test('statusUpdate - Failure Path 4: relative targetDir throws Error', () => {

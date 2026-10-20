@@ -1,7 +1,7 @@
 import readline from 'node:readline';
 import path from 'node:path';
 import { TOOLS } from './tool_schemas.mjs';
-import { statusInit, statusUpdate, statusVerify, statusRead } from './status_manager.mjs';
+import { statusInit, statusInitBatch, statusUpdate, statusVerify, statusRead } from './status_manager.mjs';
 
 const PROTOCOL_VERSION = '2024-11-05';
 
@@ -67,15 +67,23 @@ export function handleMessage(msg) {
     try {
       let resultText = '';
       if (name === 'status_init') {
-        const targetDir = args.dir;
-        if (!targetDir || typeof targetDir !== 'string') {
-          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        if (args.items !== undefined) {
+          if (!Array.isArray(args.items) || args.items.length === 0) {
+            throw new Error("CRITICAL: 'items' argument must be a non-empty array of objects.");
+          }
+          const res = statusInitBatch(args.items);
+          resultText = res.message;
+        } else {
+          const targetDir = args.dir;
+          if (!targetDir || typeof targetDir !== 'string') {
+            throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+          }
+          const role = args.role;
+          const type = args.type || 'agent';
+          const status = args.status || 'not_started';
+          const res = statusInit(targetDir, role, type, status);
+          resultText = res.message;
         }
-        const role = args.role;
-        const type = args.type || 'agent';
-        const status = args.status || 'not_started';
-        const res = statusInit(targetDir, role, type, status);
-        resultText = res.message;
       } else if (name === 'status_update') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {

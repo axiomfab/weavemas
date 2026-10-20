@@ -5,9 +5,64 @@ import { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS } from './f
 export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS };
 
 /**
- * Initializes a new status.md in target directory.
+ * Batch initializes multiple status.md files with strict pre-validation.
+ */
+export function statusInitBatch(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new TypeError('CRITICAL: items must be a non-empty array of objects.');
+  }
+
+  // 1. Strict pre-validation pass before touching disk
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item || typeof item !== 'object') {
+      throw new TypeError(`CRITICAL: Item at index ${i} must be an object.`);
+    }
+    if (!item.dir || typeof item.dir !== 'string') {
+      throw new TypeError(`CRITICAL: Item at index ${i} must have a non-empty string 'dir'.`);
+    }
+    if (!path.isAbsolute(item.dir)) {
+      throw new Error(`CRITICAL: Item at index ${i} has relative path "${item.dir}". Target directory must be an absolute path.`);
+    }
+    if (!item.role || typeof item.role !== 'string') {
+      throw new TypeError(`CRITICAL: Item at index ${i} must have a non-empty string 'role'.`);
+    }
+    const type = item.type || 'agent';
+    if (type !== 'agent' && type !== 'orchestrator') {
+      throw new TypeError(`CRITICAL: Item at index ${i} type must be either "agent" or "orchestrator".`);
+    }
+    const status = item.status || 'not_started';
+    if (typeof status !== 'string' || !status) {
+      throw new TypeError(`CRITICAL: Item at index ${i} initial status must be a non-empty string.`);
+    }
+  }
+
+  // 2. Execution pass
+  const paths = [];
+  for (const item of items) {
+    const res = statusInit(item.dir, item.role, item.type || 'agent', item.status || 'not_started');
+    paths.push(res.path);
+  }
+
+  return {
+    success: true,
+    count: paths.length,
+    message: `STATUS_INIT_OK: Batch initialized ${paths.length} status.md files`,
+    paths
+  };
+}
+
+/**
+ * Initializes a new status.md in target directory, or batch initializes if passed an array or { items }.
  */
 export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not_started') {
+  if (Array.isArray(targetDir)) {
+    return statusInitBatch(targetDir);
+  }
+  if (typeof targetDir === 'object' && targetDir !== null && Array.isArray(targetDir.items)) {
+    return statusInitBatch(targetDir.items);
+  }
+
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }

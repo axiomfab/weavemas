@@ -5,13 +5,13 @@
 export const TOOLS = [
   {
     name: 'status_init',
-    description: 'Initialize a new WeaveMAS status.md file in the specified directory.',
+    description: 'Initialize one or multiple WeaveMAS status.md files in the specified directory or batch of directories.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to the target directory to initialize status.md in.'
+          description: 'Absolute path to target directory to initialize status.md in (for single initialization).'
         },
         role: {
           type: 'string',
@@ -24,9 +24,34 @@ export const TOOLS = [
         status: {
           type: 'string',
           description: 'Initial lifecycle status (default: "not_started").'
+        },
+        items: {
+          type: 'array',
+          description: 'Batch list of directories and roles to initialize in a single call.',
+          items: {
+            type: 'object',
+            properties: {
+              dir: {
+                type: 'string',
+                description: 'Absolute path to target directory.'
+              },
+              role: {
+                type: 'string',
+                description: 'The expected role identifier.'
+              },
+              type: {
+                type: 'string',
+                description: 'Node type: "agent" or "orchestrator" (default: "agent").'
+              },
+              status: {
+                type: 'string',
+                description: 'Initial lifecycle status (default: "not_started").'
+              }
+            },
+            required: ['dir', 'role']
+          }
         }
-      },
-      required: ['dir', 'role']
+      }
     }
   },
   {
