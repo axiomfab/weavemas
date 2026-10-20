@@ -193,12 +193,12 @@ When the final pipeline stage completes:
 
 ---
 
-## 8. Parallel Execution Protocols
+## 8. Sub-Orchestrator & Parallel Execution Protocols
 
-When a stage guideline defines parallel execution, the orchestrator follows one of two distinct execution protocols based on how the workflow is authored:
+WeaveMAS orchestrators support two independent execution mechanics: **Sub-Orchestrators** (for encapsulating multi-agent sub-workflows and revision loops) and **Parallel Execution** (running multiple agents or sub-orchestrators concurrently).
 
 ### Protocol A: Executing Direct Parallel Agents
-Used when a stage specifies running agents directly in parallel (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
+Used when a stage specifies running individual worker agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
 
 1. **Batch Pre-Spawn Scaffolding**:
    Pre-scaffold the declared working directory for every agent in the parallel set and call `call_mcp_tool` (`status_init`) on each before dispatching. Stage required Tier 2 inputs.
@@ -211,13 +211,15 @@ Used when a stage specifies running agents directly in parallel (e.g. `For each 
 
 ---
 
-### Protocol B: Executing Clustered Sub-Orchestrators
-Used when a multi-agent loop or multi-track workflow is clustered into sub-orchestrators (e.g. `For each <item>, cluster into a sub-orchestrator and execute in parallel:` or `Cluster each of the following into a sub-orchestrator and execute in parallel:`):
+### Protocol B: Executing Sub-Orchestrators (Sequential or Parallel)
+Used when a multi-agent loop or multi-track workflow is clustered into an ephemeral sub-orchestrator (e.g. `For each <item>, cluster into a sub-orchestrator [and execute in parallel]:` or `Cluster each track into a sub-orchestrator [and execute in parallel]:`):
 
 1. **Upfront Worker Scaffolding**:
    The root orchestrator pre-creates all worker directories across all clusters in `output/<context_slug>/` before dispatching sub-orchestrators.
-2. **Concurrent Sub-Orchestrator Dispatch**:
-   The root orchestrator batch-dispatches $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`), passing the cluster's assigned unit parameters, agent instructions, and assigned agent slugs.
+2. **Sub-Orchestrator Dispatch (Sequential vs. Parallel)**:
+   * **Parallel Dispatch**: If declared with `execute in parallel`, batch-dispatch all $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`).
+   * **Sequential Dispatch**: If declared without `execute in parallel`, dispatch one sub-orchestrator at a time, waiting for its deliverable before dispatching the next unit.
+   * **Prompt Contents**: Pass the cluster's assigned unit parameters, agent instructions, and assigned agent slugs.
 3. **Ephemeral Sub-Orchestrator Runtime Rules**:
    Each sub-orchestrator operates under strict execution constraints:
    * **Shared Execution Root**: Operates in the shared context root (`output/<context_slug>/`).
@@ -226,4 +228,4 @@ Used when a multi-agent loop or multi-track workflow is clustered into sub-orche
    * **Local Revision Encapsulation**: The sub-orchestrator supervises its assigned workers sequentially. If a downstream worker (e.g. Fact-Checker) requests changes, the sub-orchestrator coordinates revisions directly with the upstream worker (e.g. Writer) via `send_message(Recipient: <id>)` (max 2 cycles). Zero intermediate drafts or critique noise reach the root orchestrator.
    * **Deliverable Finalization**: Once verified via `status_read`, the sub-orchestrator writes or copies the final unit deliverable and finishes its turn.
 4. **Root Ingestion**:
-   The root orchestrator waits reactively for all sub-orchestrators to complete, verifies the finalized deliverables on disk, and proceeds to compilation or the next stage.
+   The root orchestrator waits for sub-orchestrator completion (reactively for parallel batches, or sequentially per turn), verifies the finalized deliverables on disk, and proceeds.
