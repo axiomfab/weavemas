@@ -76,9 +76,8 @@ Initialize master `status.md` at the root of `output/<context_slug>/` strictly v
 
 Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hook:
 
-1. **Scaffold Subagent Working Directory**:
-   Create the agent's declared `Working Directory` (e.g. `<stage_slug>/agents/<agent_identifier>/` for multi-stage pipelines, or `agents/<agent_identifier>/` for single-file stageless pipelines) inside `output/<context_slug>/`.
-2. **Initialize Subagent Status (Single or Batch)**:
+1. **Initialize Subagent Status & Directory (Automatic Directory Creation)**:
+   Calling `status_init` **automatically creates the target directory recursively** if it does not exist. The orchestrator **must NOT run separate `mkdir` or shell commands to create agent folders**; `status_init` creates both the folder and `status.md` in a single operation.
    * **Single Subagent**:
      Call `call_mcp_tool` (`status_init`):
      ```json
@@ -87,8 +86,8 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
        "role": "<role_slug>"
      }
      ```
-   * **Batch Initialization (Preferred When Scaffolding Multiple Agents)**:
-     Whenever multiple agents need to be initialized (e.g. at the beginning of a wave, multi-agent stage, or loop), **batch initialization is strictly preferred** over issuing separate round-trips. Pass `items` to `status_init` in a single call:
+   * **Batch Initialization (Strictly Preferred When Scaffolding Multiple Agents)**:
+     Whenever multiple agents need to be initialized (e.g. at the beginning of a wave, multi-agent stage, or loop), **batch initialization is strictly preferred** over issuing separate round-trips. Pass `items` to `status_init` in a single call to create all folders and status files simultaneously:
      ```json
      {
        "items": [
@@ -103,7 +102,7 @@ Before dispatching any subagent via `invoke_subagent`, execute the pre-spawn hoo
        ]
      }
      ```
-3. **Stage Input Files (3-Tier Input Model)**:
+2. **Stage Input Files (3-Tier Input Model)**:
    * **Tier 1 (Directives & Parameters)**: Inline directly into the `invoke_subagent` prompt.
    * **Tier 2 (Prior Stage Deliverables & Handoffs)**: The orchestrator inspects the agent's declared `* **Inputs**:` under `## Agents` and stages them into the subagent's working directory:
      - **Whole-File Staging (`- Source: <path> (staged as: <name>)`)**: Copy the source file directly into the subagent's working directory with filename `<name>`.
@@ -217,7 +216,7 @@ WeaveMAS orchestrators support two independent execution mechanics: **Sub-Orches
 Used when a stage specifies running individual worker agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
 
 1. **Batch Pre-Spawn Scaffolding & Batch Status Init**:
-   Pre-scaffold the declared working directory for every agent in the parallel set. **Initialize all agent statuses in a single batch call** via `call_mcp_tool` (`status_init` with `items: [{ dir, role }, ...]`) before dispatching. Stage required Tier 2 inputs.
+   **Initialize all agent workspaces and status files in a single batch call** via `call_mcp_tool` (`status_init` with `items: [{ dir, role }, ...]`). This automatically creates all agent directories recursively without needing separate `mkdir` commands. Then stage required Tier 2 inputs.
 2. **Concurrent Batch Dispatch**:
    Dispatch all parallel agents concurrently in a single turn using `invoke_subagent` (`TypeName: "self"`).
 3. **Reactive Barrier Synchronization**:
@@ -231,7 +230,7 @@ Used when a stage specifies running individual worker agents concurrently (e.g. 
 Used when a multi-agent loop or multi-track workflow is clustered into an ephemeral sub-orchestrator (e.g. `For each <item>, cluster into a sub-orchestrator [and execute in parallel]:` or `Cluster each track into a sub-orchestrator [and execute in parallel]:`):
 
 1. **Upfront Worker Scaffolding**:
-   The root orchestrator pre-creates all worker directories across all clusters in `output/<context_slug>/` before dispatching sub-orchestrators.
+   The root orchestrator initializes all worker workspaces via batch `status_init` (`items: [...]`), which automatically creates all worker directories across clusters before dispatching sub-orchestrators. Stage initial inputs into the created workspaces.
 2. **Sub-Orchestrator Dispatch (Sequential vs. Parallel)**:
    * **Parallel Dispatch**: If declared with `execute in parallel`, batch-dispatch all $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`).
    * **Sequential Dispatch**: If declared without `execute in parallel`, dispatch one sub-orchestrator at a time, waiting for its deliverable before dispatching the next unit.

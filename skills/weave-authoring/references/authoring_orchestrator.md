@@ -116,9 +116,8 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 ### Block B: The Mandatory Pre-Spawn Hook
 Before dispatching any subagent via `invoke_subagent`, the orchestrator **must** execute this pre-spawn hook:
 
-1. Create the dedicated subagent directory: `<stage_slug>/agents/<agent_identifier>/`.
-2. Initialize status (`status.md`) with `role: "<role_slug>"` (`status: not_started`). (When initializing multiple subagents for a wave or multi-agent stage, batch initialization via `status_init` with `items: [...]` is preferred).
-3. Stage required Tier 2 deliverables directly into the subagent directory.
+1. Initialize status (`status.md`) with `role: "<role_slug>"` (`status: not_started`). Calling `status_init` automatically creates the target working directory (`<stage_slug>/agents/<agent_identifier>/`) recursively, eliminating separate directory creation commands. (When initializing multiple subagents for a wave, multi-agent stage, or loop, batch initialization via `status_init` with `items: [...]` is preferred).
+2. Stage required Tier 2 deliverables directly into the initialized subagent directory.
 
 > [!IMPORTANT]
 > **Declarative Authoring Mandate & `status.md` Referencing**:
