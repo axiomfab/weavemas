@@ -87,7 +87,7 @@ WeaveMAS supports both **Multi-Stage Modular** pipelines and **Single-File (Stag
 
 ## 📋 3. Prescriptive Orchestrator Building Blocks
 
-Every WeaveMAS orchestrator relies on four core runtime mechanisms (enforced natively by the mounted `weave-core-orchestrator` skill—**do not write these as procedural text into `orchestrator.md`**):
+Every WeaveMAS orchestrator relies on four core runtime mechanisms. Understand the fundamental division of labor: **stage files define what** (agents, inputs, deliverables, and sequential flow); the mounted `weave-core-orchestrator` skill handles **how** (pre-spawn hooks, prompt formatting, tool mapping, and status verification). Do NOT re-write these procedural mechanics into stage files:
 
 ### Block A: Master Orchestrator Status Contract & Upfront Stage Scaffolding
 The orchestrator maintains the master `status.md` at the root of `output/<context_slug>/`.
@@ -284,6 +284,13 @@ Every run is scoped to a dedicated context directory matching:
 ```
 
 ### Template B: Single-Agent Modular Stage Guide (`orchestrator/<stage_slug>.md`)
+
+> [!CAUTION]
+> **Stage File Anti-Patterns**:
+> 1. **Never write out `invoke_subagent` prompt templates or tool JSON**: The mounted `weave-core-orchestrator` skill automatically constructs standard black-box dispatch prompts from the agent instructions, working directory, and staged inputs.
+> 2. **Never write out mechanical pre-spawn procedures** (e.g., *"Step 1: Initialize status via status_init..."*): Declaring agents and inputs under `## Agents` is all the orchestrator needs to execute scaffolding automatically.
+> 3. **Never write out reactive wait or polling reminders**: Reactive wakeup is handled natively by the messaging runtime.
+> 4. Stage files are **declarative workflow contracts** (who, what inputs, what sequence), NOT procedural execution scripts written in markdown.
 
 ```markdown
 # Stage <N>: <Stage Title>
