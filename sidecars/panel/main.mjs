@@ -67,7 +67,7 @@ app.api('/api/pipeline', (data) => {
   }
   const result = evaluatePipelineStages(showDir);
   const showBase = basename(showDir);
-  const stageAgents = readAllStagesAgents(showBase, ws);
+  const stageAgents = readAllStagesAgents(showDir, ws);
   return {
     ...result,
     stageAgents,
@@ -84,7 +84,7 @@ app.api('/api/agents', (data) => {
   const showBase = basename(showDir);
   return {
     showId: showBase,
-    stages: readAllStagesAgents(showBase, ws)
+    stages: readAllStagesAgents(showDir, ws)
   };
 }, 'GET');
 

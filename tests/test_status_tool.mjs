@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, '..');
 
 const statusToolPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'lib', 'status_tool.mjs');
-const { executeStatusUpdate, readStageAgents } = await import(`file://${statusToolPath.replace(/\\/g, '/')}`);
+const { executeStatusUpdate, readStageAgents, readDirectAgents, readAllStagesAgents } = await import(`file://${statusToolPath.replace(/\\/g, '/')}`);
 
 const testShow = 'show_test_status_tool';
 const testStage = '02_concept';
@@ -154,5 +154,54 @@ test('Failure Path: readStageAgents sets deliverableContent to null when deliver
   const stageData = readStageAgents(testShow, setupStage, workspaceRoot);
   assert.ok(stageData.director_none);
   assert.equal(stageData.director_none.deliverableContent, null);
+});
+
+test('Happy Path: readDirectAgents discovers agents in stageless pipeline and loads deliverable', () => {
+  const stagelessShow = 'show_stageless_test';
+  const stagelessDir = path.join(workspaceRoot, 'output', stagelessShow);
+  const factcheckerDir = path.join(stagelessDir, 'agents', 'factchecker');
+  fs.mkdirSync(factcheckerDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(factcheckerDir, 'status.md'),
+    '---\ntype: agent\nstatus: completed\ndeliverable: audit_report.md\n---\nAudit verified.',
+    'utf-8'
+  );
+  fs.writeFileSync(path.join(factcheckerDir, 'audit_report.md'), '# Verified Claims', 'utf-8');
+
+  try {
+    const agents = readDirectAgents(stagelessShow, workspaceRoot);
+    assert.ok(agents.factchecker);
+    assert.equal(agents.factchecker.frontmatter.status, 'completed');
+    assert.equal(agents.factchecker.frontmatter.deliverable, 'audit_report.md');
+    assert.equal(agents.factchecker.deliverableContent, '# Verified Claims');
+
+    const allStages = readAllStagesAgents(stagelessShow, workspaceRoot);
+    assert.equal(allStages.length, 1);
+    assert.equal(allStages[0].num, null);
+    assert.equal(allStages[0].name, 'Agents');
+    assert.equal(allStages[0].stageDir, 'agents');
+    assert.equal(allStages[0].nodes.length, 1);
+    assert.equal(allStages[0].nodes[0].id, 'factchecker');
+  } finally {
+    fs.rmSync(stagelessDir, { recursive: true, force: true });
+  }
+});
+
+test('Failure Path 1: readDirectAgents throws TypeError on invalid or missing parameters', () => {
+  assert.throws(() => readDirectAgents(null, workspaceRoot), /CRITICAL: showDir and workspaceRoot are required strings/);
+  assert.throws(() => readDirectAgents('show', null), /CRITICAL: showDir and workspaceRoot are required strings/);
+  assert.throws(() => readDirectAgents('', workspaceRoot), /CRITICAL: showDir and workspaceRoot are required strings/);
+});
+
+test('Failure Path 2: readDirectAgents returns empty object when agents directory does not exist', () => {
+  const emptyShow = 'show_no_agents_test';
+  const emptyDir = path.join(workspaceRoot, 'output', emptyShow);
+  fs.mkdirSync(emptyDir, { recursive: true });
+  try {
+    const agents = readDirectAgents(emptyShow, workspaceRoot);
+    assert.deepEqual(agents, {});
+  } finally {
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  }
 });
 

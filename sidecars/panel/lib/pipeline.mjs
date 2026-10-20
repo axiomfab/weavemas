@@ -27,7 +27,7 @@ export function getAllContextDirs(workspaceDir) {
       const fullPath = join(outputDir, d.name);
       try {
         const subEntries = readdirSync(fullPath, { withFileTypes: true });
-        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'status.md');
+        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'status.md' || (sub.isDirectory() && sub.name === 'agents'));
       } catch {
         return false;
       }

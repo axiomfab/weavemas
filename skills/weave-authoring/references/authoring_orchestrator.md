@@ -7,7 +7,7 @@ This guide details how to author **Orchestrator Guidelines**—comprising the wo
 ## 🎯 1. The Standard Orchestrator Binding Contract
 
 ### A. Workspace Trigger Rule (`.agent/rules/orchestrator_trigger.md`)
-In Antigravity, the primary agent operates in the main conversation and transitions into a WeaveMAS orchestrator when triggered by a workspace rule in `.agent/rules/`:
+In Antigravity, the primary agent operates in the main conversation and transitions into either a WeaveMAS orchestrator (to run the pipeline) or a WeaveMAS revision architect (to diagnose and fix outcome issues) when triggered by a workspace rule in `.agent/rules/`:
 
 ```markdown
 ---
@@ -16,18 +16,27 @@ trigger: always_on
 
 # <Pipeline Name> Protocol
 
-**Trigger:** Any request containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
+## 1. Pipeline Execution
+**Trigger:** Any request to run or generate with the pipeline containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
 **Action:** Before invoking any subagents or running commands, you must first read `orchestrator.md` (and follow the modular stage guidelines under `orchestrator/` if present).
+
+## 2. Outcome Feedback & Pipeline Revision
+**Trigger:** Any request providing feedback, critique, or reporting mistakes on the outcome/output of a pipeline run (e.g., in `output/<context_slug>/`).
+**Action:** Do NOT jump straight to ad-hoc edits. You MUST activate the `weave-authoring` skill and follow its Outcome Review & Revision guide (`references/authoring_revision.md`) to address this.
 ```
 
-* **Why Mandatory**: Without this rule, the primary agent does not automatically know to read `orchestrator.md` when a user asks to run the pipeline.
+* **Why Mandatory**: Without this rule, the primary agent neither knows to read `orchestrator.md` when asked to run the pipeline, nor knows to run structured dual-track revision when the user critiques a generated outcome.
 * **`.agent/rules/` Write Protection & Mandatory Red Chat Alert**: Because Antigravity blocks agents from writing directly into `.agent/rules/`, you **MUST** write the rule file to the workspace root as `orchestrator_trigger.md` and include the following **RED** (`[!CAUTION]`) alert block at the top or bottom of your final chat response so the user cannot miss it:
   ```markdown
   > [!CAUTION]
   > 🔴 **IMPORTANT — MANUAL STEP REQUIRED TO ACTIVATE PIPELINE**
-  > Antigravity prevents agents from writing directly to `.agent/rules/`. To enable automatic pipeline triggering, move the generated `orchestrator_trigger.md` file into `.agent/rules/orchestrator_trigger.md`:
+  > Antigravity prevents agents from writing directly to `.agent/rules/`. To enable automatic pipeline triggering:
+  > 1. Ensure the directory `.agent/rules/` exists (create it in the AGY IDE file tree if needed).
+  > 2. Copy or drag-and-drop the generated `orchestrator_trigger.md` file into `.agent/rules/orchestrator_trigger.md`.
+  >
+  > Alternatively, run:
   > ```powershell
-  > New-Item -ItemType Directory -Force -Path .agent/rules | Out-Null; Move-Item -Force orchestrator_trigger.md .agent/rules/orchestrator_trigger.md
+  > New-Item -ItemType Directory -Force -Path .agent/rules | Out-Null; Copy-Item -Force orchestrator_trigger.md .agent/rules/orchestrator_trigger.md
   > ```
   ```
 
@@ -169,7 +178,7 @@ When an agent needs revision (e.g. from user review gates, Showrunner adjustment
 
 ## ✍️ 5. Concrete Orchestrator Guideline Templates
 
-### Template A1: Workspace Trigger Rule (`.agent/rules/orchestrator.md`)
+### Template A1: Workspace Trigger Rule (`.agent/rules/orchestrator_trigger.md`)
 
 ```markdown
 ---
@@ -178,8 +187,13 @@ trigger: always_on
 
 # <Pipeline Name> Protocol
 
-**Trigger:** Any request containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
+## 1. Pipeline Execution
+**Trigger:** Any request to run or generate with the pipeline containing "<trigger_phrase_1>", "<trigger_phrase_2>", or "<trigger_phrase_3>".
 **Action:** Before invoking any subagents or running commands, you must first read `orchestrator.md` and follow the modular guidelines under `orchestrator/` (if present).
+
+## 2. Outcome Feedback & Pipeline Revision
+**Trigger:** Any request providing feedback, critique, or reporting mistakes on the outcome/output of a pipeline run (e.g., in `output/<context_slug>/`).
+**Action:** Do NOT jump straight to ad-hoc edits. You MUST activate the `weave-authoring` skill and follow its Outcome Review & Revision guide (`references/authoring_revision.md`) to address this.
 ```
 
 ### Template A2: Master Orchestrator Guide — Multi-Stage (`orchestrator.md`)

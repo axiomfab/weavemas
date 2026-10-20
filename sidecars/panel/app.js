@@ -71,6 +71,7 @@
     }
 
     // Stepper row
+    const stepperRoot = document.getElementById('stepper-root');
     const stepperRow = document.getElementById('stages-stepper-row');
     const stepperLine = document.getElementById('stepper-line');
     if (!stepperRow) return;
@@ -82,35 +83,39 @@
       selectedStageNum = null;
     }
 
-    if (stepperLine) {
-      if (stageList.length <= 1) {
-        stepperLine.style.display = 'none';
-      } else {
-        stepperLine.style.display = 'block';
-        const offsetPct = (100 / (2 * stageList.length)).toFixed(2);
-        stepperLine.style.left = `${offsetPct}%`;
-        stepperLine.style.right = `${offsetPct}%`;
-      }
-    }
+    if (stageList.length === 0) {
+      if (stepperRoot) stepperRoot.style.display = 'none';
+      if (stepperLine) stepperLine.style.display = 'none';
+      stepperRow.innerHTML = '';
+    } else {
+      if (stepperRoot) stepperRoot.style.display = '';
 
-    function hasAgentInProgress(nodes) {
-      if (!nodes || !Array.isArray(nodes)) return false;
-      for (const node of nodes) {
-        if (!node) continue;
-        if (node.type === 'agent') {
-          const status = (node.frontmatter?.status || '').toLowerCase();
-          const base = status.split('/')[0];
-          if (base === 'in_progress' || base === 'revising' || base === 'running') return true;
-        } else if (node.type === 'group' && node.children) {
-          if (hasAgentInProgress(node.children)) return true;
+      if (stepperLine) {
+        if (stageList.length <= 1) {
+          stepperLine.style.display = 'none';
+        } else {
+          stepperLine.style.display = 'block';
+          const offsetPct = (100 / (2 * stageList.length)).toFixed(2);
+          stepperLine.style.left = `${offsetPct}%`;
+          stepperLine.style.right = `${offsetPct}%`;
         }
       }
-      return false;
-    }
 
-    if (stageList.length === 0) {
-      stepperRow.innerHTML = '<div class="w-full text-center py-2 text-slate-500 text-xs">No stage directories found in output folder.</div>';
-    } else {
+      function hasAgentInProgress(nodes) {
+        if (!nodes || !Array.isArray(nodes)) return false;
+        for (const node of nodes) {
+          if (!node) continue;
+          if (node.type === 'agent') {
+            const status = (node.frontmatter?.status || '').toLowerCase();
+            const base = status.split('/')[0];
+            if (base === 'in_progress' || base === 'revising' || base === 'running') return true;
+          } else if (node.type === 'group' && node.children) {
+            if (hasAgentInProgress(node.children)) return true;
+          }
+        }
+        return false;
+      }
+
       let stepperHtml = '';
       const stageAgentsList = pipelineData.stageAgents || [];
       for (const st of stageList) {

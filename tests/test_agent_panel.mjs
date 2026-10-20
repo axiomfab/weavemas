@@ -553,3 +553,77 @@ test('Failure Path: Renders fallback message when deliverableContent is empty st
   expandedCards.clear();
   cardViewModes.clear();
 });
+
+test('Happy Path: Renders stageless agents without stage prefix and with clean element IDs', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const stagelessData = {
+    stages: [
+      {
+        num: null,
+        name: 'Agents',
+        stageDir: 'agents',
+        nodes: [
+          {
+            type: 'agent',
+            id: 'factchecker',
+            name: 'factchecker',
+            frontmatter: { role: 'factchecker', status: 'completed', deliverable: 'audit_report.md' },
+            body: 'Audit completed successfully.',
+            deliverableContent: '# Audit Report Content'
+          },
+          {
+            type: 'agent',
+            id: 'writer',
+            name: 'writer',
+            frontmatter: { role: 'writer', status: 'in_progress', deliverable: 'draft.md' },
+            body: 'Drafting text...',
+            deliverableContent: '# Article Draft'
+          }
+        ]
+      }
+    ]
+  };
+
+  render(container, stagelessData);
+  assert.match(container.innerHTML, /Fact Checker/);
+  assert.match(container.innerHTML, /Writer/);
+  assert.match(container.innerHTML, /Agents/);
+  assert.doesNotMatch(container.innerHTML, /Stage null/);
+  assert.match(container.innerHTML, /data-concept-toggle="card_factchecker"/);
+  assert.match(container.innerHTML, /data-concept-toggle="card_writer"/);
+});
+
+test('Happy Path: Renders stageless agent deliverable content when card is expanded in deliverable mode', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const stagelessData = {
+    stages: [
+      {
+        num: null,
+        name: 'Agents',
+        stageDir: 'agents',
+        nodes: [
+          {
+            type: 'agent',
+            id: 'factchecker',
+            name: 'factchecker',
+            frontmatter: { role: 'factchecker', status: 'completed', deliverable: 'audit_report.md' },
+            body: 'Audit completed.',
+            deliverableContent: '# Verified Claims Report'
+          }
+        ]
+      }
+    ]
+  };
+
+  expandedCards.add('card_factchecker');
+  cardViewModes.set('card_factchecker', 'deliverable');
+
+  render(container, stagelessData);
+  assert.match(container.innerHTML, /# Verified Claims Report/);
+  assert.match(container.innerHTML, /audit_report\.md/);
+
+  // Cleanup
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+

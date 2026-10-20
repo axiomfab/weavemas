@@ -1,7 +1,7 @@
 ---
 name: weave-authoring
 description: >-
-  Authoring guide for WeaveMAS: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, and building observable UI dashboards.
+  Authoring guide for WeaveMAS: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.
 ---
 
 # WeaveMAS: Authoring & Design Guide
@@ -14,12 +14,13 @@ Rather than loading runtime skills during execution, WeaveMAS **weaves concrete 
 
 ## 🧭 Targeted Authoring Guides
 
-Load only the specific guide for the entity you are authoring:
+Load only the specific guide for the entity you are authoring or revising:
 
 | Building Target | Reference Guide | When to Read |
 | :--- | :--- | :--- |
 | **Agents** | [`references/authoring_agent.md`](references/authoring_agent.md) | Weaving concrete role-specific `status.md` contracts and deliverables directly into agent definitions with zero meta-optionality. |
 | **Orchestrators** | [`references/authoring_orchestrator.md`](references/authoring_orchestrator.md) | Weaving pre-spawn hooks, relative directory scoping from `output/<context_slug>/`, and state supervision into orchestrators. |
+| **Outcome Review & Revision** | [`references/authoring_revision.md`](references/authoring_revision.md) | Diagnosing user feedback on pipeline outcomes to propose both (1) an immediate outcome fix and (2) systemic agent/orchestrator improvements. |
 | **UI & Dashboards** | [`references/authoring_ui.md`](references/authoring_ui.md) | Building Sidecar extensions, web panels, tree visualizers, and state parsers that observe WeaveMAS filesystem states. |
 
 ---

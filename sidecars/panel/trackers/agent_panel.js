@@ -116,7 +116,7 @@
 
   function renderNode(node, stageNum) {
     if (node.type === 'group') {
-      const groupId = `grp_s${stageNum}_${node.id}`;
+      const groupId = (stageNum != null) ? `grp_s${stageNum}_${node.id}` : `grp_${node.id}`;
       const isExpanded = expandedGroups.has(groupId);
       const title = formatAgentTitle(node.name || node.id);
       const sortedChildren = (node.children || []).slice().sort((a, b) => {
@@ -127,7 +127,7 @@
       });
       return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
-    const cardId = `card_s${stageNum}_${node.id}`;
+    const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const title = formatAgentTitle(node.name || node.id);
     const isDelivActive = cardViewModes.get(cardId) === 'deliverable';
     const chip = getAgentValueChip(node.frontmatter, cardId, isDelivActive);
@@ -156,7 +156,10 @@
         });
         const activeCount = nodeList.reduce((acc, n) => acc + countLeaves(n), 0);
         if (nodeList.length === 0 || activeCount === 0) return '';
-        return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2"><div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span></div><div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div><div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div></div>`;
+        const stageHeader = (st.num != null && st.num > 0)
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span></div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">${escapeHtml(st.name)}</span></div>` : '');
+        return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div><div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div></div>`;
       }).filter(Boolean).join('');
     }
 

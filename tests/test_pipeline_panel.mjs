@@ -243,4 +243,25 @@ describe('Pipeline Panel Stage Evaluation', () => {
     ];
     assert.equal(hasActiveFn(mockNodesActive), true);
   });
+
+  it('Stageless Pipeline UI: hides stepper-root when no stages exist and validates frontend script syntax', () => {
+    const htmlPath = resolve(__dirname, '..', 'sidecars', 'panel', 'index.html');
+    const html = readFileSync(htmlPath, 'utf8');
+    const jsPath = resolve(__dirname, '..', 'sidecars', 'panel', 'app.js');
+    const appJs = readFileSync(jsPath, 'utf8');
+
+    // Happy Path 1: index.html hides stepper-line by default
+    assert.match(html, /id="stepper-line"[^>]*style="display:\s*none;"/);
+
+    // Happy Path 2: app.js hides stepperRoot and stepperLine when stageList is empty
+    assert.match(appJs, /if\s*\(stageList\.length\s*===\s*0\)\s*\{\s*if\s*\(stepperRoot\)\s*stepperRoot\.style\.display\s*=\s*'none';/);
+    assert.match(appJs, /if\s*\(stepperLine\)\s*stepperLine\.style\.display\s*=\s*'none';/);
+
+    // Happy Path 3: Syntax check validates that app.js and panel trackers parse without syntax errors
+    const scripts = ['app.js', 'trackers/header_bar.js', 'trackers/agent_panel.js', 'trackers/runtime_tracker.js', 'trackers/stage_panel.js'];
+    for (const s of scripts) {
+      const code = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', s), 'utf8');
+      assert.doesNotThrow(() => new Function(code), `Syntax error in ${s}`);
+    }
+  });
 });

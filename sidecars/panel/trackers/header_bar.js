@@ -18,6 +18,9 @@
       throw new TypeError('CRITICAL: options object is required and must be an object');
     }
 
+    if (options.shows !== undefined && !Array.isArray(options.shows)) {
+      throw new TypeError('CRITICAL: shows must be an array');
+    }
     const { shows = [], contexts = shows, activePath = null, onSelectShow, onSelectContext = onSelectShow, onSync } = options;
     const availableItems = (Array.isArray(contexts) && contexts.length > 0) ? contexts : (Array.isArray(shows) ? shows : []);
 
@@ -73,7 +76,7 @@
       const currentVal = norm(activePath || sel.value);
 
       if (availableItems.length === 0) {
-        sel.innerHTML = '<option value="">No runs in output/</option>';
+        sel.innerHTML = '<option value="">No shows in output/</option>';
       } else {
         sel.innerHTML = availableItems.map(s => {
           const isSel = norm(s.path) === currentVal;

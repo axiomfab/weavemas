@@ -88,11 +88,14 @@ export function executeStatusUpdate(params, workspaceRoot) {
 
 function readDeliverableContent(dir, deliverable, workspaceRoot, showDir, stageName) {
   if (!deliverable || typeof deliverable !== 'string' || deliverable === 'null' || deliverable === 'None') return null;
+  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
+    ? showDir
+    : path.join(workspaceRoot, 'output', showDir);
   const candidates = [
     path.join(dir, deliverable),
-    path.join(workspaceRoot, 'output', showDir, stageName, deliverable),
-    path.join(workspaceRoot, 'output', showDir, deliverable)
-  ];
+    stageName ? path.join(showFullPath, stageName, deliverable) : null,
+    path.join(showFullPath, deliverable)
+  ].filter(Boolean);
   for (const cand of candidates) {
     if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
       try { return fs.readFileSync(cand, 'utf-8'); } catch { /* continue */ }
@@ -101,20 +104,7 @@ function readDeliverableContent(dir, deliverable, workspaceRoot, showDir, stageN
   return null;
 }
 
-export function readStageAgents(showDir, stageName, workspaceRoot) {
-  if (!showDir || !stageName || !workspaceRoot) {
-    throw new TypeError('CRITICAL: showDir, stageName, and workspaceRoot are required strings');
-  }
-  let agentsDir = path.join(workspaceRoot, 'output', showDir, stageName, 'agents');
-  if (!fs.existsSync(agentsDir)) {
-    const altStage = stageName.startsWith('stage') ? stageName.replace(/^stage/, '') : `stage${stageName}`;
-    const altDir = path.join(workspaceRoot, 'output', showDir, altStage, 'agents');
-    if (fs.existsSync(altDir)) {
-      agentsDir = altDir;
-    } else {
-      return {};
-    }
-  }
+function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
   function getNodeTime(n) {
     if (!n) return 0;
     if (typeof n.createdAt === 'number' && n.createdAt > 0) return n.createdAt;
@@ -234,11 +224,47 @@ export function readStageAgents(showDir, stageName, workspaceRoot) {
   return map;
 }
 
+export function readStageAgents(showDir, stageName, workspaceRoot) {
+  if (!showDir || !stageName || !workspaceRoot) {
+    throw new TypeError('CRITICAL: showDir, stageName, and workspaceRoot are required strings');
+  }
+  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
+    ? showDir
+    : path.join(workspaceRoot, 'output', showDir);
+  let agentsDir = path.join(showFullPath, stageName, 'agents');
+  if (!fs.existsSync(agentsDir)) {
+    const altStage = stageName.startsWith('stage') ? stageName.replace(/^stage/, '') : `stage${stageName}`;
+    const altDir = path.join(showFullPath, altStage, 'agents');
+    if (fs.existsSync(altDir)) {
+      agentsDir = altDir;
+    } else {
+      return {};
+    }
+  }
+  return scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName);
+}
+
+export function readDirectAgents(showDir, workspaceRoot) {
+  if (!showDir || typeof showDir !== 'string' || !workspaceRoot || typeof workspaceRoot !== 'string') {
+    throw new TypeError('CRITICAL: showDir and workspaceRoot are required strings');
+  }
+  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
+    ? showDir
+    : path.join(workspaceRoot, 'output', showDir);
+  const agentsDir = path.join(showFullPath, 'agents');
+  if (!fs.existsSync(agentsDir)) {
+    return {};
+  }
+  return scanAgentsDir(agentsDir, workspaceRoot, showDir, null);
+}
+
 export function readAllStagesAgents(showDir, workspaceRoot) {
   if (!showDir || typeof showDir !== 'string' || !workspaceRoot || typeof workspaceRoot !== 'string') {
     throw new TypeError('CRITICAL: showDir and workspaceRoot are required strings');
   }
-  const showFullPath = path.join(workspaceRoot, 'output', showDir);
+  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
+    ? showDir
+    : path.join(workspaceRoot, 'output', showDir);
   if (!fs.existsSync(showFullPath)) {
     return [];
   }
@@ -266,5 +292,23 @@ export function readAllStagesAgents(showDir, workspaceRoot) {
       list.push({ num: s.num, name: s.name, stageDir: s.stageDir, nodes: agents._nodes || Object.values(agents), agents });
     }
   }
+
+  const directAgents = readDirectAgents(showDir, workspaceRoot);
+  if (Object.keys(directAgents).length > 0) {
+    const directNodes = directAgents._nodes || Object.values(directAgents);
+    const directEntry = {
+      num: null,
+      name: 'Agents',
+      stageDir: 'agents',
+      nodes: directNodes,
+      agents: directAgents
+    };
+    if (entries.length === 0) {
+      list.push(directEntry);
+    } else {
+      list.unshift(directEntry);
+    }
+  }
+
   return list;
 }
