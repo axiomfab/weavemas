@@ -190,3 +190,40 @@ When the final pipeline stage completes:
       "progress": "<Final end-to-end execution summary>"
     }
     ```
+
+---
+
+## 8. Parallel Execution Protocols
+
+When a stage guideline defines parallel execution, the orchestrator follows one of two distinct execution protocols based on how the workflow is authored:
+
+### Protocol A: Executing Direct Parallel Agents
+Used when a stage specifies running agents directly in parallel (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
+
+1. **Batch Pre-Spawn Scaffolding**:
+   Pre-scaffold the declared working directory for every agent in the parallel set and call `call_mcp_tool` (`status_init`) on each before dispatching. Stage required Tier 2 inputs.
+2. **Concurrent Batch Dispatch**:
+   Dispatch all parallel agents concurrently in a single turn using `invoke_subagent` (`TypeName: "self"`).
+3. **Reactive Barrier Synchronization**:
+   Do NOT poll `status.md` in a loop. Leverage reactive wakeups and wait until all dispatched agents complete.
+4. **Deliverable Ingestion & Cross-Unit Checks**:
+   Query each completed agent via `call_mcp_tool` (`status_read`). If executing in phased waves (e.g. Wave 1 Architects $\rightarrow$ Wave 2 Writers), inspect the combined set of deliverables for cross-unit consistency (e.g. deduplicating themes, balancing pacing) before dispatching the next wave.
+
+---
+
+### Protocol B: Executing Clustered Sub-Orchestrators
+Used when a multi-agent loop or multi-track workflow is clustered into sub-orchestrators (e.g. `For each <item>, cluster into a sub-orchestrator and execute in parallel:` or `Cluster each of the following into a sub-orchestrator and execute in parallel:`):
+
+1. **Upfront Worker Scaffolding**:
+   The root orchestrator pre-creates all worker directories across all clusters in `output/<context_slug>/` before dispatching sub-orchestrators.
+2. **Concurrent Sub-Orchestrator Dispatch**:
+   The root orchestrator batch-dispatches $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`), passing the cluster's assigned unit parameters, agent instructions, and assigned agent slugs.
+3. **Ephemeral Sub-Orchestrator Runtime Rules**:
+   Each sub-orchestrator operates under strict execution constraints:
+   * **Shared Execution Root**: Operates in the shared context root (`output/<context_slug>/`).
+   * **Zero `status.md` Creation**: Sub-orchestrators **MUST NEVER create a `status.md` for themselves and MUST NEVER touch root `status.md`**. The master status file belongs strictly to the root orchestrator.
+   * **Standard Worker Paths**: Child workers live in their standard stage directories (e.g. `stage<NN>_<slug>/agents/<agent_identifier>/`). No artificial nested `<unit_id>/` directories are created.
+   * **Local Revision Encapsulation**: The sub-orchestrator supervises its assigned workers sequentially. If a downstream worker (e.g. Fact-Checker) requests changes, the sub-orchestrator coordinates revisions directly with the upstream worker (e.g. Writer) via `send_message(Recipient: <id>)` (max 2 cycles). Zero intermediate drafts or critique noise reach the root orchestrator.
+   * **Deliverable Finalization**: Once verified via `status_read`, the sub-orchestrator writes or copies the final unit deliverable and finishes its turn.
+4. **Root Ingestion**:
+   The root orchestrator waits reactively for all sub-orchestrators to complete, verifies the finalized deliverables on disk, and proceeds to compilation or the next stage.

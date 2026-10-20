@@ -75,10 +75,9 @@ WeaveMAS supports both **Multi-Stage Modular** pipelines and **Single-File (Stag
   - *Single-Instance Agents*: Semantic role slugs (`director`, `showrunner`, `youtube_sourcer`, `staging`).
   - *Multi-Instance Agents*: Parameterized slugs with zero-padded coordinates (`architect_a<AA>_s<SS>`, `writer_a<AA>_s<SS>`, `factchecker_a<AA>_s<SS>`) or specialized roles (`writer_global_flow`).
   - *Why Mandatory*: Unambiguously referenced throughout `## Execution`, passed directly as `Role: "<agent_identifier>"` in `invoke_subagent` for deterministic UI sidecar badges, and targeted in `send_message(Recipient: <id>)`.
-* **Execution Protocol & Parallelization Strategy**: The `## Execution Protocol` (or `## Execution`) section in `orchestrator.md` or individual stage guides defines the step-by-step operational procedure for running the stage. Whenever a stage or workflow processes multiple units of work (e.g., segments, chapters, modular components), the author **MUST explicitly declare and explain the parallelization strategy** in `## Execution Protocol`:
-  - **Sequential Flow**: Units executed one by one due to linear narrative dependencies.
-  - **Flat Wave Parallelism**: Units executed in synchronized phased batches with a cross-unit review checkpoint between roles.
-  - **Hierarchical 2-Tier Sub-Orchestration**: Autonomous units delegated to ephemeral sub-orchestrators to encapsulate local review loops (e.g. Writer ⇆ Fact-Checker).
+* **Execution & Parallelization Strategy**: The `## Execution` section in `orchestrator.md` or individual stage guides defines the step-by-step operational procedure for running the stage. Whenever a stage or workflow processes multiple units of work (e.g., segments, chapters, modular components), the author declares the parallelization strategy directly on the specific execution step:
+  - **Direct Parallel Agents**: Running workers directly in parallel (either parameterized via `For each <item>, run <agent> in parallel:` or explicitly via `Run the following agents in parallel:`).
+  - **Clustered Sub-Orchestrators**: Grouping multi-agent loops into an ephemeral coordinator to encapsulate local review/revision cycles (either parameterized via `For each <item>, cluster into a sub-orchestrator and execute in parallel:` or explicitly defining distinct tracks via `Cluster each of the following into a sub-orchestrator and execute in parallel:`).
   - *Reference*: See [`authoring_parallelization.md`](authoring_parallelization.md) for full architectural patterns, selection criteria, the ephemeral sub-orchestrator contract, and concrete protocol templates.
 * **Pre-Spawn Hook**: Provide the exact MCP call the orchestrator must execute before invoking subagents.
 * **Deliverable Ingestion**: Specify the exact file path read from the agent's `deliverable` frontmatter upon completion.
@@ -328,7 +327,7 @@ For each item (`<item_id>`) in `<prior_stage_deliverable>.md`:
   - `<role3_slug>/`: Empty (receives deliverable from `<role2>_<item_id>` during loop).
 
 ### 2. <Item> Processing Loop
-For each `<item_id>`:
+For each `<item_id>`, cluster into a sub-orchestrator and execute in parallel:
 
 1. **`<role1>_<item_id>`**:
    - Inputs: Staged input files, item parameters.
