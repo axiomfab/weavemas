@@ -118,6 +118,7 @@ Dispatch subagents as autonomous black boxes:
 
 * **Mandatory Subagent Delegation (No Orchestrator Overstepping)**:
   The orchestrator coordinates, stages inputs, and verifies deliverables—it must never execute domain tasks (such as writing prose, conducting research, calculating parameters, or generating media) directly in its own context. Every stage task must be dispatched to its designated subagents via `invoke_subagent`. Do not combine separate subagent roles into single ad-hoc monolithic agents or invent intermediary coordinator agents unless explicitly declared in the pipeline specification.
+  * **Protocol B Precedence**: The presence of the keyword `sub-orchestrator` (e.g. `cluster into a sub-orchestrator`) in `## Execution` is an explicit pipeline directive that triggers Protocol B. Sub-orchestrators are ephemeral and deliberately omitted from `## Agents` (per `authoring_parallelization.md`). Spawning them under Protocol B does NOT violate this coordinator prohibition.
 * **Dispatch via `TypeName: "self"` (`invoke_subagent`)**:
   Dispatch the subagent with `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition) and `Role: "<agent_identifier>"` matching the exact slug defined in `## Agents` (e.g. `Role: "director"`, `Role: "showrunner"`, or parameterized `Role: "architect_a01_s01"`). This ensures deterministic UI badges and unambiguous routing for `send_message`.
 * **Dispatch Prompt Contents**:
@@ -212,6 +213,13 @@ When the final pipeline stage completes:
 
 WeaveMAS orchestrators support two independent execution mechanics: **Sub-Orchestrators** (for encapsulating multi-agent sub-workflows and revision loops) and **Parallel Execution** (running multiple agents or sub-orchestrators concurrently).
 
+### Protocol Selection Circuit Breaker (Mandatory Pre-Flight Check)
+Before dispatching agents in any stage, scan `## Execution` for the keyword `sub-orchestrator` (e.g. `cluster into a sub-orchestrator`):
+* **If `sub-orchestrator` is present in `## Execution`**: You MUST execute via **Protocol B**. You are **strictly forbidden** from flattening the workflow into direct parallel waves (Protocol A). Ephemeral sub-orchestrators are declared solely in `## Execution` and are deliberately omitted from `## Agents` (per `authoring_parallelization.md`).
+* **If `sub-orchestrator` is NOT present in `## Execution`**: Execute via **Protocol A** (direct parallel agents or sequential agents).
+
+---
+
 ### Protocol A: Executing Direct Parallel Agents
 Used when a stage specifies running individual agents concurrently (e.g. `For each <item>, run <agent> in parallel:` or `Run the following agents in parallel:`):
 
@@ -234,7 +242,21 @@ Used when a multi-agent loop or multi-track workflow is clustered into an epheme
 2. **Sub-Orchestrator Dispatch (Sequential vs. Parallel)**:
    * **Parallel Dispatch**: If declared with `execute in parallel`, batch-dispatch all $N$ ephemeral sub-orchestrators concurrently via `invoke_subagent` (`TypeName: "self"`).
    * **Sequential Dispatch**: If declared without `execute in parallel`, dispatch one sub-orchestrator at a time, waiting for its deliverable before dispatching the next unit.
-   * **Prompt Contents**: Pass the cluster's assigned unit parameters, agent instructions, and assigned agent slugs.
+   * **Role Naming**: Name the sub-orchestrator role matching the unit cluster (e.g. `Role: "<cluster_slug>_producer"` or `Role: "suborchestrator_<unit_id>"`).
+   * **Dispatch Prompt Template**:
+     ```markdown
+     Act as the Ephemeral Sub-Orchestrator for <unit_id> (<assigned_cluster_name>).
+
+     Execution Constraints:
+     - Shared Execution Root: Operates in output/<context_slug>/
+     - ZERO status.md: Do NOT create a status.md for yourself and do NOT touch the root status.md. Master status belongs strictly to the root orchestrator.
+     - Supervise the following child agents sequentially:
+       1. `<child_agent_1_role>` (Instructions: `<path_1>`, WD: `<wd_1>`, Deliverable: `<deliv_1>`)
+       2. `<child_agent_2_role>` (Instructions: `<path_2>`, WD: `<wd_2>`, Deliverable: `<deliv_2>`)
+       ...
+     - Local Revision Loop: If a downstream verification agent flags discrepancies requiring revisions, send corrections directly to the upstream authoring agent via `send_message` (max 2 cycles).
+     - Finalization: Once deliverables are verified, copy/compile the final unit deliverable to `<final_unit_deliverable>` in `<assigned_cluster_dir>` and message the parent orchestrator upon completion.
+     ```
 3. **Ephemeral Sub-Orchestrator Runtime Rules**:
    Each sub-orchestrator operates under strict execution constraints:
    * **Shared Execution Root**: Operates in the shared context root (`output/<context_slug>/`).
