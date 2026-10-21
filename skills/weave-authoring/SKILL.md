@@ -34,3 +34,10 @@ Load only the specific guide for the entity you are authoring or revising:
    - **Mandatory User Approval Rule**: Every time the author/assistant wants to introduce or modify a frontmatter parameter, it **MUST explicitly ask the user** for permission first. Adding unapproved parameters (e.g. `is_completed`, `progress`, `success`, `deliverable_exists`) is strictly forbidden.
    - **No Derived State in Frontmatter**: State is derived directly from raw values (`status: "completed"`, `deliverable: "file.md"`). Never invent synthetic booleans.
    - **No Narrative Logs in Frontmatter**: Progress summaries and step logs belong exclusively in the Markdown body, never in YAML frontmatter.
+
+---
+
+## 🤖 Model Tier Selection & Constraints
+
+* **Supported Subagent Models**: `flash` (recommended default for cost/throughput balance), `pro` (complex reasoning/synthesis), or `inherit`.
+* ⚠️ **Strict Ban on `flash_lite`**: **Do NOT use `flash_lite`** for WeaveMAS subagents. `flash_lite` consistently fails to invoke and format calls to MCP tools (`call_mcp_tool`), causing `status_verify` pre-flight checks and `status_update` lifecycle reporting to fail. Until dedicated CLI tooling is available for status tracking, all WeaveMAS subagents must be configured with `flash`, `pro`, or `inherit`.

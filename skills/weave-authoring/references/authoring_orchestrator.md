@@ -157,6 +157,7 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
 ### Block D: Dispatch & Deliverable Ingestion Protocol
 1. **Dispatch (`invoke_subagent`)**:
    * Dispatch via `TypeName: "self"` (which guarantees full inheritance of mounted plugin skills, tool permissions, and MCP servers), setting `Model: "flash"` (or as configured in the agent definition).
+   * ⚠️ **Model Selection Constraint**: Never dispatch subagents with `Model: "flash_lite"`. `flash_lite` models fail to execute MCP tools (`call_mcp_tool`) correctly, breaking subagent `status_verify` pre-flight checks and `status_update` lifecycle reporting. Use `"flash"`, `"pro"`, or `"inherit"`.
    * **Assigned Working Directory**: Explicitly state:
      `Assigned Working Directory: output/<context_slug>/<stage_slug>/agents/<agent_identifier>/`
    * **The Black Box Dispatch Constraint (No Prompt Over-Specification)**:

@@ -25,6 +25,9 @@ tools:
 ```
 
 * **`subagent: true`**: Registers the markdown definition as a delegatable subagent for `invoke_subagent`.
+* **`model: <flash | pro | inherit>`**: Specifies the execution model tier for the subagent.
+  * ✅ **Recommended**: Use `flash` (optimal balance of throughput, speed, and cost) or `pro` (for high-complexity analytical reasoning or synthesis). `inherit` is also supported.
+  * ⚠️ **CRITICAL: NEVER USE `flash_lite`**: **Do NOT configure `model: flash_lite`**. `flash_lite` models fail to execute MCP tools (`call_mcp_tool`) correctly and reliably (e.g., schema validation failures, missing required tool calls, or invalid parameter payloads). Because WeaveMAS agents strictly rely on MCP status tools (`status_verify`, `status_update`) provided by `weave-core-agent` for lifecycle management, using `flash_lite` causes silent or noisy pipeline execution failures.
 * **`inheritCustomizations: true`**: Required for the subagent to discover and inherit skills from installed plugins (e.g. `weavemas`) and access plugin MCP services.
 * **`skills: [weave-core-agent]`**: Natively mounts the `weave-core-agent` skill into the subagent's execution environment.
 * **`inheritMcp: true`**: Automatically provides the subagent with the native Antigravity MCP dispatcher (`call_mcp_tool`) for mounted MCP servers (`weavemas_weave`).
@@ -170,7 +173,7 @@ Tasks are executed sequentially:
 ---
 name: stage3_factchecker
 description: agent that audits drafted segment prose against historical records
-model: flash_lite
+model: flash
 subagent: true
 inheritCustomizations: true
 inheritMcp: true
