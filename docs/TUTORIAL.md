@@ -142,7 +142,7 @@ Even without images, this demonstrates the core value of WeaveMAS: the **Writer*
 
 Open a blank workspace in Antigravity with the **WeaveMAS** plugin enabled and send this single prompt:
 
-> **"Use the `weave-authoring` skill to create a minimal, single-file (stageless) KidsWiki pipeline that writes short text articles for children aged 3 to 12 (defaulting to age 4). Include two agents: a Writer (responsible for age-appropriate readability) and a Fact Checker (strictly verifying factual accuracy, with an in-place revision loop if any statement is wrong), saving the final verified text article to `<topic_slug>.md`."**
+> **"Use the `weave-authoring` skill to create a minimal, single-file (stageless) KidsWiki pipeline that writes short text articles for children aged 3 to 12 (defaulting to age 4). Include two agents: a Writer (responsible for age-appropriate readability) and a Fact Checker (strictly verifying factual accuracy, with an in-place revision loop if any statement is wrong), saving the final verified text article to article.md in output/<topic_slug>_<age>yo/."**
 
 ### Step 2: Inspect the Generated Files
 
@@ -170,7 +170,7 @@ Click any file below to inspect the generated source code and see how each part 
 | `.agent/agents/agent_writer.md` | Multi-task agent (`01_concepts` $\to$ `02_draft`) that calibrates age readability and drafts the text article. | [View Source & Breakdown](examples/kidswiki/agent_writer.md) |
 | `.agent/agents/agent_fact_checker.md` | Multi-task agent (`01_claims` $\to$ `02_verify` $\to$ `03_verdict`) that strictly audits factual and scientific accuracy. | [View Source & Breakdown](examples/kidswiki/agent_fact_checker.md) |
 
-When you run `"Write a KidsWiki article about 'Rocket' for a 4yo"`, the Writer drafts the text, the Fact Checker verifies it, and the final verified text article is saved directly to `output/kidswiki_rocket_age4/rocket.md`.
+When you run `"Write a KidsWiki article about 'Rocket' for a 4yo"`, the Writer drafts the text, the Fact Checker verifies it, and the final verified text article is saved directly to `output/rocket_4yo/article.md`.
 
 ---
 

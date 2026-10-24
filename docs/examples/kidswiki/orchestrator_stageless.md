@@ -19,9 +19,9 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 
 ## Output Structure
 Every run is scoped to a dedicated context directory matching:
-`output/kidswiki_<topic_slug>_age<target_age>/` (e.g., `output/kidswiki_rocket_age4/`).
+`output/<topic_slug>_<age>yo/` (e.g., `output/rocket_4yo/`).
 
-All agent workspaces (`agents/<agent_id>/`), status tracking files, and the final compiled deliverable (`<topic_slug>.md`) live strictly inside this context root.
+All agent workspaces (`agents/<agent_id>/`), status tracking files, and the final compiled deliverable (`article.md`) live strictly inside this context root.
 
 ## Agents
 
@@ -47,7 +47,7 @@ All agent workspaces (`agents/<agent_id>/`), status tracking files, and the fina
      - Once `writer` updates `draft.md` in place, re-stage `draft.md` into `agents/fact_checker/draft.md` and notify `fact_checker` via `send_message(Recipient: <fact_checker_conversationId>)` to re-verify.
 
 3. **Final Deliverable Ingestion**:
-   - Once `audit.md` contains `VERDICT: APPROVED`, copy verified `draft.md` to `output/kidswiki_<topic_slug>_age<target_age>/<topic_slug>.md`.
+   - Once `audit.md` contains `VERDICT: APPROVED`, copy verified `draft.md` to `output/<topic_slug>_<age>yo/article.md`.
 ```
 
 ---
@@ -55,5 +55,5 @@ All agent workspaces (`agents/<agent_id>/`), status tracking files, and the fina
 ## How Stageless Mode Differs from Multi-Stage Mode
 
 1. **Everything in One File**: Instead of linking out to `orchestrator/stage1_editorial.md` and `orchestrator/stage2_publishing.md`, the `## Agents` list and the 4-step `## Execution` sequence live directly inside `orchestrator.md`.
-2. **Flat Agent Workspaces (`agents/<agent_id>/`)**: Each agent's working directory sits directly under the run root (`output/kidswiki_rocket_age4/agents/writer/`, `.../agents/fact_checker/`, `.../agents/illustrator/`) instead of being nested inside `stage01_.../` folders.
-3. **Direct Agent-to-Agent Handoff**: Once `fact_checker` approves the draft, the orchestrator copies the verified draft straight into `agents/illustrator/approved_draft.md` without needing an intermediate stage deliverable file.
+2. **Flat Agent Workspaces (`agents/<agent_id>/`)**: Each agent's working directory sits directly under the run root (`output/rocket_4yo/agents/writer/`, `.../agents/fact_checker/`) instead of being nested inside `stage01_.../` folders.
+3. **Direct Agent Handoff**: Once `fact_checker` approves the draft, the orchestrator copies the verified draft directly to `output/<topic_slug>_<age>yo/article.md`.
