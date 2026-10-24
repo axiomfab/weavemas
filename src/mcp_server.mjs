@@ -1,7 +1,7 @@
 import readline from 'node:readline';
 import path from 'node:path';
 import { TOOLS } from './tool_schemas.mjs';
-import { statusInit, statusInitBatch, statusUpdate, statusVerify, statusRead } from './status_manager.mjs';
+import { statusInit, statusInitBatch, statusUpdate, statusVerify, statusRead, discoverAgents } from './status_manager.mjs';
 
 const PROTOCOL_VERSION = '2024-11-05';
 
@@ -78,10 +78,10 @@ export function handleMessage(msg) {
           if (!targetDir || typeof targetDir !== 'string') {
             throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
           }
-          const role = args.role;
           const type = args.type || 'agent';
           const status = args.status || 'not_started';
-          const res = statusInit(targetDir, role, type, status);
+          const instructionsFile = args.instructions_file || null;
+          const res = statusInit(targetDir, type, status, instructionsFile);
           resultText = res.message;
         }
       } else if (name === 'status_update') {
@@ -100,10 +100,9 @@ export function handleMessage(msg) {
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
-        const expectedRole = args.expected_role;
-        if (!expectedRole) throw new Error("CRITICAL: 'expected_role' argument is required for status_verify.");
+        const expectedRole = args.expected_role || args.expected_id || null;
         const res = statusVerify(targetDir, expectedRole);
-        resultText = `STATUS_VERIFY_OK: Role verified as '${res.role}' (Current status: ${res.status})`;
+        resultText = `STATUS_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status})`;
       } else if (name === 'status_read') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {
@@ -112,6 +111,15 @@ export function handleMessage(msg) {
         const expectedDeliverable = args.expected_deliverable !== undefined ? args.expected_deliverable : undefined;
         const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
         const res = statusRead(targetDir, expectedDeliverable, expectedStatus);
+        resultText = JSON.stringify(res, null, 2);
+      } else if (name === 'discover_agents') {
+        const directory = args.directory;
+        if (!directory || typeof directory !== 'string') {
+          throw new Error("CRITICAL: 'directory' argument is required and must be an absolute path.");
+        }
+        const filterStatus = args.filter_status !== undefined ? args.filter_status : 'initialized';
+        const limit = args.limit !== undefined ? args.limit : undefined;
+        const res = discoverAgents(directory, filterStatus, limit);
         resultText = JSON.stringify(res, null, 2);
       } else {
         return sendLine({

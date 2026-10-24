@@ -40,13 +40,12 @@ Before starting any task work, verify that your assigned working directory and p
   * `Arguments`:
     ```json
     {
-      "expected_role": "<role_slug>",
       "dir": "<absolute_working_directory>"
     }
     ```
 * **Using CLI Tool (Fallback)**:
   ```bash
-  python .agent/skills/weave-core/scripts/weave_status.py verify --expected-role <role_slug>
+  python .agent/skills/weave-core/scripts/weave_status.py verify --dir "<absolute_working_directory>"
   ```
 
 If verification fails, fail fast and report the error immediately.

@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS } from './frontmatter.mjs';
+import { discoverAgents } from './agent_discovery.mjs';
 
-export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS };
+export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS, discoverAgents };
 
 /**
  * Batch initializes multiple status.md files with strict pre-validation.
@@ -24,9 +25,6 @@ export function statusInitBatch(items) {
     if (!path.isAbsolute(item.dir)) {
       throw new Error(`CRITICAL: Item at index ${i} has relative path "${item.dir}". Target directory must be an absolute path.`);
     }
-    if (!item.role || typeof item.role !== 'string') {
-      throw new TypeError(`CRITICAL: Item at index ${i} must have a non-empty string 'role'.`);
-    }
     const type = item.type || 'agent';
     if (type !== 'agent' && type !== 'orchestrator') {
       throw new TypeError(`CRITICAL: Item at index ${i} type must be either "agent" or "orchestrator".`);
@@ -35,12 +33,17 @@ export function statusInitBatch(items) {
     if (typeof status !== 'string' || !status) {
       throw new TypeError(`CRITICAL: Item at index ${i} initial status must be a non-empty string.`);
     }
+    const instructionsFile = item.instructions_file || item.instructionsFile || null;
+    if (instructionsFile !== null && (typeof instructionsFile !== 'string' || !instructionsFile.trim())) {
+      throw new TypeError(`CRITICAL: Item at index ${i} instructions_file must be a non-empty string.`);
+    }
   }
 
   // 2. Execution pass
   const paths = [];
   for (const item of items) {
-    const res = statusInit(item.dir, item.role, item.type || 'agent', item.status || 'not_started');
+    const instructionsFile = item.instructions_file || item.instructionsFile || null;
+    const res = statusInit(item.dir, item.type || 'agent', item.status || 'not_started', instructionsFile);
     paths.push(res.path);
   }
 
@@ -55,7 +58,7 @@ export function statusInitBatch(items) {
 /**
  * Initializes a new status.md in target directory, or batch initializes if passed an array or { items }.
  */
-export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not_started') {
+export function statusInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null) {
   if (Array.isArray(targetDir)) {
     return statusInitBatch(targetDir);
   }
@@ -69,15 +72,28 @@ export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not
   if (!path.isAbsolute(targetDir)) {
     throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
   }
-  if (!role || typeof role !== 'string') {
-    throw new TypeError('CRITICAL: Role identifier must be a non-empty string.');
+
+  let resolvedType = type;
+  let resolvedStatus = initialStatus;
+  let resolvedInstructions = instructionsFile;
+
+  if (typeof type === 'object' && type !== null) {
+    resolvedType = type.type || 'agent';
+    resolvedStatus = type.status || 'not_started';
+    resolvedInstructions = type.instructions_file || type.instructionsFile || null;
   }
+
   const validTypes = ['agent', 'orchestrator'];
-  if (!validTypes.includes(type)) {
+  if (!validTypes.includes(resolvedType)) {
     throw new TypeError('CRITICAL: Type must be either "agent" or "orchestrator".');
   }
-  if (typeof initialStatus !== 'string' || !initialStatus) {
+  if (typeof resolvedStatus !== 'string' || !resolvedStatus) {
     throw new TypeError('CRITICAL: Initial status must be a non-empty string.');
+  }
+  if (resolvedInstructions !== null && resolvedInstructions !== undefined) {
+    if (typeof resolvedInstructions !== 'string' || !resolvedInstructions.trim()) {
+      throw new TypeError('CRITICAL: instructions_file must be a non-empty string.');
+    }
   }
 
   const resolvedDir = path.resolve(targetDir);
@@ -89,22 +105,23 @@ export function statusInit(targetDir, role, type = 'agent', initialStatus = 'not
   const now = new Date().toISOString();
 
   const frontmatter = {
-    type,
-    role,
-    status: initialStatus,
+    type: resolvedType,
+    status: resolvedStatus,
+    ...(resolvedInstructions ? { instructions_file: resolvedInstructions } : {}),
     deliverable: null,
     updated_at: now
   };
 
-  const initialBody = type === 'orchestrator'
-    ? `# Pipeline Status\n\n- ${now}: \`${initialStatus}\` - Pipeline execution initialized\n`
-    : `# ${role} Status\n\n- ${now}: \`${initialStatus}\` - Initialized status\n`;
+  const agentName = path.basename(resolvedDir);
+  const initialBody = resolvedType === 'orchestrator'
+    ? `# Pipeline Status\n\n- ${now}: \`${resolvedStatus}\` - Pipeline execution initialized\n`
+    : `# ${agentName} Status\n\n- ${now}: \`${resolvedStatus}\` - Initialized status\n`;
 
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, initialBody), 'utf-8');
 
   return {
     success: true,
-    message: `STATUS_INIT_OK: Initialized ${type} status for '${role}' at ${statusPath}`,
+    message: `STATUS_INIT_OK: Initialized ${resolvedType} status at ${statusPath}`,
     path: statusPath
   };
 }
@@ -177,17 +194,19 @@ export function statusUpdate(targetDir, status, progress = null, deliverable = n
 }
 
 /**
- * Verifies that the agent role in status.md matches the expected role.
+ * Verifies that the agent status.md exists and matches expectations.
  */
-export function statusVerify(targetDir, expectedRole) {
+export function statusVerify(targetDir, expectedId = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
   if (!path.isAbsolute(targetDir)) {
     throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
   }
-  if (!expectedRole || typeof expectedRole !== 'string') {
-    throw new TypeError('CRITICAL: Expected role must be a non-empty string.');
+  if (expectedId !== null && expectedId !== undefined) {
+    if (typeof expectedId !== 'string' || !expectedId.trim()) {
+      throw new TypeError('CRITICAL: Expected agent identifier must be a non-empty string.');
+    }
   }
   const resolvedDir = path.resolve(targetDir);
   const statusPath = path.join(resolvedDir, 'status.md');
@@ -196,16 +215,23 @@ export function statusVerify(targetDir, expectedRole) {
   }
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter } = parseFrontmatter(fileContent);
-  if (!frontmatter.role) {
-    throw new Error(`CRITICAL: No role found in status.md frontmatter at ${statusPath}`);
-  }
-  if (frontmatter.role !== expectedRole) {
-    throw new Error(`CRITICAL: Role mismatch. Expected '${expectedRole}', but status.md defines '${frontmatter.role}'.`);
+  const agentId = path.basename(resolvedDir);
+
+  if (expectedId !== null && expectedId !== undefined) {
+    const normalizedExpected = expectedId.replace(/\\/g, '/');
+    const normalizedDir = resolvedDir.replace(/\\/g, '/');
+    const matches = agentId === expectedId ||
+      normalizedDir.endsWith(`/${normalizedExpected}`) ||
+      (frontmatter.instructions_file && String(frontmatter.instructions_file).includes(expectedId));
+
+    if (!matches) {
+      throw new Error(`CRITICAL: Identity mismatch. Expected '${expectedId}', but working directory is '${agentId}'.`);
+    }
   }
   return {
     success: true,
-    role: String(frontmatter.role),
-    status: String(frontmatter.status)
+    agent_id: agentId,
+    status: String(frontmatter.status ?? '')
   };
 }
 
@@ -229,8 +255,8 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   const { frontmatter } = parseFrontmatter(fileContent);
 
   const status = String(frontmatter.status ?? '');
-  const role = String(frontmatter.role ?? '');
   const type = String(frontmatter.type ?? 'agent');
+  const instructionsFile = frontmatter.instructions_file ? String(frontmatter.instructions_file) : null;
   const deliverable = frontmatter.deliverable ? String(frontmatter.deliverable) : null;
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
@@ -266,7 +292,7 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
 
   return {
     status,
-    role,
+    instructions_file: instructionsFile,
     deliverable,
     type,
     updated_at: updatedAt

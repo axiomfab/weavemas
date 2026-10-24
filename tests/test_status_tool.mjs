@@ -76,7 +76,6 @@ test('Happy Path 2: readStageAgents recursively discovers agents in nested act_i
     path.join(archDir, 'status.md'),
     `---
 type: agent
-role: stage3_writing/agent_architect
 act: "act_1"
 segment: "A1_01"
 status: completed
@@ -99,13 +98,12 @@ test('Happy Path 3: readStageAgents parses status.md containing UTF-8 BOM with n
   const writerDir = path.join(testOutputDir, writingStage, 'agents', 'act_1', 'A1_01', 'writer');
   fs.mkdirSync(writerDir, { recursive: true });
   // Prepend \uFEFF (UTF-8 BOM)
-  const bomContent = '\uFEFF---\ntype: agent\nrole: stage3_writing/agent_writer\nstatus: not_started\ndeliverable: null\n---\nWriter ready.';
+  const bomContent = '\uFEFF---\ntype: agent\nstatus: not_started\ndeliverable: null\n---\nWriter ready.';
   fs.writeFileSync(path.join(writerDir, 'status.md'), bomContent, 'utf-8');
 
   const stageData = readStageAgents(testShow, writingStage, workspaceRoot);
   assert.ok(stageData.act_1_A1_01_writer, 'Should discover writer agent');
   assert.equal(stageData.act_1_A1_01_writer.frontmatter.status, 'not_started');
-  assert.equal(stageData.act_1_A1_01_writer.frontmatter.role, 'stage3_writing/agent_writer');
   assert.equal(stageData.act_1_A1_01_writer.body, 'Writer ready.');
 });
 
@@ -115,7 +113,7 @@ test('Happy Path: readStageAgents loads deliverableContent when deliverable file
   fs.mkdirSync(dirDir, { recursive: true });
   fs.writeFileSync(
     path.join(dirDir, 'status.md'),
-    '---\ntype: agent\nrole: stage1_setup/agent_director\nstatus: completed\ndeliverable: setup.md\n---\nInit done.',
+    '---\ntype: agent\nstatus: completed\ndeliverable: setup.md\n---\nInit done.',
     'utf-8'
   );
   fs.writeFileSync(path.join(dirDir, 'setup.md'), '# Setup Deliverable Content\nPersona: Jack Turner', 'utf-8');

@@ -58,8 +58,8 @@ test('Failure Path 2: Returns empty string without inventing fallbacks when only
 });
 
 test('Happy Path: Dynamic Title Formatting parses role slugs and folder names into clean Title Case', () => {
-  assert.equal(formatAgentTitle('showrunner', { role: 'stage2_concept/agent_showrunner' }), 'Showrunner');
-  assert.equal(formatAgentTitle('youtube_sourcer', { role: 'stage2_concept/agent_youtubesourcer' }), 'YouTube Sourcer');
+  assert.equal(formatAgentTitle('showrunner'), 'Showrunner');
+  assert.equal(formatAgentTitle('youtube_sourcer'), 'YouTube Sourcer');
   assert.equal(formatAgentTitle('custom_reviewer', {}), 'Custom Reviewer');
 });
 
@@ -119,7 +119,7 @@ test('Happy Path: Multi-stage render generates horizontal stage section headers 
         agents: {
           director: {
             id: 'director',
-            frontmatter: { role: 'stage1_setup/agent_director', status: 'completed/setup_ready', deliverable: 'setup.md' }
+            frontmatter: { status: 'completed/setup_ready', deliverable: 'setup.md' }
           }
         }
       },
@@ -129,7 +129,7 @@ test('Happy Path: Multi-stage render generates horizontal stage section headers 
         agents: {
           showrunner: {
             id: 'showrunner',
-            frontmatter: { role: 'stage2_concept/agent_showrunner', status: 'completed/concept_ready', deliverable: 'concept.md' }
+            frontmatter: { status: 'completed/concept_ready', deliverable: 'concept.md' }
           }
         }
       }
@@ -165,14 +165,14 @@ test('Happy Path: Multi-stage render filters to specific stage and un-filters wh
         num: 1,
         name: 'Setup',
         agents: {
-          director: { id: 'director', frontmatter: { role: 'stage1_setup/agent_director', status: 'completed' } }
+          director: { id: 'director', frontmatter: { status: 'completed' } }
         }
       },
       {
         num: 2,
         name: 'Concept',
         agents: {
-          showrunner: { id: 'showrunner', frontmatter: { role: 'stage2_concept/agent_showrunner', status: 'completed' } }
+          showrunner: { id: 'showrunner', frontmatter: { status: 'completed' } }
         }
       }
     ]
@@ -210,7 +210,7 @@ test('Failure Path 2: Multi-stage render maintains backward compatibility with l
     agents: {
       youtube_sourcer: {
         id: 'youtube_sourcer',
-        frontmatter: { role: 'agent_youtubesourcer', status: 'completed', progress: '12/12' }
+        frontmatter: { status: 'completed', progress: '12/12' }
       }
     }
   };
@@ -259,13 +259,13 @@ test('Happy Path: Renders hierarchical agent group cards containing child agents
                     type: 'agent',
                     id: 'act_1_segment_01_architect',
                     name: 'architect',
-                    frontmatter: { role: 'stage3_writing/agent_architect', status: 'completed' }
+                    frontmatter: { status: 'completed' }
                   },
                   {
                     type: 'agent',
                     id: 'act_1_segment_01_writer',
                     name: 'writer',
-                    frontmatter: { role: 'stage3_writing/agent_writer', status: 'in_progress' }
+                    frontmatter: { status: 'in_progress' }
                   }
                 ]
               }
@@ -378,7 +378,7 @@ test('Happy Path: Renders deliverable content when card is in deliverable view m
         agents: {
           director: {
             id: 'director',
-            frontmatter: { role: 'stage1_setup/agent_director', status: 'completed', deliverable: 'setup.md' },
+            frontmatter: { status: 'completed', deliverable: 'setup.md' },
             body: '### Update 1\nStarted.',
             deliverableContent: '# Setup Title\nGuideline content here.'
           }
@@ -454,7 +454,7 @@ test('Happy Path: Scroll preservation preserves scroll position when user scroll
         agents: {
           director: {
             id: 'director',
-            frontmatter: { role: 'stage1_setup/agent_director', status: 'in_progress', deliverable: 'setup.md' },
+            frontmatter: { status: 'in_progress', deliverable: 'setup.md' },
             body: 'Old logs'
           }
         }
@@ -504,7 +504,7 @@ test('Failure Path: Renders fallback message when deliverableContent is missing 
         agents: {
           director: {
             id: 'director',
-            frontmatter: { role: 'stage1_setup/agent_director', status: 'completed', deliverable: 'setup.md' },
+            frontmatter: { status: 'completed', deliverable: 'setup.md' },
             body: 'Init done.',
             deliverableContent: null
           }
@@ -534,7 +534,7 @@ test('Failure Path: Renders fallback message when deliverableContent is empty st
         agents: {
           director: {
             id: 'director',
-            frontmatter: { role: 'stage1_setup/agent_director', status: 'completed', deliverable: 'setup.md' },
+            frontmatter: { status: 'completed', deliverable: 'setup.md' },
             body: 'Init done.',
             deliverableContent: '   '
           }
@@ -567,7 +567,7 @@ test('Happy Path: Renders stageless agents without stage prefix and with clean e
             type: 'agent',
             id: 'factchecker',
             name: 'factchecker',
-            frontmatter: { role: 'factchecker', status: 'completed', deliverable: 'audit_report.md' },
+            frontmatter: { status: 'completed', deliverable: 'audit_report.md' },
             body: 'Audit completed successfully.',
             deliverableContent: '# Audit Report Content'
           },
@@ -575,7 +575,7 @@ test('Happy Path: Renders stageless agents without stage prefix and with clean e
             type: 'agent',
             id: 'writer',
             name: 'writer',
-            frontmatter: { role: 'writer', status: 'in_progress', deliverable: 'draft.md' },
+            frontmatter: { status: 'in_progress', deliverable: 'draft.md' },
             body: 'Drafting text...',
             deliverableContent: '# Article Draft'
           }
@@ -606,7 +606,7 @@ test('Happy Path: Renders stageless agent deliverable content when card is expan
             type: 'agent',
             id: 'factchecker',
             name: 'factchecker',
-            frontmatter: { role: 'factchecker', status: 'completed', deliverable: 'audit_report.md' },
+            frontmatter: { status: 'completed', deliverable: 'audit_report.md' },
             body: 'Audit completed.',
             deliverableContent: '# Verified Claims Report'
           }

@@ -50,10 +50,12 @@ test('MCP Discovery - Happy Path: tools/list returns Weave status tools', () => 
   assert.ok(toolNames.includes('status_update'));
   assert.ok(toolNames.includes('status_verify'));
   assert.ok(toolNames.includes('status_read'));
+  assert.ok(toolNames.includes('discover_agents'));
 });
 
 test('MCP Tool Call - Happy Path: executes status_init and status_update', () => {
   const tmp = createTempDir();
+  const agentDir = path.join(tmp, 'agent_showrunner');
   // 1. status_init
   const initReq = {
     jsonrpc: '2.0',
@@ -61,7 +63,7 @@ test('MCP Tool Call - Happy Path: executes status_init and status_update', () =>
     method: 'tools/call',
     params: {
       name: 'status_init',
-      arguments: { dir: tmp, role: 'stage2_concept/agent_showrunner' }
+      arguments: { dir: agentDir }
     }
   };
   const initRes = captureResponse(initReq);
@@ -75,7 +77,7 @@ test('MCP Tool Call - Happy Path: executes status_init and status_update', () =>
     method: 'tools/call',
     params: {
       name: 'status_verify',
-      arguments: { dir: tmp, expected_role: 'stage2_concept/agent_showrunner' }
+      arguments: { dir: agentDir, expected_role: 'agent_showrunner' }
     }
   };
   const verifyRes = captureResponse(verifyReq);
@@ -89,7 +91,7 @@ test('MCP Tool Call - Happy Path: executes status_init and status_update', () =>
     method: 'tools/call',
     params: {
       name: 'status_update',
-      arguments: { dir: tmp, status: 'in_progress/outline', progress: 'Outline generated.' }
+      arguments: { dir: agentDir, status: 'in_progress/outline', progress: 'Outline generated.' }
     }
   };
   const updateRes = captureResponse(updateReq);
@@ -164,7 +166,7 @@ test('MCP Tool Call - Happy Path 2: status_init initializes orchestrator node', 
   assert.match(initRes.result.content[0].text, /STATUS_INIT_OK/);
   const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
   assert.match(fileContent, /type: "orchestrator"/);
-  assert.match(fileContent, /role: "orchestrator"/);
+  assert.doesNotMatch(fileContent, /^role:/m);
   assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -237,7 +239,6 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
   assert.equal(readRes.id, 18);
   assert.equal(readRes.result.isError, undefined);
   const data = JSON.parse(readRes.result.content[0].text);
-  assert.equal(data.role, 'stage1_setup/agent_director');
   assert.equal(data.status, 'completed');
   assert.equal(data.deliverable, 'setup.md');
   assert.equal(data.type, 'agent');
@@ -321,4 +322,116 @@ test('MCP Failure Path 9: status_init with invalid batch items returns isError: 
   assert.equal(res.result.isError, true);
   assert.match(res.result.content[0].text, /CRITICAL: 'items' argument must be a non-empty array of objects/);
 });
+
+test('MCP Tool Call - Happy Path: status_init with instructions_file', () => {
+  const tmp = createTempDir();
+  const req = {
+    jsonrpc: '2.0',
+    id: 23,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: {
+        dir: tmp,
+        instructions_file: '.agent/agents/architect.md'
+      }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 23);
+  assert.equal(res.result.isError, undefined);
+  assert.match(res.result.content[0].text, /STATUS_INIT_OK/);
+  const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
+  assert.match(fileContent, /instructions_file: "\.agent\/agents\/architect\.md"/);
+  assert.doesNotMatch(fileContent, /^role:/m);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Tool Call - Happy Path: discover_agents discovers agents with pagination', () => {
+  const tmp = createTempDir();
+  const stageDir = path.join(tmp, 'stage01_setup');
+  const agent1Dir = path.join(stageDir, 'agents', 'agent_alpha');
+  const agent2Dir = path.join(stageDir, 'agents', 'agent_beta');
+
+  // Initialize two agents
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 24,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: { dir: agent1Dir, status: 'initialized', instructions_file: '.agent/agents/alpha.md' }
+    }
+  });
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 25,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: { dir: agent2Dir, status: 'initialized', instructions_file: '.agent/agents/beta.md' }
+    }
+  });
+
+  const discoverReq = {
+    jsonrpc: '2.0',
+    id: 26,
+    method: 'tools/call',
+    params: {
+      name: 'discover_agents',
+      arguments: {
+        directory: stageDir,
+        filter_status: 'initialized',
+        limit: 1
+      }
+    }
+  };
+  const res = captureResponse(discoverReq);
+  assert.equal(res.id, 26);
+  assert.equal(res.result.isError, undefined);
+  const parsed = JSON.parse(res.result.content[0].text);
+  assert.equal(parsed.total_matching, 2);
+  assert.equal(parsed.returned_count, 1);
+  assert.equal(parsed.remaining_count, 1);
+  assert.equal(parsed.agents.length, 1);
+  assert.equal(parsed.agents[0].agent_id, 'agent_alpha');
+  assert.equal(parsed.agents[0].instructions_file, '.agent/agents/alpha.md');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 10: discover_agents without directory returns isError: true', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 27,
+    method: 'tools/call',
+    params: {
+      name: 'discover_agents',
+      arguments: {}
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 27);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: 'directory' argument is required/);
+});
+
+test('MCP Failure Path 11: discover_agents with relative directory returns isError: true', () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 28,
+    method: 'tools/call',
+    params: {
+      name: 'discover_agents',
+      arguments: {
+        directory: 'relative/path/stage'
+      }
+    }
+  };
+  const res = captureResponse(req);
+  assert.equal(res.id, 28);
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Directory must be an absolute path/);
+});
+
 

@@ -14,7 +14,7 @@ Frontmatter is strictly for **identity and routing**, NEVER for derived state or
 ## 3. WeaveMAS `status.md` Immutable 5-Key Contract
 For any WeaveMAS status file, the frontmatter contains EXACTLY these 5 keys and NO others:
 1. `type`: ("agent" | "orchestrator")
-2. `role`: (string identifier)
-3. `status`: (lifecycle slug)
+2. `status`: (lifecycle slug)
+3. `instructions_file`: (path to agent's .md instruction file, or `null`)
 4. `deliverable`: (relative path string or `null`)
 5. `updated_at`: (ISO 8601 timestamp string)

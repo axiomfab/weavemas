@@ -4,8 +4,8 @@
 
 export const ALLOWED_FRONTMATTER_KEYS = new Set([
   'type',
-  'role',
   'status',
+  'instructions_file',
   'deliverable',
   'updated_at'
 ]);

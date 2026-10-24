@@ -13,10 +13,6 @@ export const TOOLS = [
           type: 'string',
           description: 'Absolute path to target directory to initialize status.md in (for single initialization).'
         },
-        role: {
-          type: 'string',
-          description: 'The expected role identifier (e.g. stage2_concept/agent_showrunner or orchestrator).'
-        },
         type: {
           type: 'string',
           description: 'Node type: "agent" or "orchestrator" (default: "agent").'
@@ -25,19 +21,19 @@ export const TOOLS = [
           type: 'string',
           description: 'Initial lifecycle status (default: "not_started").'
         },
+        instructions_file: {
+          type: 'string',
+          description: "Path to the agent's .md instruction file."
+        },
         items: {
           type: 'array',
-          description: 'Batch list of directories and roles to initialize in a single call.',
+          description: 'Batch list of directories to initialize in a single call.',
           items: {
             type: 'object',
             properties: {
               dir: {
                 type: 'string',
                 description: 'Absolute path to target directory.'
-              },
-              role: {
-                type: 'string',
-                description: 'The expected role identifier.'
               },
               type: {
                 type: 'string',
@@ -46,12 +42,17 @@ export const TOOLS = [
               status: {
                 type: 'string',
                 description: 'Initial lifecycle status (default: "not_started").'
+              },
+              instructions_file: {
+                type: 'string',
+                description: "Path to the agent's .md instruction file."
               }
             },
-            required: ['dir', 'role']
+            required: ['dir']
           }
         }
-      }
+      },
+      required: ['dir']
     }
   },
   {
@@ -82,7 +83,7 @@ export const TOOLS = [
   },
   {
     name: 'status_verify',
-    description: 'Verify that the working directory status.md matches the assigned subagent role.',
+    description: 'Verify that the working directory status.md exists and matches the assigned subagent workspace.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -92,10 +93,10 @@ export const TOOLS = [
         },
         expected_role: {
           type: 'string',
-          description: 'The expected role identifier for pre-flight verification.'
+          description: 'Optional expected agent identifier or role slug for pre-flight verification.'
         }
       },
-      required: ['dir', 'expected_role']
+      required: ['dir']
     }
   },
   {
@@ -118,6 +119,28 @@ export const TOOLS = [
         }
       },
       required: ['dir']
+    }
+  },
+  {
+    name: 'discover_agents',
+    description: 'Discover initialized or matching WeaveMAS subagent workspaces in a stage or context directory.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        directory: {
+          type: 'string',
+          description: 'Absolute path to the target stage or context directory (e.g. "<workspace_root>/output/<context_slug>/<stage_slug>").'
+        },
+        filter_status: {
+          type: 'string',
+          description: 'Status string to match in status.md (default: "initialized").'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of matching agent records to return in a single call.'
+        }
+      },
+      required: ['directory']
     }
   }
 ];

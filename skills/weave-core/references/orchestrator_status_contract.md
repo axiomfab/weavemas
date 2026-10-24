@@ -9,7 +9,6 @@ This document defines the contract for the master `status.md` file maintained by
 ```yaml
 ---
 type: orchestrator
-role: orchestrator
 status: in_progress/stage01_setup
 deliverable: null
 updated_at: "2026-10-13T22:30:00.000000+00:00"
@@ -19,7 +18,6 @@ updated_at: "2026-10-13T22:30:00.000000+00:00"
 ### Fields
 
 * **`type`**: Always `orchestrator`. Identifies the master control node for pipeline trackers and UI panels.
-* **`role`**: Always `orchestrator`.
 * **`status`**: Overall pipeline stage state:
   * `in_progress/<stage_name>`: Actively running a pipeline stage (e.g., `in_progress/stage01_setup`, `in_progress/stage02_concept`).
   * `completed`: Entire pipeline has finished and final deliverable is produced.

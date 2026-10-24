@@ -13,8 +13,8 @@ FRONTMATTER_PATTERN = re.compile(r"^---\r?\n(.*?)\r?\n---\r?\n?(.*)$", re.DOTALL
 @dataclass
 class StatusData:
     type: str
-    role: str
     status: str
+    instructions_file: Optional[str]
     deliverable: Optional[str]
     updated_at: str
     body: str
@@ -50,23 +50,18 @@ def parse_status_file(file_path: Path) -> StatusData:
     node_type = fields.get("type")
     if not node_type:
         raise ValueError("CRITICAL: Missing 'type' in status frontmatter")
-    role = fields.get("role")
-    if not role:
-        if node_type == "orchestrator":
-            role = "orchestrator"
-        else:
-            raise ValueError("CRITICAL: Missing 'role' in status frontmatter")
     status = fields.get("status")
     if not status:
         raise ValueError("CRITICAL: Missing 'status' in status frontmatter")
 
+    instructions_file = fields.get("instructions_file")
     deliverable = fields.get("deliverable")
     updated_at = fields.get("updated_at") or datetime.now(timezone.utc).isoformat()
 
     return StatusData(
         type=node_type,
-        role=role,
         status=status,
+        instructions_file=instructions_file,
         deliverable=deliverable,
         updated_at=updated_at,
         body=body,
@@ -78,12 +73,15 @@ def serialize_status_file(data: StatusData) -> str:
     lines: list[str] = [
         "---",
         f"type: {data.type}",
-        f"role: {data.role}",
         f"status: {data.status}",
+    ]
+    if data.instructions_file:
+        lines.append(f'instructions_file: "{data.instructions_file}"')
+    lines.extend([
         f"deliverable: {deliv_str}",
         f'updated_at: "{data.updated_at}"',
         "---",
-    ]
+    ])
     if data.body:
         return "\n".join(lines) + f"\n\n{data.body.strip()}\n"
     return "\n".join(lines) + "\n"
@@ -94,24 +92,22 @@ def init_status(
     role: Optional[str] = None,
     node_type: str = "agent",
     initial_status: str = "not_started",
+    instructions_file: Optional[str] = None,
 ) -> Path:
-    if node_type == "orchestrator" and (not role or not role.strip()):
-        role = "orchestrator"
-    elif not role or not role.strip():
-        raise ValueError("CRITICAL: role parameter is required and cannot be empty for agent")
     target_dir.mkdir(parents=True, exist_ok=True)
     status_file = target_dir / "status.md"
 
     now_iso = datetime.now(timezone.utc).isoformat()
+    agent_name = target_dir.name
     init_body = (
         "Pipeline execution initialized."
         if node_type == "orchestrator"
-        else f"Working directory initialized for {role.strip()}."
+        else f"Working directory initialized for {agent_name}."
     )
     data = StatusData(
         type=node_type,
-        role=role.strip(),
         status=initial_status.strip(),
+        instructions_file=instructions_file,
         deliverable=None,
         updated_at=now_iso,
         body=init_body,
@@ -120,16 +116,15 @@ def init_status(
     return status_file
 
 
-def verify_status(target_dir: Path, expected_role: str) -> bool:
-    if not expected_role or not expected_role.strip():
-        raise ValueError("CRITICAL: expected_role parameter is required")
+def verify_status(target_dir: Path, expected_role: Optional[str] = None) -> bool:
     status_file = target_dir / "status.md"
     data = parse_status_file(status_file)
 
-    if data.role != expected_role:
-        raise ValueError(
-            f"CRITICAL: Role mismatch. Expected '{expected_role}', found '{data.role}' in {status_file}"
-        )
+    if expected_role and expected_role.strip():
+        if target_dir.name != expected_role and not str(target_dir).endswith(expected_role):
+            raise ValueError(
+                f"CRITICAL: Identity mismatch. Expected '{expected_role}', directory is '{target_dir.name}'"
+            )
     if data.status != "not_started":
         raise ValueError(
             f"CRITICAL: Initial status must be 'not_started', found '{data.status}' in {status_file}"
@@ -183,13 +178,13 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init_p = subparsers.add_parser("init", help="Initialize status.md")
-    init_p.add_argument("--role", default=None, help="Agent role slug (required for agent, defaults to 'orchestrator' for orchestrator)")
     init_p.add_argument("--dir", default=".", help="Directory to create status.md in (defaults to CWD)")
     init_p.add_argument("--type", default="agent", choices=["agent", "orchestrator"], help="Node type")
     init_p.add_argument("--status", default="not_started", help="Initial status")
+    init_p.add_argument("--instructions-file", default=None, help="Path to agent instructions markdown file")
 
     verify_p = subparsers.add_parser("verify", help="Verify preflight status.md state")
-    verify_p.add_argument("--expected-role", required=True, help="Expected agent role slug")
+    verify_p.add_argument("--expected-role", default=None, help="Optional expected agent identifier or slug")
     verify_p.add_argument("--dir", default=".", help="Directory containing status.md")
 
     update_p = subparsers.add_parser("update", help="Update status.md state")
@@ -210,14 +205,15 @@ def main() -> None:
     if args.command == "init":
         init_status(
             target_dir=target_dir,
-            role=args.role,
             node_type=args.type,
             initial_status=args.status,
+            instructions_file=args.instructions_file,
         )
         print(f"STATUS_INIT_OK: Initialized status.md in {target_dir}")
     elif args.command == "verify":
         verify_status(target_dir=target_dir, expected_role=args.expected_role)
-        print(f"STATUS_VERIFY_OK: status.md matches expected role '{args.expected_role}'")
+        target_name = args.expected_role if args.expected_role else target_dir.name
+        print(f"STATUS_VERIFY_OK: status.md matches expected agent '{target_name}'")
     elif args.command == "update":
         update_status(
             target_dir=target_dir,
