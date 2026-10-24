@@ -26,11 +26,15 @@ Your master execution root is `output/<context_slug>/`:
 Anytime an orchestration guide, stage script, or workflow directive refers to initializing status, advancing status, updating progress, or referencing `status.md`:
 - **Never Edit `status.md` Manually**: Do NOT use `write_to_file`, `replace_file_content`, or shell commands to touch `status.md`.
 - **Always Use WeaveMAS MCP Status Tools (`ServerName: "weavemas_weave"`)**:
-  - Whenever a guide says *"Initialize status (`status.md`)"* or *"Initialize master `status.md`"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_init"`).
+  - Whenever initializing master pipeline status $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_init"`).
   - Whenever a guide says *"Advance master status (`status.md`)"* or *"Update status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_update"`).
   - Whenever a guide says *"Verify status (`status.md`)"* $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_verify"`).
   - Whenever checking subagent lifecycle, completion, or deliverable existence $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "status_read"`).
   - Whenever discovering provisioned subagents $\rightarrow$ Call `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolName: "discover_agents"`).
+- **Master Status Only (`status_init`)**: The root orchestrator ONLY calls `status_init` for the root pipeline master status (`output/<context_slug>/status.md`).
+- **Strict Worker Agent Scaffolding Prohibition**:
+  > [!CAUTION]
+  > **NEVER DIRECTLY SCAFFOLD WORKER AGENTS**: The root orchestrator is **strictly forbidden** from calling `status_init` for stage or leaf worker agents, creating leaf agent directories, or staging Tier 2 inputs directly. All agent workspace scaffolding, initial `status.md` creation, and Tier 2 input staging MUST be delegated exclusively to the ephemeral `provisioner` subagent via Phase 1 (`orchestrator-agent-instantiation`).
 - **Never Inspect `status.md` via `view_file`**: Inspecting `status.md` via `view_file` or file reading tools is strictly prohibited. Always use `status_read` to receive concise, structured status metadata.
 - **Absolute Path Requirement (`dir` / `directory`)**: The directory argument passed to all status MCP tools (`status_init`, `status_update`, `status_verify`, `status_read`, `discover_agents`) **must strictly be an absolute path** (e.g. `<workspace_root>/output/<context_slug>`). Relative paths will fail fast immediately to prevent working directory collisions.
 - **Declarative Mapping**: Stage guides define status lifecycle events declaratively (referencing `status.md`); the orchestrator executing this skill is strictly responsible for translating these declarative directives into the appropriate WeaveMAS MCP status tool invocations.
@@ -72,13 +76,24 @@ Initialize master `status.md` at the root of `output/<context_slug>/` strictly v
 
 ## 4. Two-Phase Stage Execution Contract (Autonomous Microskill Chaining)
 
-To prevent optimistic progression and context bloat, every stage (or stageless manifest) MUST be executed by chaining two dedicated microskills in strict sequence:
+To prevent optimistic progression, context bloat, and legacy manual scaffolding, every stage (or stageless manifest) MUST be executed by chaining two dedicated microskills in strict sequence:
 
-1. **Phase 1 — Agent Instantiation (`orchestrator-agent-instantiation`)**:
-   - Expand and execute `orchestrator-agent-instantiation` first.
-   - **STRICT BARRIER**: Do NOT evaluate `## Execution` or dispatch worker subagents until `orchestrator-agent-instantiation` completes and returns `PROVISIONING_COMPLETE`.
-2. **Phase 2 — Agent Execution (`orchestrator-agent-execution`)**:
-   - Immediately upon receiving `PROVISIONING_COMPLETE`, expand and execute `orchestrator-agent-execution` to discover the initialized workspaces via MCP and run the stage's `## Execution` block.
+### Phase 1 — Agent Instantiation (`orchestrator-agent-instantiation`)
+- **MANDATORY PROVISIONER DELEGATION**: You must NEVER call `status_init` for stage agents or create worker directories yourself. Always delegate Phase 1 to the ephemeral `provisioner` subagent:
+  - Invoke subagent with `TypeName: "provisioner"` (or `"weavemas:provisioner"`), `Model: "flash"`, `Role: "provisioner"`.
+  - Provide the prompt:
+    ```markdown
+    Target Manifest / Stage Guide: <absolute_path_to_manifest_or_stage_md>
+    Target Directory: <workspace_root>/output/<context_slug>/<stage_slug>
+
+    Parse ONLY the `## Agents` section of the guide, initialize all declared agent workspaces via `weavemas_weave/status_init` (including each agent's `instructions_file`), and stage all declared Tier 2 input files into each agent's working directory.
+    ```
+- **STRICT PHASE BARRIER**: Wait reactively for the Provisioner to return `PROVISIONING_COMPLETE`. Do NOT evaluate `## Execution`, inspect agent status files, or dispatch worker subagents while the Provisioner is running.
+
+### Phase 2 — Agent Execution (`orchestrator-agent-execution`)
+- Immediately upon receiving `PROVISIONING_COMPLETE`, expand and execute `orchestrator-agent-execution`.
+- Discover the provisioned workspaces via MCP `discover_agents` (`filter_status: "initialized"`, `limit: 10`).
+- Execute the stage's `## Execution` block via Protocol A (direct agents) or Protocol B (sub-orchestrators).
 
 ---
 

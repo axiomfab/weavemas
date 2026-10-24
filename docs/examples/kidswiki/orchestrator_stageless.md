@@ -11,7 +11,7 @@ When a pipeline only has a handful of agents and does not need separate stage mi
 ```markdown
 # Multi-Agent KidsWiki Orchestrator Guide (Stageless Mode)
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage workspace scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: The article subject (e.g., `"Rocket"`). Required.

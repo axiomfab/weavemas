@@ -15,7 +15,7 @@ Notice that there is **zero tool-calling code** in these files—they are purely
 ```markdown
 # Multi-Agent KidsWiki Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: The article subject (e.g., `"Rocket"`). Required.
@@ -28,7 +28,7 @@ Every run is scoped to a dedicated context directory matching:
 All stage directories, agent workspaces, status tracking files, and final compiled deliverables (`<topic_slug>.md` and `illustration.png`) live strictly inside this context root.
 
 ## Execution
-The pipeline executes through sequential stages. For each stage, follow the referenced protocol guide to manage pre-spawn hooks, subagent dispatch, and deliverable verification:
+The pipeline executes through sequential stages. For each stage, follow the referenced protocol guide to manage Two-Phase execution (Phase 1 provisioner delegation and Phase 2 agent dispatch):
 
 ### Stage 1: Editorial & Fact Checking (Writer + Fact Checker)
 * **Execution Directory**: `stage01_editorial/`

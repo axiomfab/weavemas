@@ -44,7 +44,7 @@ trigger: always_on
 Every `orchestrator.md` file must include this mandatory binding statement verbatim near the top of the document:
 
 ```markdown
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 ```
 
 ---
@@ -80,14 +80,14 @@ WeaveMAS supports both **Multi-Stage Modular** pipelines and **Single-File (Stag
   - **Sub-Orchestrators (Encapsulation)**: A multi-agent loop or sub-workflow can be clustered into an ephemeral sub-orchestrator to isolate internal revision cycles (e.g. Writer ⇆ Fact-Checker) and intermediate drafts from the root context window. Sub-orchestrators can be executed **sequentially** (e.g. `For each <item>, cluster into a sub-orchestrator:`) or **in parallel** (`...and execute in parallel:`).
   - **Parallel Execution (Concurrency Modifier)**: Parallelism is a general execution modifier that can be applied to **agents** (e.g. `Run the following agents in parallel:`, `For each <item>, run <agent> in parallel:`) or to **sub-orchestrators** (e.g. `Cluster each into a sub-orchestrator and execute in parallel:`).
   - *Reference*: See [`authoring_parallelization.md`](authoring_parallelization.md) for the complete architecture matrix, selection criteria, the ephemeral sub-orchestrator contract, and protocol templates.
-* **Pre-Spawn Hook**: Provide the exact MCP call the orchestrator must execute before invoking subagents.
+* **Declarative Agent Specifications for Provisioner**: Declare all agents with `Instructions`, `Working Directory`, and `Inputs` under `## Agents` so the Phase 1 `provisioner` subagent can automatically scaffold workspaces, initialize status, and stage Tier 2 inputs.
 * **Deliverable Ingestion**: Specify the exact file path read from the agent's `deliverable` frontmatter upon completion.
 
 ---
 
 ## 📋 3. Prescriptive Orchestrator Building Blocks
 
-Every WeaveMAS orchestrator relies on four core runtime mechanisms. Understand the fundamental division of labor: **stage files define what** (agents, inputs, deliverables, and sequential flow); the mounted `weave-core-orchestrator` skill handles **how** (pre-spawn hooks, prompt formatting, tool mapping, and status verification). Do NOT re-write these procedural mechanics into stage files:
+Every WeaveMAS orchestrator relies on four core runtime mechanisms. Understand the fundamental division of labor: **stage files define what** (agents, inputs, deliverables, and sequential flow); the mounted `weave-core-orchestrator` skill handles **how** (Phase 1 provisioner delegation, Phase 2 discovery and black-box dispatch, and status verification). Do NOT re-write these procedural mechanics into stage files:
 
 ### Block A: Master Orchestrator Status Contract & Upfront Stage Scaffolding
 The orchestrator maintains the master `status.md` at the root of `output/<context_slug>/`.
@@ -116,15 +116,18 @@ The orchestrator maintains the master `status.md` at the root of `output/<contex
 
 ---
 
-### Block B: The Mandatory Pre-Spawn Hook
-Before dispatching any subagent via `invoke_subagent`, the orchestrator **must** execute this pre-spawn hook:
+### Block B: Phase 1 — Delegation to the Provisioner Subagent (Scaffolding & Input Staging)
+The root orchestrator **never** directly scaffolds agent directories, never calls `status_init` for worker agents, and never copies Tier 2 input files directly.
 
-1. Initialize status (`status.md`) with `role: "<role_slug>"` (`status: not_started`). Calling `status_init` automatically creates the target working directory (`<stage_slug>/agents/<agent_identifier>/`) recursively, eliminating separate directory creation commands. (When initializing multiple subagents for a wave, multi-agent stage, or loop, batch initialization via `status_init` with `items: [...]` is preferred).
-2. Stage required Tier 2 deliverables directly into the initialized subagent directory.
+Instead, for every stage (or stageless manifest), the orchestrator delegates Phase 1 to the plugin's ephemeral `provisioner` subagent (`TypeName: "provisioner"`, `Model: "flash"`, `Role: "provisioner"`) following the `orchestrator-agent-instantiation` microskill:
+1. The orchestrator invokes `provisioner` with the path to the stage guideline (or stageless `orchestrator.md`) and the target stage execution directory.
+2. The `provisioner` subagent parses ONLY the `## Agents` section of the guide, calls `status_init` (with `instructions_file`) to scaffold all agent workspaces recursively, and stages all declared Tier 2 inputs into each agent's working directory.
+3. The orchestrator waits reactively for `PROVISIONING_COMPLETE`.
+4. In Phase 2 (`orchestrator-agent-execution`), the orchestrator queries `discover_agents` via MCP and dispatches the worker agents.
 
 > [!IMPORTANT]
-> **Declarative Authoring Mandate & `status.md` Referencing**:
-> In stage guides, write clean, declarative directives referencing `status.md` (e.g. *"Initialize status (`status.md`) with `role: ...`"*, *"Advance master status (`status.md`) to `...`"*). Never paste raw `call_mcp_tool` JSON boilerplate into individual stage guidelines; the `weave-core-orchestrator` skill mandates that whenever an orchestration script references status or `status.md`, the orchestrator executes the corresponding WeaveMAS MCP status tool (`status_init`, `status_update`, `status_verify`), strictly supplying the absolute workspace path for `dir`.
+> **Pure Declarative Authoring Mandate**:
+> In stage guides, author clean, declarative specifications under `## Agents` (`Instructions`, `Working Directory`, `Inputs`). Never paste manual pre-spawn procedures, raw `mkdir` commands, or `status_init` calls into stage guides. The mounted `weave-core-orchestrator` skill automatically enforces Phase 1 delegation to `provisioner` and Phase 2 discovery via `discover_agents`.
 
 ---
 
@@ -134,9 +137,9 @@ To prevent LLM summarization loss and enforce Zero Unnecessary Exploration (ZUE)
 1. **Tier 1: Task Directives & Runtime Parameters (Prompt Inlining)**:
    * **What**: Immediate prompt configuration—target duration (`60.0 min`), segment identifiers (`SEG-01`), and specific narrative beats.
    * **Rule**: Inlined directly in the `invoke_subagent` prompt.
-2. **Tier 2: Prior Stage Handoff Deliverables (Pre-Spawn Workspace Staging)**:
+2. **Tier 2: Prior Stage Handoff Deliverables (Staged by Provisioner)**:
    * **What**: Canonical artifacts generated by prior pipeline stages (`01_setup.md`, `02_concept.md`, `03_script.md`).
-   * **Rule**: The orchestrator **must copy or write the deliverable file into the subagent's working directory during the pre-spawn hook** (e.g. `<stage_slug>/agents/<agent_identifier>/01_setup.md`).
+   * **Rule**: Staged into the worker subagent's working directory exclusively by the `provisioner` subagent during Phase 1 (`orchestrator-agent-instantiation`). The orchestrator never manually copies or writes input files into worker workspaces.
    * **Strict Prohibition**: **Never** instruct an orchestrator to inline a prior stage deliverable into a prompt. LLMs have an intrinsic brevity bias and will summarize or truncate the document.
    * **Standardized Declarative Syntax in `## Agents`**:
      Declare all input sources concisely using this standard single-line format under `* **Inputs**:`:
@@ -222,7 +225,7 @@ trigger: always_on
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...
@@ -235,7 +238,7 @@ Every run is scoped to a dedicated context directory matching:
 All stage directories, agent workspaces, status tracking files, and final compiled deliverables live strictly inside this context root.
 
 ## Execution
-The pipeline executes through sequential stages. For each stage, the orchestrator follows the referenced protocol guide to manage pre-spawn hooks, subagent dispatch, and deliverable verification:
+The pipeline executes through sequential stages. For each stage, the orchestrator follows the referenced protocol guide to manage Two-Phase execution (Phase 1 provisioner delegation and Phase 2 agent dispatch):
 
 ### Stage 1: <Stage Title> (<Agent Names>)
 * **Execution Directory**: `stage01_<slug>/`
@@ -256,7 +259,7 @@ Use this self-contained template when a pipeline does not need separate `orchest
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, subagent pre-spawn hooks, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...
@@ -289,7 +292,7 @@ Every run is scoped to a dedicated context directory matching:
 > [!CAUTION]
 > **Stage File Anti-Patterns**:
 > 1. **Never write out `invoke_subagent` prompt templates or tool JSON**: The mounted `weave-core-orchestrator` skill automatically constructs standard black-box dispatch prompts from the agent instructions, working directory, and staged inputs.
-> 2. **Never write out mechanical pre-spawn procedures** (e.g., *"Step 1: Initialize status via status_init..."*): Declaring agents and inputs under `## Agents` is all the orchestrator needs to execute scaffolding automatically.
+> 2. **Never write out mechanical pre-spawn procedures** (e.g., *"Step 1: Initialize status via status_init..."*): Declaring agents and inputs under `## Agents` is all the Phase 1 `provisioner` needs to execute workspace scaffolding and Tier 2 staging automatically.
 > 3. **Never write out reactive wait or polling reminders**: Reactive wakeup is handled natively by the messaging runtime.
 > 4. Stage files are **declarative workflow contracts** (who, what inputs, what sequence), NOT procedural execution scripts written in markdown.
 

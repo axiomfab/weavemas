@@ -7,7 +7,6 @@ import {
   parseFrontmatter,
   serializeStatus,
   statusInit,
-  statusInitBatch,
   statusUpdate,
   statusVerify,
   statusRead,
@@ -121,22 +120,6 @@ test('statusInit - Happy Path without role: initializes agent status when role i
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusInitBatch - Happy Path without role: batch initializes items when role is omitted', () => {
-  const tmpRoot = createTempDir();
-  const dirA = path.join(tmpRoot, 'agent_a');
-  const dirB = path.join(tmpRoot, 'agent_b');
-  const res = statusInitBatch([
-    { dir: dirA },
-    { dir: dirB, status: 'initialized' }
-  ]);
-  assert.equal(res.success, true);
-  assert.equal(res.count, 2);
-  const contentA = fs.readFileSync(path.join(dirA, 'status.md'), 'utf-8');
-  const contentB = fs.readFileSync(path.join(dirB, 'status.md'), 'utf-8');
-  assert.doesNotMatch(contentA, /^role:/m);
-  assert.doesNotMatch(contentB, /^role:/m);
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
-});
 
 test('statusInit - Happy Path 2: initializes orchestrator status with custom initial status', () => {
   const tmp = createTempDir();
@@ -240,77 +223,15 @@ test('statusInit - Failure Path 5: relative targetDir throws Error', () => {
   });
 });
 
-test('statusInitBatch - Happy Path: initializes multiple status.md files in batch', () => {
-  const tmpRoot = createTempDir();
-  const dirA = path.join(tmpRoot, 'agent_a');
-  const dirB = path.join(tmpRoot, 'agent_b');
-  const items = [
-    { dir: dirA },
-    { dir: dirB, status: 'not_started' }
-  ];
-
-  const res = statusInitBatch(items);
-  assert.equal(res.success, true);
-  assert.equal(res.count, 2);
-  assert.equal(fs.existsSync(path.join(dirA, 'status.md')), true);
-  assert.equal(fs.existsSync(path.join(dirB, 'status.md')), true);
-
-  const contentA = fs.readFileSync(path.join(dirA, 'status.md'), 'utf-8');
-  assert.doesNotMatch(contentA, /^role:/m);
-  assert.match(contentA, /status: "not_started"/);
-
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
-});
-
-test('statusInit - Happy Path Polymorphic: accepts { items: [...] } object', () => {
-  const tmpRoot = createTempDir();
-  const dir1 = path.join(tmpRoot, 'agent_1');
-  const dir2 = path.join(tmpRoot, 'agent_2');
-  const res = statusInit({
-    items: [
-      { dir: dir1 },
-      { dir: dir2 }
-    ]
-  });
-  assert.equal(res.success, true);
-  assert.equal(res.count, 2);
-  assert.equal(fs.existsSync(path.join(dir1, 'status.md')), true);
-  assert.equal(fs.existsSync(path.join(dir2, 'status.md')), true);
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
-});
-
-test('statusInitBatch - Failure Path 1: relative path in any item throws Error before writing', () => {
-  const tmpRoot = createTempDir();
-  const dirValid = path.join(tmpRoot, 'valid');
-  assert.throws(() => statusInitBatch([
-    { dir: dirValid },
-    { dir: 'relative/dir' }
-  ]), {
-    name: 'Error',
-    message: /CRITICAL: Item at index 1 has relative path/
-  });
-  // Verify strict fail-fast pre-validation did not write the first item
-  assert.equal(fs.existsSync(path.join(dirValid, 'status.md')), false);
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
-});
-
-test('statusInitBatch - Failure Path 2: invalid items throws TypeError', () => {
-  assert.throws(() => statusInitBatch([]), {
+test('statusInit - Failure Path: non-string targetDir (array or object) throws TypeError', () => {
+  assert.throws(() => statusInit([]), {
     name: 'TypeError',
-    message: /CRITICAL: items must be a non-empty array/
+    message: /CRITICAL: Target directory must be a non-empty string/
   });
-  assert.throws(() => statusInitBatch(null), {
+  assert.throws(() => statusInit({ items: [] }), {
     name: 'TypeError',
-    message: /CRITICAL: items must be a non-empty array/
+    message: /CRITICAL: Target directory must be a non-empty string/
   });
-  const tmpRoot = createTempDir();
-  assert.throws(() => statusInitBatch([
-    { dir: '' }
-  ]), {
-    name: 'TypeError',
-    message: /CRITICAL: Item at index 0 must have a non-empty string 'dir'/
-  });
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
 test('statusUpdate - Failure Path 4: relative targetDir throws Error', () => {
@@ -433,35 +354,7 @@ test('statusInit - Failure Path with invalid instructions_file: empty string thr
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusInitBatch - Happy Path with instructions_file: sets instructions_file on batch items', () => {
-  const tmp1 = createTempDir();
-  const tmp2 = createTempDir();
-  const res = statusInitBatch([
-    { dir: tmp1, status: 'initialized', instructions_file: '.agent/agents/architect.md' },
-    { dir: tmp2, status: 'initialized', instructions_file: '.agent/agents/writer.md' }
-  ]);
-  assert.equal(res.success, true);
-  assert.equal(res.count, 2);
-  const fm1 = parseFrontmatter(fs.readFileSync(path.join(tmp1, 'status.md'), 'utf-8')).frontmatter;
-  const fm2 = parseFrontmatter(fs.readFileSync(path.join(tmp2, 'status.md'), 'utf-8')).frontmatter;
-  assert.equal(fm1.instructions_file, '.agent/agents/architect.md');
-  assert.equal(fm2.instructions_file, '.agent/agents/writer.md');
-  assert.equal(fm1.role, undefined);
-  assert.equal(fm2.role, undefined);
-  fs.rmSync(tmp1, { recursive: true, force: true });
-  fs.rmSync(tmp2, { recursive: true, force: true });
-});
 
-test('statusInitBatch - Failure Path with invalid instructions_file: non-string in item throws TypeError', () => {
-  const tmp = createTempDir();
-  assert.throws(() => statusInitBatch([
-    { dir: tmp, instructions_file: true }
-  ]), {
-    name: 'TypeError',
-    message: /CRITICAL: Item at index 0 instructions_file must be a non-empty string/
-  });
-  fs.rmSync(tmp, { recursive: true, force: true });
-});
 
 
 

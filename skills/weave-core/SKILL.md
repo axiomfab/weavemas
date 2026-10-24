@@ -67,11 +67,17 @@ python .agent/skills/weave-core/scripts/weave_status.py init \
   --dir "output/<context_slug>"
 ```
 
-### 2. Pre-Spawn Subagent Scaffolding
-Before dispatching any subagent via `invoke_subagent`, the orchestrator must scaffold the subagent's directory and initial `status.md`:
+### 2. Subagent Scaffolding Delegation (Phase 1)
+The root orchestrator never scaffolds subagent directories directly. Scaffolding agent workspaces, initializing leaf `status.md`, and staging Tier 2 inputs are delegated exclusively to the ephemeral `provisioner` subagent via Phase 1 (`orchestrator-agent-instantiation`):
+```markdown
+Call invoke_subagent(TypeName: "provisioner", Role: "provisioner", Model: "flash")
+Prompt: Target Manifest / Stage Guide & Target Directory
+```
+The Provisioner initializes each declared agent workspace via `status_init`:
 ```bash
 python .agent/skills/weave-core/scripts/weave_status.py init \
   --role "<role_slug>" \
+  --instructions-file "<instructions_path>" \
   --dir "<subagent_directory>"
 ```
 
@@ -82,5 +88,5 @@ python .agent/skills/weave-core/scripts/weave_status.py init \
 | Guide | Target | Reference File | Scope |
 | :--- | :--- | :--- | :--- |
 | **Agent Protocol** | Subagents | [`weave-core-agent`](../weave-core-agent/SKILL.md) | Universal agent specification: CWD boundaries, read exceptions, ZUE, and lifecycle tracking. |
-| **Orchestrator Protocol** | Orchestrator | [`weave-core-orchestrator`](../weave-core-orchestrator/SKILL.md) | Upfront scaffolding, master pipeline progression, pre-spawn hooks, and deliverable ingestion. |
+| **Orchestrator Protocol** | Orchestrator | [`weave-core-orchestrator`](../weave-core-orchestrator/SKILL.md) | Upfront scaffolding, master pipeline progression, Phase 1 provisioner delegation, and deliverable ingestion. |
 | **Architecture Overview** | Shared | [`references/status_contract.md`](./references/status_contract.md) | Two-tier architecture overview and principles. |

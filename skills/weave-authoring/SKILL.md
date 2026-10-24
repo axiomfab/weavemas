@@ -19,7 +19,7 @@ Load only the specific guide for the entity you are authoring or revising:
 | Building Target | Reference Guide | When to Read |
 | :--- | :--- | :--- |
 | **Agents** | [`references/authoring_agent.md`](references/authoring_agent.md) | Weaving concrete role-specific `status.md` contracts and deliverables directly into agent definitions with zero meta-optionality. |
-| **Orchestrators** | [`references/authoring_orchestrator.md`](references/authoring_orchestrator.md) | Weaving pre-spawn hooks, relative directory scoping from `output/<context_slug>/`, and state supervision into orchestrators. |
+| **Orchestrators** | [`references/authoring_orchestrator.md`](references/authoring_orchestrator.md) | Weaving Phase 1 provisioner delegation, relative directory scoping from `output/<context_slug>/`, and Two-Phase state supervision into orchestrators. |
 | **Parallelization Strategies** | [`references/authoring_parallelization.md`](references/authoring_parallelization.md) | Designing parallel workflows: selecting between Sequential, Flat Wave Parallelism, and Hierarchical 2-Tier Sub-Orchestration based on workflow semantics. |
 | **Outcome Review & Revision** | [`references/authoring_revision.md`](references/authoring_revision.md) | Diagnosing user feedback on pipeline outcomes to propose both (1) an immediate outcome fix and (2) systemic agent/orchestrator improvements. |
 | **UI & Dashboards** | [`references/authoring_ui.md`](references/authoring_ui.md) | Building Sidecar extensions, web panels, tree visualizers, and state parsers that observe WeaveMAS filesystem states. |

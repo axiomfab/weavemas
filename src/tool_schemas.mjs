@@ -5,13 +5,13 @@
 export const TOOLS = [
   {
     name: 'status_init',
-    description: 'Initialize one or multiple WeaveMAS status.md files in the specified directory or batch of directories.',
+    description: 'Initialize a WeaveMAS status.md file in the specified directory.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to target directory to initialize status.md in (for single initialization).'
+          description: 'Absolute path to target directory to initialize status.md in.'
         },
         type: {
           type: 'string',
@@ -24,32 +24,6 @@ export const TOOLS = [
         instructions_file: {
           type: 'string',
           description: "Path to the agent's .md instruction file."
-        },
-        items: {
-          type: 'array',
-          description: 'Batch list of directories to initialize in a single call.',
-          items: {
-            type: 'object',
-            properties: {
-              dir: {
-                type: 'string',
-                description: 'Absolute path to target directory.'
-              },
-              type: {
-                type: 'string',
-                description: 'Node type: "agent" or "orchestrator" (default: "agent").'
-              },
-              status: {
-                type: 'string',
-                description: 'Initial lifecycle status (default: "not_started").'
-              },
-              instructions_file: {
-                type: 'string',
-                description: "Path to the agent's .md instruction file."
-              }
-            },
-            required: ['dir']
-          }
         }
       },
       required: ['dir']

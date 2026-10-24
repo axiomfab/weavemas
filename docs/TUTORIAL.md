@@ -319,12 +319,13 @@ flowchart TD
         FinalOut["rocket.md + illustration.png<br/>(Compiled Final Deliverable)"]
     end
 
-    MCP["WeaveMAS MCP Server (weavemas_weave)<br/>status_init | status_verify | status_update | status_read"]
+    MCP["WeaveMAS MCP Server (weavemas_weave)<br/>status_init | discover_agents | status_verify | status_update | status_read"]
     UI["WeaveMAS Sidecar UI<br/>(sidecar://weavemas/panel/)"]
 
-    Orch -->|"1. Upfront Stage Scaffolding & status_init"| MasterStatus
-    Orch -->|"2. Pre-Spawn status_init & Tier 2 File Staging"| Stage1
-    Orch -->|"3. invoke_subagent (TypeName: 'self')"| Subagents["Sandboxed Subagents<br/>(mount weave-core-agent)"]
+    Orch -->|"1. Upfront Stage Scaffolding & Master status_init"| MasterStatus
+    Orch -->|"2. Phase 1: invoke_subagent (TypeName: 'provisioner')"| Provisioner["Ephemeral Provisioner<br/>(Scaffolding & Input Staging)"]
+    Provisioner -->|"status_init & Tier 2 Staging"| Stage1
+    Orch -->|"3. Phase 2: discover_agents & invoke_subagent"| Subagents["Sandboxed Subagents<br/>(mount weave-core-agent)"]
     Orch <-->|"4. Revisions via send_message(conversationId)"| Subagents
     Orch -->|"5. status_read & Ingest"| FinalOut
 
@@ -339,21 +340,26 @@ flowchart TD
 
 1. **Startup & Upfront Stage Scaffolding**:
    * The orchestrator reads `orchestrator.md`, outputs the `[WeaveMAS UI](sidecar://weavemas/panel/)` badge, and pre-creates **all** stage folders upfront (`stage01_editorial/` and `stage02_publishing/`) so the UI sidecar immediately renders the full 2-stage stepper.
-   * Calls `status_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `role: "orchestrator"`, `status: "in_progress/stage01_editorial"`).
-2. **Pre-Spawn Hook & Black-Box Dispatch (`writer`)**:
-   * Orchestrator calls `status_init` for `.../stage01_editorial/agents/writer` with `role: "stage1_writer"`.
-   * Dispatches `writer` via `invoke_subagent` using `TypeName: "self"`, `Role: "writer"`, `Model: "flash"`, passing only the instruction file path, the assigned working directory, and Tier 1 parameters (`Topic: Rocket`, `Target Age: 4`).
+   * Calls `status_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `status: "in_progress/stage01_editorial"`).
+2. **Phase 1: Agent Instantiation via Provisioner (`orchestrator-agent-instantiation`)**:
+   * Orchestrator invokes the ephemeral `provisioner` subagent (`TypeName: "provisioner"`, `Model: "flash"`, `Role: "provisioner"`), passing the stage guide path and target execution directory.
+   * `provisioner` parses the `## Agents` block, initializes declared agent workspaces (`writer`, `fact_checker`) via `status_init` (with `instructions_file`), and stages any Tier 2 handoff files.
+   * `provisioner` returns `PROVISIONING_COMPLETE`.
+3. **Phase 2: Black-Box Dispatch & Execution (`orchestrator-agent-execution`)**:
+   * Orchestrator calls `discover_agents` to discover initialized workspaces in `stage01_editorial/`.
+   * Dispatches `writer` via `invoke_subagent` using `TypeName: "self"`, `Role: "writer"`, `Model: "flash"`, passing the discovered instruction path, assigned working directory, and Tier 1 parameters (`Topic: Rocket`, `Target Age: 4`).
    * Inside its sandbox, `writer` executes:
-     1. `status_verify` (`expected_role: "stage1_writer"`) on Turn 1.
+     1. `status_verify` on Turn 1.
      2. `status_update` (`status: "in_progress/01_concepts"`).
      3. `status_update` (`status: "in_progress/02_draft"`).
      4. Writes `draft.md` and calls `status_update` (`status: "completed"`, `deliverable: "draft.md"`).
-3. **Deliverable Verification & In-Place Revision Loop (`fact_checker`)**:
-   * Orchestrator validates `writer` completion via `status_read`, physically copies `draft.md` into `.../stage01_editorial/agents/fact_checker/draft.md`, calls `status_init`, and dispatches `fact_checker`.
-   * If `fact_checker` writes `VERDICT: REVISION_REQUIRED` in `audit.md`, the orchestrator sends the correction bullets to the existing `writer` session via `send_message(Recipient: <writer_conversationId>)`—preserving context and avoiding subagent churn.
+4. **Deliverable Verification & In-Place Revision Loop (`fact_checker`)**:
+   * Orchestrator validates `writer` completion via `status_read`, stages `draft.md` into `fact_checker`'s workspace, and dispatches `fact_checker`.
+   * If `fact_checker` writes `VERDICT: REVISION_REQUIRED` in `audit.md`, the orchestrator sends correction bullets to the existing `writer` session via `send_message(Recipient: <writer_conversationId>)`—preserving context and avoiding subagent churn.
    * Once approved, the orchestrator copies the approved draft to `01_editorial_approved.md` and transitions master status to `in_progress/stage02_publishing`.
-4. **Stage 2 & Final Compilation (`illustrator`)**:
-   * Orchestrator initializes `stage02_publishing/agents/illustrator/`, stages `01_editorial_approved.md`, and dispatches `illustrator`.
+5. **Stage 2 & Final Compilation (`illustrator`)**:
+   * Orchestrator runs Phase 1 (`provisioner`) to initialize `stage02_publishing/agents/illustrator/` and stage `01_editorial_approved.md`.
+   * Orchestrator queries `discover_agents` (Phase 2) and dispatches `illustrator`.
    * `illustrator` generates `illustration.png`, copies `01_editorial_approved.md` as `article.md`, and calls `status_update(status: "completed", deliverable: "article.md")`.
    * Orchestrator validates via `status_read`, copies `article.md` as `rocket.md` and `illustration.png` to `output/kidswiki_rocket_age4/`, and marks master `status.md` as `completed`.
 
@@ -424,7 +430,7 @@ output/kidswiki_rocket_age4/
 | Skill | Target Persona | Purpose |
 | :--- | :--- | :--- |
 | `weave-authoring` | Pipeline Author / Designer | Guides the LLM in generating compliant WeaveMAS orchestrator and agent files from a high-level user prompt. |
-| `weave-core-orchestrator` | Root Orchestrator | Enforces upfront stage directory creation, master `status.md` initialization, pre-spawn hooks, black-box `TypeName: "self"` dispatch, and `status_read` ingestion. |
+| `weave-core-orchestrator` | Root Orchestrator | Enforces upfront stage directory creation, master `status.md` initialization, Two-Phase stage chaining (Phase 1 provisioner delegation -> Phase 2 agent dispatch), and `status_read` ingestion. |
 | `weave-core-agent` | Leaf Subagents | Enforces CWD sandboxing, Turn 1 `status_verify` pre-flight check, automatic `# Tasks` slug progression (`in_progress/<task_slug>`), and deliverable verification. |
 | `weave-core` | Shared Reference | Core status contract specifications and CLI fallback utilities. |
 
@@ -433,10 +439,11 @@ All `dir` arguments **must be absolute paths**.
 
 | Tool | Caller | Required Arguments | Behavior |
 | :--- | :--- | :--- | :--- |
-| `status_init` | Orchestrator | `dir`, `role` *(opt: `type`, `status`)* | Creates target directory recursively and writes initial `status.md` (`not_started` for agents, `in_progress/<stage>` for orchestrator). |
-| `status_verify` | Subagent (Turn 1) | `dir`, `expected_role` | Verifies `status.md` exists, matches `expected_role`, and is ready for execution. Fails fast on mismatch. |
+| `status_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`)* | Creates target directory recursively and writes initial `status.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
+| `discover_agents` | Orchestrator (Phase 2) | `directory` *(opt: `filter_status`, `limit`)* | Discovers provisioned subagents under a stage directory, returning agent ids, directories, and instruction paths. |
+| `status_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `status.md` exists and is ready for execution. Fails fast on missing status. |
 | `status_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `deliverable`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `deliverable` exists on disk when `status == "completed"`. |
-| `status_read` | Orchestrator | `dir` *(opt: `expected_deliverable`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
+| `status_read` | Orchestrator | `dir` *(opt: `expected_deliverable`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
 
 ### Two Pipeline Structural Modes
 * **Mode 1: Multi-Stage Modular Pipeline (`orchestrator.md` + `orchestrator/stage<N>_<slug>.md`)**: Best for pipelines with distinct phases and review gates (like our 2-stage KidsWiki example). The UI sidecar renders a visual stage stepper across the top for every `stage<NN>_<name>/` directory.

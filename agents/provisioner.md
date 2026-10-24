@@ -28,7 +28,7 @@ Emit parallel calls to `call_mcp_tool` (`ServerName: "weavemas_weave"`, `ToolNam
 - `dir`: `"<workspace_root>/output/<context_slug>/<stage_slug>/agents/<agent_identifier>"` (or `<workspace_root>/output/<context_slug>/agents/<agent_identifier>` for stageless runs)
 - `instructions_file`: `"<path_to_agent_instruction_md>"` (as declared under `* **Instructions**: [...]`)
 - `status`: `"initialized"`
-*(Note: You may emit multiple parallel `status_init` tool calls per turn or pass small batches of 5–10 in `items`—never construct a 40-item single JSON array).*
+*(Note: You may emit multiple parallel `status_init` tool calls per turn—never construct custom batch objects).*
 Wait for Wave 1 to complete so all agent directories exist on disk before starting Wave 2.
 
 ### Wave 2: Stage Tier 2 Input Files
