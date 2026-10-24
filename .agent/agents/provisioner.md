@@ -4,6 +4,9 @@ description: Ephemeral workspace provisioner that scaffolds agent directories vi
 inheritMcp: true
 inheritCustomizations: true
 commandExecutionPolicy: auto
+tools:
+  - view_file
+  - write_to_file
 ---
 
 # Stage Provisioner Subagent
