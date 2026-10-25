@@ -14,6 +14,7 @@ Execute at the start of every stage before evaluating `## Execution` or spawning
    ```markdown
    Target Manifest / Stage Guide: <absolute_path_to_manifest_or_stage_md>
    Target Directory: <workspace_root>/output/<context_slug>/<stage_slug>
+   Context Slug: <context_slug>
    ```
 2. **Phase Gate**: Wait reactively for `PROVISIONING_COMPLETE`. Do NOT inspect agent `status.md` files or evaluate `## Execution` while the Provisioner runs.
 3. **Handoff to Phase 2**: Once `PROVISIONING_COMPLETE` arrives, immediately expand and execute `orchestrator-agent-execution`.
