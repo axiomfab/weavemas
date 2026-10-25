@@ -74,7 +74,8 @@ export function handleMessage(msg) {
         const type = args.type || 'agent';
         const status = args.status || 'not_started';
         const instructionsFile = args.instructions_file || null;
-        const res = statusInit(targetDir, type, status, instructionsFile);
+        const inputs = args.inputs !== undefined ? args.inputs : null;
+        const res = statusInit(targetDir, type, status, instructionsFile, inputs);
         resultText = res.message;
       } else if (name === 'status_update') {
         const targetDir = args.dir;
@@ -94,7 +95,10 @@ export function handleMessage(msg) {
         }
         const expectedRole = args.expected_role || args.expected_id || null;
         const res = statusVerify(targetDir, expectedRole);
-        resultText = `STATUS_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status})`;
+        const inputsSummary = res.inputs && res.inputs.length > 0
+          ? ` | Verified inputs: ${JSON.stringify(res.inputs)}`
+          : '';
+        resultText = `STATUS_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status}${inputsSummary})`;
       } else if (name === 'status_read') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {

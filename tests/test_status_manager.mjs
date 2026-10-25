@@ -75,10 +75,74 @@ test('serializeStatus - Failure Path 3: forbidden frontmatter key throws Error',
   });
 });
 
-test('Frontmatter Contract - Integrity Canary: exactly 5 closed keys', () => {
-  const EXPECTED_KEYS = ['deliverable', 'instructions_file', 'status', 'type', 'updated_at'];
+test('Frontmatter Contract - Integrity Canary: exactly 6 closed keys', () => {
+  const EXPECTED_KEYS = ['deliverable', 'inputs', 'instructions_file', 'status', 'type', 'updated_at'];
   assert.deepEqual(Array.from(ALLOWED_FRONTMATTER_KEYS).sort(), EXPECTED_KEYS);
-  assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 5);
+  assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 6);
+});
+
+test('parseFrontmatter & serializeStatus - Happy Path: round-trips multi-line YAML inputs list', () => {
+  const fm = {
+    type: 'agent',
+    status: 'initialized',
+    instructions_file: '.agent/agents/factchecker.md',
+    inputs: ['../writer/draft.md', '../../prompts/persona.md'],
+    deliverable: null,
+    updated_at: '2026-10-25T01:50:00.000Z'
+  };
+  const serialized = serializeStatus(fm, 'Initialized.');
+  assert.match(serialized, /inputs:\n  - "\.\.\/writer\/draft\.md"\n  - "\.\.\/\.\.\/prompts\/persona\.md"/);
+  const parsed = parseFrontmatter(serialized);
+  assert.deepEqual(parsed.frontmatter.inputs, ['../writer/draft.md', '../../prompts/persona.md']);
+  assert.equal(parsed.frontmatter.instructions_file, '.agent/agents/factchecker.md');
+});
+
+test('statusInit & statusVerify - Happy Path: initializes with inputs and verifies existing input files on disk', () => {
+  const tmp = createTempDir();
+  const writerDir = path.join(tmp, 'writer');
+  const checkerDir = path.join(tmp, 'factchecker');
+  fs.mkdirSync(writerDir, { recursive: true });
+
+  // Initialize factchecker before writer/draft.md exists
+  const initRes = statusInit(checkerDir, 'agent', 'initialized', '.agent/agents/factchecker.md', ['../writer/draft.md']);
+  assert.equal(initRes.success, true);
+
+  // Now writer creates draft.md before factchecker runs statusVerify
+  fs.writeFileSync(path.join(writerDir, 'draft.md'), '# Draft Content', 'utf-8');
+  const verifyRes = statusVerify(checkerDir, 'factchecker');
+  assert.equal(verifyRes.success, true);
+  assert.deepEqual(verifyRes.inputs, ['../writer/draft.md']);
+
+  const readRes = statusRead(checkerDir);
+  assert.deepEqual(readRes.inputs, ['../writer/draft.md']);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusVerify - Failure Path: throws Error when a declared input file does not exist on disk', () => {
+  const tmp = createTempDir();
+  const checkerDir = path.join(tmp, 'factchecker');
+  statusInit(checkerDir, 'agent', 'initialized', '.agent/agents/factchecker.md', ['../writer/missing_draft.md']);
+
+  assert.throws(() => statusVerify(checkerDir), {
+    name: 'Error',
+    message: /CRITICAL: Input file does not exist on disk/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusInit - Failure Path: invalid inputs (non-array or empty string item) throws TypeError', () => {
+  const tmp = createTempDir();
+  assert.throws(() => statusInit(tmp, 'agent', 'initialized', null, 'not-an-array'), {
+    name: 'TypeError',
+    message: /CRITICAL: inputs must be an array/
+  });
+  assert.throws(() => statusInit(tmp, 'agent', 'initialized', null, ['valid.md', '   ']), {
+    name: 'TypeError',
+    message: /CRITICAL: Each entry in inputs must be a non-empty string/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
 
 test('statusInit - Happy Path: creates directory and status.md with not_started', () => {

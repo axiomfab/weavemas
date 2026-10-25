@@ -118,6 +118,7 @@ export function discoverAgents(directory, filterStatus = 'initialized', limit = 
       agent_id: item.agent_id,
       dir: item.dir,
       instructions_file: typeof frontmatter.instructions_file === 'string' ? frontmatter.instructions_file : null,
+      inputs: Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [],
       status
     });
   }

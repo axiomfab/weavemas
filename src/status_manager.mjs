@@ -6,9 +6,29 @@ import { discoverAgents } from './agent_discovery.mjs';
 export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS, discoverAgents };
 
 /**
+ * Validates and normalizes an optional inputs array.
+ * @param {unknown} inputs 
+ * @returns {string[] | null}
+ */
+function validateInputsArray(inputs) {
+  if (inputs === null || inputs === undefined) return null;
+  if (!Array.isArray(inputs)) {
+    throw new TypeError('CRITICAL: inputs must be an array of non-empty file path strings.');
+  }
+  const normalized = [];
+  for (const item of inputs) {
+    if (typeof item !== 'string' || !item.trim()) {
+      throw new TypeError('CRITICAL: Each entry in inputs must be a non-empty string.');
+    }
+    normalized.push(item.trim());
+  }
+  return normalized;
+}
+
+/**
  * Initializes a new status.md in target directory.
  */
-export function statusInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null) {
+export function statusInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -19,11 +39,13 @@ export function statusInit(targetDir, type = 'agent', initialStatus = 'not_start
   let resolvedType = type;
   let resolvedStatus = initialStatus;
   let resolvedInstructions = instructionsFile;
+  let resolvedInputs = inputs;
 
   if (typeof type === 'object' && type !== null) {
     resolvedType = type.type || 'agent';
     resolvedStatus = type.status || 'not_started';
     resolvedInstructions = type.instructions_file || type.instructionsFile || null;
+    resolvedInputs = type.inputs !== undefined ? type.inputs : null;
   }
 
   const validTypes = ['agent', 'orchestrator'];
@@ -38,6 +60,7 @@ export function statusInit(targetDir, type = 'agent', initialStatus = 'not_start
       throw new TypeError('CRITICAL: instructions_file must be a non-empty string.');
     }
   }
+  const validatedInputs = validateInputsArray(resolvedInputs);
 
   const resolvedDir = path.resolve(targetDir);
   if (!fs.existsSync(resolvedDir)) {
@@ -51,6 +74,7 @@ export function statusInit(targetDir, type = 'agent', initialStatus = 'not_start
     type: resolvedType,
     status: resolvedStatus,
     ...(resolvedInstructions ? { instructions_file: resolvedInstructions } : {}),
+    ...(validatedInputs !== null ? { inputs: validatedInputs } : {}),
     deliverable: null,
     updated_at: now
   };
@@ -137,7 +161,7 @@ export function statusUpdate(targetDir, status, progress = null, deliverable = n
 }
 
 /**
- * Verifies that the agent status.md exists and matches expectations.
+ * Verifies that the agent status.md exists, matches expectations, and all declared inputs exist on disk.
  */
 export function statusVerify(targetDir, expectedId = null) {
   if (!targetDir || typeof targetDir !== 'string') {
@@ -171,10 +195,22 @@ export function statusVerify(targetDir, expectedId = null) {
       throw new Error(`CRITICAL: Identity mismatch. Expected '${expectedId}', but working directory is '${agentId}'.`);
     }
   }
+
+  const rawInputs = Array.isArray(frontmatter.inputs) ? frontmatter.inputs : [];
+  for (const inputPath of rawInputs) {
+    const resolvedInput = path.isAbsolute(inputPath)
+      ? inputPath
+      : path.resolve(resolvedDir, inputPath);
+    if (!fs.existsSync(resolvedInput)) {
+      throw new Error(`CRITICAL: Input file does not exist on disk: ${resolvedInput} (declared as "${inputPath}")`);
+    }
+  }
+
   return {
     success: true,
     agent_id: agentId,
-    status: String(frontmatter.status ?? '')
+    status: String(frontmatter.status ?? ''),
+    inputs: rawInputs
   };
 }
 
@@ -200,6 +236,7 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   const status = String(frontmatter.status ?? '');
   const type = String(frontmatter.type ?? 'agent');
   const instructionsFile = frontmatter.instructions_file ? String(frontmatter.instructions_file) : null;
+  const inputs = Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [];
   const deliverable = frontmatter.deliverable ? String(frontmatter.deliverable) : null;
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
@@ -236,6 +273,7 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   return {
     status,
     instructions_file: instructionsFile,
+    inputs,
     deliverable,
     type,
     updated_at: updatedAt

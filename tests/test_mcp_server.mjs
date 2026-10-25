@@ -409,4 +409,56 @@ test('MCP Failure Path 11: discover_agents with relative directory returns isErr
   assert.match(res.result.content[0].text, /CRITICAL: Directory must be an absolute path/);
 });
 
+test('MCP Tool Call - Happy Path: status_init with inputs and status_verify checks input file existence', () => {
+  const tmp = createTempDir();
+  const writerDir = path.join(tmp, 'writer');
+  const checkerDir = path.join(tmp, 'checker');
+  fs.mkdirSync(writerDir, { recursive: true });
+
+  const initRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 29,
+    method: 'tools/call',
+    params: {
+      name: 'status_init',
+      arguments: {
+        dir: checkerDir,
+        status: 'initialized',
+        instructions_file: '.agent/agents/checker.md',
+        inputs: ['../writer/draft.md']
+      }
+    }
+  });
+  assert.equal(initRes.result.isError, undefined);
+
+  // Verify fails before draft.md is created
+  const failVerify = captureResponse({
+    jsonrpc: '2.0',
+    id: 30,
+    method: 'tools/call',
+    params: {
+      name: 'status_verify',
+      arguments: { dir: checkerDir }
+    }
+  });
+  assert.equal(failVerify.result.isError, true);
+  assert.match(failVerify.result.content[0].text, /CRITICAL: Input file does not exist on disk/);
+
+  // Create draft.md and verify succeeds
+  fs.writeFileSync(path.join(writerDir, 'draft.md'), '# Draft', 'utf-8');
+  const okVerify = captureResponse({
+    jsonrpc: '2.0',
+    id: 31,
+    method: 'tools/call',
+    params: {
+      name: 'status_verify',
+      arguments: { dir: checkerDir }
+    }
+  });
+  assert.equal(okVerify.result.isError, undefined);
+  assert.match(okVerify.result.content[0].text, /Verified inputs: \["\.\.\/writer\/draft\.md"\]/);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 

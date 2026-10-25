@@ -1,25 +1,42 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+function parseScalarValue(raw) {
+  const val = raw.trim();
+  if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) return val.slice(1, -1);
+  if (val === 'true') return true;
+  if (val === 'false') return false;
+  if (val === 'null' || val === '~') return null;
+  if (val === '[]') return [];
+  if (!isNaN(Number(val)) && val !== '') return Number(val);
+  return val;
+}
+
 function parseFrontmatter(content) {
   if (typeof content !== 'string') throw new TypeError('CRITICAL: content must be a string to parse frontmatter');
   const clean = content.replace(/^\uFEFF/, '').trimStart();
   const match = clean.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: clean };
   const frontmatter = {};
+  let currentListKey = null;
   for (const line of match[1].split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
+    if (currentListKey && trimmed.startsWith('-')) {
+      frontmatter[currentListKey].push(String(parseScalarValue(trimmed.slice(1))));
+      continue;
+    }
+    currentListKey = null;
     const colonIdx = trimmed.indexOf(':');
     if (colonIdx === -1) continue;
     const key = trimmed.slice(0, colonIdx).trim();
-    let val = trimmed.slice(colonIdx + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1, -1);
-    else if (val === 'true') val = true;
-    else if (val === 'false') val = false;
-    else if (val === 'null' || val === '~') val = null;
-    else if (!isNaN(Number(val)) && val !== '') val = Number(val);
-    frontmatter[key] = val;
+    const rawVal = trimmed.slice(colonIdx + 1).trim();
+    if (rawVal === '') {
+      frontmatter[key] = [];
+      currentListKey = key;
+    } else {
+      frontmatter[key] = parseScalarValue(rawVal);
+    }
   }
   return { frontmatter, body: match[2] || '' };
 }
@@ -28,7 +45,15 @@ function serializeFrontmatter(frontmatter, body) {
   if (!frontmatter || typeof frontmatter !== 'object') throw new TypeError('CRITICAL: frontmatter must be a valid object');
   const lines = ['---'];
   for (const [key, val] of Object.entries(frontmatter)) {
-    lines.push(typeof val === 'string' ? `${key}: "${val}"` : `${key}: ${val}`);
+    if (Array.isArray(val)) {
+      if (val.length === 0) lines.push(`${key}: []`);
+      else {
+        lines.push(`${key}:`);
+        for (const item of val) lines.push(`  - "${String(item)}"`);
+      }
+    } else {
+      lines.push(typeof val === 'string' ? `${key}: "${val}"` : `${key}: ${val}`);
+    }
   }
   lines.push('---');
   return body ? `${lines.join('\n')}\n\n${body.trim()}\n` : `${lines.join('\n')}\n`;

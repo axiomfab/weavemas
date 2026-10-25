@@ -24,6 +24,11 @@ export const TOOLS = [
         instructions_file: {
           type: 'string',
           description: "Path to the agent's .md instruction file."
+        },
+        inputs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional list of input file paths (relative to agent directory or workspace root) recorded in status.md frontmatter.'
         }
       },
       required: ['dir']
@@ -57,7 +62,7 @@ export const TOOLS = [
   },
   {
     name: 'status_verify',
-    description: 'Verify that the working directory status.md exists and matches the assigned subagent workspace.',
+    description: 'Verify that the working directory status.md exists, matches the assigned subagent workspace, and all declared inputs exist on disk.',
     inputSchema: {
       type: 'object',
       properties: {
