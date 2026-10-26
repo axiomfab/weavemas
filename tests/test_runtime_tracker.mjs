@@ -260,13 +260,18 @@ test('formatHumanLogBody - Happy Path: formats in_progress intervals with exact 
 
   const formatted = RuntimeTracker.formatHumanLogBody(body);
   // in_progress/outline from 10:00:10 to 10:02:02 is 112s = 1m 52s
-  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s*\(1m 52s\)\s+\[in_progress\/outline\] — Drafting outline/i);
-  // not_started should not have duration
-  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[not_started\] — Status initialized/i);
-  // waiting should not have duration
-  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[waiting\/sourcer\] — Awaiting sourcer/i);
-  // completed should not have duration
-  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[completed\] — Finished concept/i);
+  // Verify bold time, duration, and cyan color class for in_progress
+  assert.match(formatted, /<strong class="text-slate-200 font-bold font-mono">\d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?<\/strong>\s*<span class="text-slate-400 font-normal">\(1m 52s\)<\/span>/i);
+  assert.match(formatted, /text-cyan-300 bg-cyan-500\/15 border-cyan-500\/40 font-bold.*\[in_progress\/outline\]/i);
+
+  // not_started should be slate and not have duration
+  assert.match(formatted, /text-slate-400 bg-slate-800\/80 border-slate-700\/60 font-medium.*\[not_started\]/i);
+
+  // waiting should be amber and not have duration
+  assert.match(formatted, /text-amber-300 bg-amber-500\/15 border-amber-500\/40 font-medium.*\[waiting\/sourcer\]/i);
+
+  // completed should be emerald and not have duration
+  assert.match(formatted, /text-emerald-300 bg-emerald-500\/15 border-emerald-500\/40 font-semibold.*\[completed\]/i);
   assert.doesNotMatch(formatted, /ago\)/);
 });
 
@@ -274,7 +279,7 @@ test('formatHumanLogBody - Happy Path 2: computes live duration for currently ac
   const body = `- 2026-10-15T10:00:00.000Z: \`in_progress/task\` - In progress`;
   const nowMs = Date.parse('2026-10-15T10:01:15.000Z'); // 75 seconds later = 1m 15s
   const formatted = RuntimeTracker.formatHumanLogBody(body, nowMs);
-  assert.match(formatted, /\(1m 15s\)  \[in_progress\/task\] — In progress/);
+  assert.match(formatted, /\(1m 15s\)<\/span>.*\[in_progress\/task\]/);
 });
 
 test('formatHumanLogBody - Failure Path: handles null, undefined, or empty string gracefully', () => {

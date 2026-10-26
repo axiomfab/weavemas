@@ -179,6 +179,24 @@
     };
   }
 
+  function getStatusColorClass(slug) {
+    if (!slug) return 'text-slate-400 bg-slate-800/80 border-slate-700/60';
+    const [base] = slug.toLowerCase().split('/');
+    if (base === 'in_progress' || base === 'running' || base === 'revising') {
+      return 'text-cyan-300 bg-cyan-500/15 border-cyan-500/40 font-bold';
+    }
+    if (base === 'waiting') {
+      return 'text-amber-300 bg-amber-500/15 border-amber-500/40 font-medium';
+    }
+    if (base === 'completed' || base === 'approved') {
+      return 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40 font-semibold';
+    }
+    if (base === 'blocked' || base === 'error' || base === 'failed') {
+      return 'text-rose-400 bg-rose-500/15 border-rose-500/40 font-semibold';
+    }
+    return 'text-slate-400 bg-slate-800/80 border-slate-700/60 font-medium';
+  }
+
   function formatHumanLogBody(rawBody, nowMs = Date.now()) {
     if (!rawBody || typeof rawBody !== 'string') return '';
     const lines = rawBody.split(/\r?\n/);
@@ -206,11 +224,11 @@
     for (let i = 0; i < parsedEntries.length; i++) {
       const entry = parsedEntries[i];
       if (entry.isPlain) {
-        formatted.push(entry.rawLine);
+        formatted.push(`<div class="text-slate-400 font-mono">${entry.rawLine}</div>`);
         continue;
       }
       const timeStr = formatHumanLogTime(entry.iso);
-      let durationStr = '';
+      let durationHtml = '';
       if (entry.slug && entry.slug.startsWith('in_progress')) {
         let nextTimestamp = null;
         for (let j = i + 1; j < parsedEntries.length; j++) {
@@ -222,12 +240,15 @@
         const endMs = (nextTimestamp !== null) ? nextTimestamp : nowMs;
         if (!isNaN(entry.timestamp)) {
           const deltaSec = Math.max(0, Math.floor((endMs - entry.timestamp) / 1000));
-          durationStr = ` (${formatRuntime(deltaSec)})`;
+          durationHtml = ` <span class="text-slate-400 font-normal">(${formatRuntime(deltaSec)})</span>`;
         }
       }
-      const badge = entry.slug ? `[${entry.slug}]` : '';
-      const note = entry.progress ? ` — ${entry.progress}` : '';
-      formatted.push(`• ${timeStr}${durationStr}  ${badge}${note}`);
+      const colorCls = getStatusColorClass(entry.slug);
+      const badgeHtml = entry.slug
+        ? ` <span class="inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-mono ${colorCls}">[${entry.slug}]</span>`
+        : '';
+      const noteHtml = entry.progress ? ` <span class="text-slate-300 font-sans">— ${entry.progress}</span>` : '';
+      formatted.push(`<div class="leading-relaxed py-0.5"><span class="text-slate-600 font-mono mr-1.5">•</span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
     }
     return formatted.join('\n');
   }
