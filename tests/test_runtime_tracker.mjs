@@ -201,3 +201,49 @@ test('tickTimers - Failure Path 2: handles null root or non-element roots gracef
   assert.doesNotThrow(() => RuntimeTracker.tickTimers({}));
   assert.doesNotThrow(() => RuntimeTracker.tickTimers(undefined));
 });
+
+test('formatHumanLogTime - Happy Path: formats ISO timestamp to localized time string', () => {
+  const iso = '2026-10-15T14:30:45.000Z';
+  const formatted = RuntimeTracker.formatHumanLogTime(iso);
+  assert.ok(formatted);
+  assert.match(formatted, /\d{1,2}:\d{2}:\d{2}/);
+  assert.doesNotMatch(formatted, /2026-10-15T/);
+});
+
+test('formatHumanLogTime - Failure Path: handles null, undefined, or invalid string gracefully', () => {
+  assert.equal(RuntimeTracker.formatHumanLogTime(null), '');
+  assert.equal(RuntimeTracker.formatHumanLogTime(undefined), '');
+  assert.equal(RuntimeTracker.formatHumanLogTime('not-a-date'), 'not-a-date');
+});
+
+test('calculateStageRuntime - Happy Path: calculates stage duration across multiple agents', () => {
+  const nodes = [
+    {
+      type: 'agent',
+      createdAt: 1000000,
+      frontmatter: { status: 'completed', updated_at: new Date(1060000).toISOString() },
+      body: '- 2026-10-15T10:00:00.000Z: `in_progress/work` - Work\n- 2026-10-15T10:01:00.000Z: `completed` - Done'
+    },
+    {
+      type: 'agent',
+      createdAt: 1030000,
+      frontmatter: { status: 'completed', updated_at: new Date(1120000).toISOString() },
+      body: '- 2026-10-15T10:00:30.000Z: `in_progress/work` - Work\n- 2026-10-15T10:02:00.000Z: `completed` - Done'
+    }
+  ];
+
+  const res = RuntimeTracker.calculateStageRuntime(nodes, 1200000);
+  assert.equal(res.seconds, 120); // 1120000 - 1000000 = 120000ms = 120s
+  assert.equal(res.formatted, '2m 0s');
+  assert.equal(res.isRunning, false);
+});
+
+test('calculateStageRuntime - Failure Path: empty or non-array nodes returns 0s', () => {
+  const resEmpty = RuntimeTracker.calculateStageRuntime([]);
+  assert.equal(resEmpty.seconds, 0);
+  assert.equal(resEmpty.formatted, '0s');
+
+  const resNull = RuntimeTracker.calculateStageRuntime(null);
+  assert.equal(resNull.seconds, 0);
+  assert.equal(resNull.formatted, '0s');
+});

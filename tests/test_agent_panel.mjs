@@ -677,7 +677,7 @@ test('Happy Path: Renders raw status.md content when card is in status view mode
   cardViewModes.clear();
 });
 
-test('Failure Path: Renders fallback when status.md content is missing and body is empty', () => {
+test('Failure Path: Renders fallback when status.md content is missing and frontmatter is empty', () => {
   const container = { innerHTML: '', querySelectorAll: () => [] };
   const mockData = {
     stages: [
@@ -687,7 +687,7 @@ test('Failure Path: Renders fallback when status.md content is missing and body 
         agents: {
           director: {
             id: 'director',
-            frontmatter: { status: 'not_started' },
+            frontmatter: {},
             body: '',
             statusContent: null
           }
@@ -700,7 +700,7 @@ test('Failure Path: Renders fallback when status.md content is missing and body 
   cardViewModes.set('card_s1_director', 'status');
 
   render(container, mockData);
-  assert.match(container.innerHTML, /No status\.md content available\./);
+  assert.match(container.innerHTML, /No frontmatter available\./);
 
   // Cleanup
   expandedCards.clear();

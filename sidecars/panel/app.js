@@ -122,6 +122,8 @@
         const isSelected = (st.num === selectedStageNum);
         const stageAgentEntry = stageAgentsList.find(sa => sa.num === st.num);
         const hasAgentActive = stageAgentEntry ? hasAgentInProgress(stageAgentEntry.nodes || []) : false;
+        const stageRt = (window.RuntimeTracker && stageAgentEntry) ? window.RuntimeTracker.calculateStageRuntime(stageAgentEntry.nodes || []) : null;
+        const timerLabel = (stageRt && stageRt.seconds > 0) ? ` • ${stageRt.formatted}` : '';
 
         let dotClass = 'stage-dot-pending';
         if (hasAgentActive) dotClass = 'stage-dot-flashing';
@@ -133,7 +135,7 @@
           <div class="flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
             <div class="stage-dot ${dotClass}"></div>
             <span class="mt-2 text-[11px] font-bold ${isSelected ? 'text-white' : 'text-slate-300'} text-center">Stage ${st.num}</span>
-            <span class="text-[10px] text-slate-500 text-center truncate max-w-[55px]">${st.name}</span>
+            <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${st.name}${timerLabel}">${st.name}${timerLabel}</span>
           </div>
         `;
       }

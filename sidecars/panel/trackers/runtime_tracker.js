@@ -123,6 +123,88 @@
     }
   }
 
+  function formatHumanLogTime(dateInput) {
+    if (!dateInput) return '';
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return String(dateInput);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function calculateStageRuntime(nodes, nowMs = Date.now()) {
+    if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
+      return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs };
+    }
+
+    function getLeaves(list) {
+      const leaves = [];
+      for (const n of list) {
+        if (!n) continue;
+        if (n.type === 'agent' || (!n.type && n.frontmatter)) leaves.push(n);
+        else if (n.type === 'group' && Array.isArray(n.children)) leaves.push(...getLeaves(n.children));
+      }
+      return leaves;
+    }
+
+    const agents = getLeaves(nodes);
+    if (agents.length === 0) return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs };
+
+    let isRunning = false;
+    let minStartMs = Infinity;
+    let maxEndMs = 0;
+
+    for (const ag of agents) {
+      const body = ag.body || '';
+      const st = ag.frontmatter?.status || '';
+      const rt = calculateActiveRuntime(body, st, nowMs);
+      if (rt.isRunning) isRunning = true;
+      if (rt.lastStartMs && rt.lastStartMs < minStartMs) minStartMs = rt.lastStartMs;
+      if (ag.createdAt && ag.createdAt < minStartMs) minStartMs = ag.createdAt;
+
+      const updatedMs = Date.parse(ag.frontmatter?.updated_at);
+      if (!isNaN(updatedMs) && updatedMs > maxEndMs) maxEndMs = updatedMs;
+      if (ag.createdAt && ag.createdAt > maxEndMs) maxEndMs = ag.createdAt;
+    }
+
+    let stageSeconds = 0;
+    if (minStartMs !== Infinity) {
+      const endMs = isRunning ? nowMs : Math.max(maxEndMs, minStartMs);
+      stageSeconds = Math.max(0, Math.floor((endMs - minStartMs) / 1000));
+    }
+
+    return {
+      seconds: stageSeconds,
+      isRunning,
+      formatted: formatRuntime(stageSeconds),
+      minStartMs: minStartMs !== Infinity ? minStartMs : nowMs
+    };
+  }
+
+  function formatHumanLogBody(rawBody) {
+    if (!rawBody || typeof rawBody !== 'string') return '';
+    const lines = rawBody.split(/\r?\n/);
+    const formatted = [];
+    const logRegex = /^-\s+([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z):(?:\s+`([^`]+)`|\s*([^\s-]+(?:\/[^\s-]+)?))(?:\s*-\s*(.*))?$/;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === '# Status Log') continue;
+      const m = trimmed.match(logRegex);
+      if (m) {
+        const iso = m[1];
+        const slug = m[2] || m[3] || '';
+        const progress = m[4] || '';
+        const timeStr = formatHumanLogTime(iso);
+        const relStr = formatRelativeTime(iso);
+        const badge = slug ? `[${slug}]` : '';
+        const note = progress ? ` — ${progress}` : '';
+        const rel = relStr ? ` (${relStr})` : '';
+        formatted.push(`• ${timeStr}${rel}  ${badge}${note}`);
+      } else {
+        formatted.push(trimmed);
+      }
+    }
+    return formatted.join('\n');
+  }
+
   // Smooth local live ticker (200ms resolution for sub-second precision without layout thrashing)
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     setInterval(() => {
@@ -133,6 +215,9 @@
   const api = {
     formatRuntime,
     calculateActiveRuntime,
+    calculateStageRuntime,
+    formatHumanLogTime,
+    formatHumanLogBody,
     getRuntimeBadgeHtml,
     formatRelativeTime,
     tickTimers

@@ -46,6 +46,31 @@
     return '';
   }
 
+  function formatFrontmatterOnly(fm, statusContent) {
+    if (statusContent && typeof statusContent === 'string') {
+      const match = statusContent.replace(/^\uFEFF/, '').trimStart().match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (match) return `---\n${match[1].trim()}\n---`;
+    }
+    if (!fm || typeof fm !== 'object' || Object.keys(fm).length === 0) return 'No frontmatter available.';
+    const lines = ['---'];
+    for (const [k, v] of Object.entries(fm)) {
+      if (v === undefined) continue;
+      if (v === null) lines.push(`${k}: null`);
+      else if (Array.isArray(v)) {
+        if (v.length === 0) lines.push(`${k}: []`);
+        else { lines.push(`${k}:`); for (const it of v) lines.push(`  - "${String(it)}"`); }
+      } else if (typeof v === 'string') lines.push(`${k}: "${v}"`);
+      else lines.push(`${k}: ${v}`);
+    }
+    lines.push('---');
+    return lines.join('\n');
+  }
+
+  function formatHumanLogBody(rawBody) {
+    const rt = (typeof window !== 'undefined' && window.RuntimeTracker) || (typeof RuntimeTracker !== 'undefined' ? RuntimeTracker : null);
+    return rt?.formatHumanLogBody ? rt.formatHumanLogBody(rawBody) : rawBody;
+  }
+
   function getShowrunnerChip(fm) { return (fm?.total_acts != null && fm?.total_segments != null) ? `${fm.total_acts} Acts • ${fm.total_segments} Segments` : ''; }
   function getSourcerChip(fm) { return fm?.progress ? `${fm.progress} Verified` : ''; }
 
@@ -115,11 +140,12 @@
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
     } else if (isStatusMode) {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
-      const rawContent = (agentData?.statusContent != null && agentData.statusContent.trim() !== '') ? agentData.statusContent : (body ? `---\ntype: ${fm.type || 'agent'}\nstatus: "${status}"\n---\n\n${body}` : 'No status.md content available.');
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(rawContent)}</div>`;
+      const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent);
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(fmContent)}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
-      mainContentHtml = body ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(body)}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
+      const formattedLog = formatHumanLogBody(body);
+      mainContentHtml = formattedLog ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(formattedLog)}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
     }
 
     return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
@@ -176,9 +202,14 @@
         });
         const activeCount = nodeList.reduce((acc, n) => acc + countLeaves(n), 0);
         if (nodeList.length === 0 || activeCount === 0) return '';
+        const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || null;
+        const stageRt = rtTracker?.calculateStageRuntime ? rtTracker.calculateStageRuntime(nodeList) : null;
+        const timerHtml = (stageRt && stageRt.seconds > 0)
+          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}"><span class="text-[10px]">⏱️</span> ${escapeHtml(stageRt.formatted)}</span>`
+          : '';
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span></div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">${escapeHtml(st.name)}</span></div>` : '');
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
         return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div><div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div></div>`;
       }).filter(Boolean).join('');
     }
@@ -272,6 +303,8 @@
     render,
     renderAllAgents: render,
     formatAgentTitle,
+    formatFrontmatterOnly,
+    formatHumanLogBody,
     getAgentIcon,
     getStatusBadge,
     getAgentValueChip,
