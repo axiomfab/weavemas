@@ -661,7 +661,7 @@ test('Happy Path: Renders raw status.md content when card is in status view mode
   // 2. Switch to 'status' mode -> shows full status.md content including frontmatter
   cardViewModes.set('card_s2_showrunner', 'status');
   render(container, mockData);
-  assert.match(container.innerHTML, /type: agent/);
+  assert.match(container.innerHTML, /type<\/span>:\s+<span[^>]*>"agent"/);
   assert.match(container.innerHTML, /01_setup\.md/);
   assert.match(container.innerHTML, /in_progress\/outline/);
   assert.doesNotMatch(container.innerHTML, /Working on outline\.\.\./);
@@ -701,6 +701,97 @@ test('Failure Path: Renders fallback when status.md content is missing and front
 
   render(container, mockData);
   assert.match(container.innerHTML, /No frontmatter available\./);
+
+  // Cleanup
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Happy Path: Renders color-coded inputs with wildcard match counts in status.md tab', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    stages: [
+      {
+        num: 2,
+        name: 'Concept',
+        agents: {
+          showrunner: {
+            id: 'showrunner',
+            frontmatter: {
+              status: 'in_progress/outline',
+              inputs: [
+                'output/show/01_setup.md',
+                '../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md',
+                'missing_file.md'
+              ]
+            },
+            inputStatuses: [
+              { raw: 'output/show/01_setup.md', isWildcard: false, exists: true, count: 1 },
+              { raw: '../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md', isWildcard: true, exists: true, count: 4 },
+              { raw: 'missing_file.md', isWildcard: false, exists: false, count: 0 }
+            ],
+            body: ''
+          }
+        }
+      }
+    ]
+  };
+
+  expandedCards.add('card_s2_showrunner');
+  cardViewModes.set('card_s2_showrunner', 'status');
+
+  render(container, mockData);
+
+  // 1. Existing input is green
+  assert.match(container.innerHTML, /text-emerald-300 bg-emerald-500\/10 border-emerald-500\/30/);
+  assert.match(container.innerHTML, /01_setup\.md/);
+
+  // 2. Wildcard with 4 matches is yellow with count (4)
+  assert.match(container.innerHTML, /text-amber-300 bg-amber-500\/10 border-amber-500\/30/);
+  assert.match(container.innerHTML, /sourced_tracks\.md" \(4\)/);
+
+  // 3. Missing file is red
+  assert.match(container.innerHTML, /text-rose-400 bg-rose-500\/10 border-rose-500\/30/);
+  assert.match(container.innerHTML, /missing_file\.md/);
+
+  // Cleanup
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Failure Path: Wildcard with 0 matches is colored red with (0)', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    stages: [
+      {
+        num: 2,
+        name: 'Concept',
+        agents: {
+          showrunner: {
+            id: 'showrunner',
+            frontmatter: {
+              status: 'not_started',
+              inputs: [
+                '../pending_shards_*/result.md'
+              ]
+            },
+            inputStatuses: [
+              { raw: '../pending_shards_*/result.md', isWildcard: true, exists: false, count: 0 }
+            ],
+            body: ''
+          }
+        }
+      }
+    ]
+  };
+
+  expandedCards.add('card_s2_showrunner');
+  cardViewModes.set('card_s2_showrunner', 'status');
+
+  render(container, mockData);
+
+  assert.match(container.innerHTML, /text-rose-400 bg-rose-500\/10 border-rose-500\/30/);
+  assert.match(container.innerHTML, /result\.md" \(0\)/);
 
   // Cleanup
   expandedCards.clear();

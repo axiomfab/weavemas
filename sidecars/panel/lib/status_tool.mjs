@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { checkAgentInputs } from './input_verifier.mjs';
 
 function parseScalarValue(raw) {
   const val = raw.trim();
@@ -147,6 +148,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
       const fm = parsed.frontmatter;
       if (fm && (!fm.type || fm.type === 'agent')) {
         const deliverableContent = readDeliverableContent(dir, fm.deliverable, workspaceRoot, showDir, stageName);
+        const inputStatuses = Array.isArray(fm.inputs) ? checkAgentInputs(dir, fm.inputs, workspaceRoot, showDir) : [];
         let createdAt = 0;
         try {
           const stat = fs.statSync(statusFile);
@@ -165,6 +167,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
           body: parsed.body.trim(),
           deliverableContent,
           statusContent: raw,
+          inputStatuses,
           createdAt
         };
       }

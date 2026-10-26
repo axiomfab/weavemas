@@ -247,3 +247,38 @@ test('calculateStageRuntime - Failure Path: empty or non-array nodes returns 0s'
   assert.equal(resNull.seconds, 0);
   assert.equal(resNull.formatted, '0s');
 });
+
+test('formatHumanLogBody - Happy Path: formats in_progress intervals with exact duration and no duration on other states', () => {
+  const body = `
+# Status Log
+
+- 2026-10-15T10:00:00.000Z: \`not_started\` - Status initialized
+- 2026-10-15T10:00:10.000Z: \`in_progress/outline\` - Drafting outline
+- 2026-10-15T10:02:02.000Z: \`waiting/sourcer\` - Awaiting sourcer
+- 2026-10-15T10:05:00.000Z: \`completed\` - Finished concept
+`;
+
+  const formatted = RuntimeTracker.formatHumanLogBody(body);
+  // in_progress/outline from 10:00:10 to 10:02:02 is 112s = 1m 52s
+  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s*\(1m 52s\)\s+\[in_progress\/outline\] — Drafting outline/i);
+  // not_started should not have duration
+  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[not_started\] — Status initialized/i);
+  // waiting should not have duration
+  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[waiting\/sourcer\] — Awaiting sourcer/i);
+  // completed should not have duration
+  assert.match(formatted, /• \d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?\s+\[completed\] — Finished concept/i);
+  assert.doesNotMatch(formatted, /ago\)/);
+});
+
+test('formatHumanLogBody - Happy Path 2: computes live duration for currently active in_progress state', () => {
+  const body = `- 2026-10-15T10:00:00.000Z: \`in_progress/task\` - In progress`;
+  const nowMs = Date.parse('2026-10-15T10:01:15.000Z'); // 75 seconds later = 1m 15s
+  const formatted = RuntimeTracker.formatHumanLogBody(body, nowMs);
+  assert.match(formatted, /\(1m 15s\)  \[in_progress\/task\] — In progress/);
+});
+
+test('formatHumanLogBody - Failure Path: handles null, undefined, or empty string gracefully', () => {
+  assert.equal(RuntimeTracker.formatHumanLogBody(null), '');
+  assert.equal(RuntimeTracker.formatHumanLogBody(undefined), '');
+  assert.equal(RuntimeTracker.formatHumanLogBody(''), '');
+});

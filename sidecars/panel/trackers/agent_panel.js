@@ -46,23 +46,71 @@
     return '';
   }
 
-  function formatFrontmatterOnly(fm, statusContent) {
+  function formatFrontmatterOnly(fm, statusContent, inputStatuses = []) {
+    let effectiveFm = fm;
+    if ((!effectiveFm || typeof effectiveFm !== 'object' || Object.keys(effectiveFm).length === 0) && statusContent && typeof statusContent === 'string') {
+      const match = statusContent.replace(/^\uFEFF/, '').trimStart().match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (match) return `<pre class="font-mono text-xs">${escapeHtml(`---\n${match[1].trim()}\n---`)}</pre>`;
+    }
     if (statusContent && typeof statusContent === 'string') {
       const match = statusContent.replace(/^\uFEFF/, '').trimStart().match(/^---\r?\n([\s\S]*?)\r?\n---/);
-      if (match) return `---\n${match[1].trim()}\n---`;
+      if (match) {
+        const parsed = {};
+        let curList = null;
+        for (const line of match[1].split(/\r?\n/)) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          if (curList && trimmed.startsWith('-')) {
+            parsed[curList].push(trimmed.slice(1).trim().replace(/^["']|["']$/g, ''));
+            continue;
+          }
+          curList = null;
+          const cIdx = trimmed.indexOf(':');
+          if (cIdx === -1) continue;
+          const key = trimmed.slice(0, cIdx).trim();
+          const val = trimmed.slice(cIdx + 1).trim();
+          if (val === '' || val === '[]') { parsed[key] = []; curList = (val === '') ? key : null; }
+          else parsed[key] = val.replace(/^["']|["']$/g, '');
+        }
+        if (Object.keys(parsed).length > 0) effectiveFm = Object.assign({}, parsed, effectiveFm);
+      }
     }
-    if (!fm || typeof fm !== 'object' || Object.keys(fm).length === 0) return 'No frontmatter available.';
-    const lines = ['---'];
-    for (const [k, v] of Object.entries(fm)) {
+    if (!effectiveFm || typeof effectiveFm !== 'object' || Object.keys(effectiveFm).length === 0) return 'No frontmatter available.';
+
+    const inputStatusMap = new Map();
+    if (Array.isArray(inputStatuses)) {
+      for (const st of inputStatuses) {
+        if (st && st.raw) inputStatusMap.set(st.raw.trim(), st);
+      }
+    }
+
+    const lines = ['<span class="text-slate-500 font-mono">---</span>'];
+    for (const [k, v] of Object.entries(effectiveFm)) {
       if (v === undefined) continue;
-      if (v === null) lines.push(`${k}: null`);
+      if (k === 'inputs' && Array.isArray(v)) {
+        if (v.length === 0) lines.push(`<span class="text-indigo-300 font-mono">inputs</span>: <span class="text-slate-400 font-mono">[]</span>`);
+        else {
+          lines.push(`<span class="text-indigo-300 font-mono">inputs</span>:`);
+          for (const rawItem of v) {
+            const itemStr = String(rawItem).trim();
+            const info = inputStatusMap.get(itemStr) || { isWildcard: itemStr.includes('*'), exists: false, count: 0 };
+            const isW = info.isWildcard;
+            const cls = isW ? (info.count > 0 ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30') : (info.exists ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30');
+            const badge = isW ? (info.count > 0 ? ` (${info.count})` : ' (0)') : '';
+            lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] ${cls}">"${escapeHtml(itemStr)}"${badge}</span>`);
+          }
+        }
+      } else if (v === null) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-500 font-mono">null</span>`);
       else if (Array.isArray(v)) {
-        if (v.length === 0) lines.push(`${k}: []`);
-        else { lines.push(`${k}:`); for (const it of v) lines.push(`  - "${String(it)}"`); }
-      } else if (typeof v === 'string') lines.push(`${k}: "${v}"`);
-      else lines.push(`${k}: ${v}`);
+        if (v.length === 0) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
+        else {
+          lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`);
+          for (const it of v) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`);
+        }
+      } else if (typeof v === 'string') lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
+      else lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-cyan-300 font-mono">${escapeHtml(String(v))}</span>`);
     }
-    lines.push('---');
+    lines.push('<span class="text-slate-500 font-mono">---</span>');
     return lines.join('\n');
   }
 
@@ -140,8 +188,8 @@
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
     } else if (isStatusMode) {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
-      const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent);
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(fmContent)}</div>`;
+      const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${fmContent}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       const formattedLog = formatHumanLogBody(body);

@@ -179,28 +179,55 @@
     };
   }
 
-  function formatHumanLogBody(rawBody) {
+  function formatHumanLogBody(rawBody, nowMs = Date.now()) {
     if (!rawBody || typeof rawBody !== 'string') return '';
     const lines = rawBody.split(/\r?\n/);
-    const formatted = [];
+    const parsedEntries = [];
     const logRegex = /^-\s+([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z):(?:\s+`([^`]+)`|\s*([^\s-]+(?:\/[^\s-]+)?))(?:\s*-\s*(.*))?$/;
+
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed === '# Status Log') continue;
       const m = trimmed.match(logRegex);
       if (m) {
-        const iso = m[1];
-        const slug = m[2] || m[3] || '';
-        const progress = m[4] || '';
-        const timeStr = formatHumanLogTime(iso);
-        const relStr = formatRelativeTime(iso);
-        const badge = slug ? `[${slug}]` : '';
-        const note = progress ? ` — ${progress}` : '';
-        const rel = relStr ? ` (${relStr})` : '';
-        formatted.push(`• ${timeStr}${rel}  ${badge}${note}`);
+        parsedEntries.push({
+          rawLine: trimmed,
+          iso: m[1],
+          timestamp: Date.parse(m[1]),
+          slug: m[2] || m[3] || '',
+          progress: m[4] || ''
+        });
       } else {
-        formatted.push(trimmed);
+        parsedEntries.push({ rawLine: trimmed, isPlain: true });
       }
+    }
+
+    const formatted = [];
+    for (let i = 0; i < parsedEntries.length; i++) {
+      const entry = parsedEntries[i];
+      if (entry.isPlain) {
+        formatted.push(entry.rawLine);
+        continue;
+      }
+      const timeStr = formatHumanLogTime(entry.iso);
+      let durationStr = '';
+      if (entry.slug && entry.slug.startsWith('in_progress')) {
+        let nextTimestamp = null;
+        for (let j = i + 1; j < parsedEntries.length; j++) {
+          if (!parsedEntries[j].isPlain && !isNaN(parsedEntries[j].timestamp)) {
+            nextTimestamp = parsedEntries[j].timestamp;
+            break;
+          }
+        }
+        const endMs = (nextTimestamp !== null) ? nextTimestamp : nowMs;
+        if (!isNaN(entry.timestamp)) {
+          const deltaSec = Math.max(0, Math.floor((endMs - entry.timestamp) / 1000));
+          durationStr = ` (${formatRuntime(deltaSec)})`;
+        }
+      }
+      const badge = entry.slug ? `[${entry.slug}]` : '';
+      const note = entry.progress ? ` — ${entry.progress}` : '';
+      formatted.push(`• ${timeStr}${durationStr}  ${badge}${note}`);
     }
     return formatted.join('\n');
   }
