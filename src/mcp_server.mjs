@@ -84,7 +84,7 @@ export function handleMessage(msg) {
         }
         const status = args.status;
         const progress = args.progress || null;
-        const deliverable = args.deliverable || null;
+        const deliverable = args.deliverable !== undefined ? args.deliverable : null;
         if (!status) throw new Error("CRITICAL: 'status' argument is required for status_update.");
         const res = statusUpdate(targetDir, status, progress, deliverable);
         resultText = res.message;
@@ -95,8 +95,11 @@ export function handleMessage(msg) {
         }
         const expectedRole = args.expected_role || args.expected_id || null;
         const res = statusVerify(targetDir, expectedRole);
+        const pendingSummary = res.pending_inputs && res.pending_inputs.length > 0
+          ? ` | Pending inputs (not on disk yet — HALT if required for current task): ${JSON.stringify(res.pending_inputs)}`
+          : '';
         const inputsSummary = res.inputs && res.inputs.length > 0
-          ? ` | Verified inputs: ${JSON.stringify(res.inputs)}`
+          ? ` | Verified inputs: ${JSON.stringify(res.inputs)} | Resolved paths: ${JSON.stringify(res.resolved_inputs)}${pendingSummary}`
           : '';
         resultText = `STATUS_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status}${inputsSummary})`;
       } else if (name === 'status_read') {

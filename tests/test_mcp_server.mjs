@@ -431,8 +431,8 @@ test('MCP Tool Call - Happy Path: status_init with inputs and status_verify chec
   });
   assert.equal(initRes.result.isError, undefined);
 
-  // Verify fails before draft.md is created
-  const failVerify = captureResponse({
+  // Verify before draft.md is created returns Pending inputs
+  const pendingVerify = captureResponse({
     jsonrpc: '2.0',
     id: 30,
     method: 'tools/call',
@@ -441,8 +441,8 @@ test('MCP Tool Call - Happy Path: status_init with inputs and status_verify chec
       arguments: { dir: checkerDir }
     }
   });
-  assert.equal(failVerify.result.isError, true);
-  assert.match(failVerify.result.content[0].text, /CRITICAL: Input file does not exist on disk/);
+  assert.equal(pendingVerify.result.isError, undefined);
+  assert.match(pendingVerify.result.content[0].text, /Pending inputs.*: \["\.\.\/writer\/draft\.md"\]/);
 
   // Create draft.md and verify succeeds
   fs.writeFileSync(path.join(writerDir, 'draft.md'), '# Draft', 'utf-8');

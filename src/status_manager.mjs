@@ -2,8 +2,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS } from './frontmatter.mjs';
 import { discoverAgents } from './agent_discovery.mjs';
+import {
+  parseInputEntry,
+  inferLookupRoots,
+  expandPathPattern,
+  resolveInputEntry,
+  normalizeDeliverable,
+  verifyDeliverableFiles
+} from './path_resolver.mjs';
 
-export { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS, discoverAgents };
+export {
+  parseFrontmatter,
+  serializeStatus,
+  ALLOWED_FRONTMATTER_KEYS,
+  discoverAgents,
+  parseInputEntry,
+  inferLookupRoots,
+  expandPathPattern,
+  resolveInputEntry
+};
 
 /**
  * Validates and normalizes an optional inputs array.
@@ -121,21 +138,17 @@ export function statusUpdate(targetDir, status, progress = null, deliverable = n
 
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter, body } = parseFrontmatter(fileContent);
+  const normalizedDeliverable = normalizeDeliverable(deliverable);
 
   if (status.startsWith('completed')) {
-    const finalDeliverable = deliverable || frontmatter.deliverable;
-    if (!finalDeliverable) {
+    const finalDeliverable = normalizedDeliverable !== null ? normalizedDeliverable : frontmatter.deliverable;
+    if (!finalDeliverable || (Array.isArray(finalDeliverable) && finalDeliverable.length === 0)) {
       throw new Error('CRITICAL: Deliverable path is required when setting status to completed.');
     }
-    const deliverablePath = path.isAbsolute(finalDeliverable)
-      ? finalDeliverable
-      : path.join(resolvedDir, finalDeliverable);
-    if (!fs.existsSync(deliverablePath)) {
-      throw new Error(`CRITICAL: Deliverable file does not exist on disk: ${deliverablePath}`);
-    }
+    verifyDeliverableFiles(resolvedDir, finalDeliverable);
     frontmatter.deliverable = finalDeliverable;
-  } else if (deliverable) {
-    frontmatter.deliverable = deliverable;
+  } else if (normalizedDeliverable !== null) {
+    frontmatter.deliverable = normalizedDeliverable;
   }
 
   const now = new Date().toISOString();
@@ -197,12 +210,16 @@ export function statusVerify(targetDir, expectedId = null) {
   }
 
   const rawInputs = Array.isArray(frontmatter.inputs) ? frontmatter.inputs : [];
-  for (const inputPath of rawInputs) {
-    const resolvedInput = path.isAbsolute(inputPath)
-      ? inputPath
-      : path.resolve(resolvedDir, inputPath);
-    if (!fs.existsSync(resolvedInput)) {
-      throw new Error(`CRITICAL: Input file does not exist on disk: ${resolvedInput} (declared as "${inputPath}")`);
+  const resolvedInputs = {};
+  const pendingInputs = [];
+
+  for (const inputEntry of rawInputs) {
+    try {
+      const resolved = resolveInputEntry(resolvedDir, inputEntry);
+      const key = resolved.name || resolved.pattern;
+      resolvedInputs[key] = resolved.matches.length === 1 ? resolved.matches[0] : resolved.matches;
+    } catch {
+      pendingInputs.push(inputEntry);
     }
   }
 
@@ -210,7 +227,9 @@ export function statusVerify(targetDir, expectedId = null) {
     success: true,
     agent_id: agentId,
     status: String(frontmatter.status ?? ''),
-    inputs: rawInputs
+    inputs: rawInputs,
+    resolved_inputs: resolvedInputs,
+    pending_inputs: pendingInputs
   };
 }
 
@@ -237,7 +256,9 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   const type = String(frontmatter.type ?? 'agent');
   const instructionsFile = frontmatter.instructions_file ? String(frontmatter.instructions_file) : null;
   const inputs = Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [];
-  const deliverable = frontmatter.deliverable ? String(frontmatter.deliverable) : null;
+  const deliverable = Array.isArray(frontmatter.deliverable)
+    ? frontmatter.deliverable.map(String)
+    : (frontmatter.deliverable ? String(frontmatter.deliverable) : null);
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
   if (expectedStatus !== undefined && expectedStatus !== null) {
@@ -252,21 +273,17 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
   if (expectedDeliverable !== undefined) {
     if (expectedDeliverable === null) {
       if (deliverable !== null) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected null, but status.md defines '${deliverable}'.`);
+        throw new Error(`CRITICAL: Deliverable mismatch. Expected null, but status.md defines '${JSON.stringify(deliverable)}'.`);
       }
     } else {
-      if (typeof expectedDeliverable !== 'string' || !expectedDeliverable) {
-        throw new TypeError('CRITICAL: Expected deliverable must be a non-empty string or null.');
+      const normExpected = normalizeDeliverable(expectedDeliverable);
+      const expectedList = Array.isArray(normExpected) ? normExpected : [normExpected];
+      const actualList = Array.isArray(deliverable) ? deliverable : (deliverable ? [deliverable] : []);
+      const matches = expectedList.length === actualList.length && expectedList.every((val, idx) => val === actualList[idx]);
+      if (!matches) {
+        throw new Error(`CRITICAL: Deliverable mismatch. Expected '${JSON.stringify(normExpected)}', but status.md defines '${JSON.stringify(deliverable)}'.`);
       }
-      if (deliverable !== expectedDeliverable) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected '${expectedDeliverable}', but status.md defines '${deliverable}'.`);
-      }
-      const deliverablePath = path.isAbsolute(deliverable)
-        ? deliverable
-        : path.join(resolvedDir, deliverable);
-      if (!fs.existsSync(deliverablePath)) {
-        throw new Error(`CRITICAL: Deliverable file does not exist on disk: ${deliverablePath}`);
-      }
+      verifyDeliverableFiles(resolvedDir, deliverable);
     }
   }
 

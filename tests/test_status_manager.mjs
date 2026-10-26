@@ -119,15 +119,15 @@ test('statusInit & statusVerify - Happy Path: initializes with inputs and verifi
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusVerify - Failure Path: throws Error when a declared input file does not exist on disk', () => {
+test('statusVerify - Deferred Input Path: places missing input into pending_inputs when file does not exist on disk yet', () => {
   const tmp = createTempDir();
   const checkerDir = path.join(tmp, 'factchecker');
   statusInit(checkerDir, 'agent', 'initialized', '.agent/agents/factchecker.md', ['../writer/missing_draft.md']);
 
-  assert.throws(() => statusVerify(checkerDir), {
-    name: 'Error',
-    message: /CRITICAL: Input file does not exist on disk/
-  });
+  const res = statusVerify(checkerDir);
+  assert.equal(res.success, true);
+  assert.deepEqual(res.resolved_inputs, {});
+  assert.deepEqual(res.pending_inputs, ['../writer/missing_draft.md']);
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -416,6 +416,163 @@ test('statusInit - Failure Path with invalid instructions_file: empty string thr
     message: /CRITICAL: instructions_file must be a non-empty string/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves CWD, output/<context_slug>, workspaceRoot, and wildcards', () => {
+  const workspaceRoot = createTempDir();
+  const contextDir = path.join(workspaceRoot, 'output', 'kidswiki_rocket');
+  const stageDir = path.join(contextDir, 'stage02_publishing');
+  const writerDir = path.join(stageDir, 'agents', 'writer');
+  const illustratorDir = path.join(stageDir, 'agents', 'illustrator');
+  const promptsDir = path.join(workspaceRoot, 'prompts');
+
+  fs.mkdirSync(writerDir, { recursive: true });
+  fs.mkdirSync(illustratorDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+
+  const peerDraft = path.join(writerDir, 'draft.md');
+  const contextApproved = path.join(contextDir, '01_editorial_approved.md');
+  const repoPersona = path.join(promptsDir, 'style_guide.md');
+  const beat1 = path.join(writerDir, 'beat_01.md');
+  const beat2 = path.join(writerDir, 'beat_02.md');
+
+  fs.writeFileSync(peerDraft, '# Peer Draft', 'utf-8');
+  fs.writeFileSync(contextApproved, '# Approved', 'utf-8');
+  fs.writeFileSync(repoPersona, '# Style Guide', 'utf-8');
+  fs.writeFileSync(beat1, '# Beat 1', 'utf-8');
+  fs.writeFileSync(beat2, '# Beat 2', 'utf-8');
+
+  statusInit(illustratorDir, 'agent', 'initialized', '.agent/agents/illustrator.md', [
+    'Draft: ../writer/draft.md',
+    'Approved Article: 01_editorial_approved.md',
+    'prompts/style_guide.md',
+    'Beats: ../writer/beat_*.md'
+  ]);
+
+  const verifyRes = statusVerify(illustratorDir, 'illustrator');
+  assert.equal(verifyRes.success, true);
+  assert.equal(verifyRes.resolved_inputs['Draft'], peerDraft);
+  assert.equal(verifyRes.resolved_inputs['Approved Article'], contextApproved);
+  assert.equal(verifyRes.resolved_inputs['prompts/style_guide.md'], repoPersona);
+  assert.deepEqual(verifyRes.resolved_inputs['Beats'], [beat1, beat2]);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
+  const workspaceRoot = createTempDir();
+  const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'stage01', 'agents', 'checker');
+  fs.mkdirSync(agentDir, { recursive: true });
+  // Create file at workspaceRoot/writer/draft.md, NOT at stage01/agents/writer/draft.md
+  fs.mkdirSync(path.join(workspaceRoot, 'writer'), { recursive: true });
+  fs.writeFileSync(path.join(workspaceRoot, 'writer', 'draft.md'), 'wrong tier', 'utf-8');
+
+  statusInit(agentDir, 'agent', 'initialized', null, ['../writer/draft.md']);
+  const res = statusVerify(agentDir);
+  assert.deepEqual(res.resolved_inputs, {});
+  assert.deepEqual(res.pending_inputs, ['../writer/draft.md']);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('3-Tier Input Resolution - Boundary Path 2: wildcard matching zero files stays in pending_inputs', () => {
+  const workspaceRoot = createTempDir();
+  const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'agents', 'compiler');
+  fs.mkdirSync(agentDir, { recursive: true });
+
+  statusInit(agentDir, 'agent', 'initialized', null, ['Segments: ../writer_*/draft.md']);
+  const res = statusVerify(agentDir);
+  assert.deepEqual(res.resolved_inputs, {});
+  assert.deepEqual(res.pending_inputs, ['Segments: ../writer_*/draft.md']);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('Deliverable List & Wildcards - Happy Path: statusUpdate and statusRead support array of deliverables and wildcards', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'agent', 'in_progress');
+  fs.writeFileSync(path.join(tmp, 'article.md'), '# Article', 'utf-8');
+  fs.writeFileSync(path.join(tmp, 'illustration_1.png'), 'PNG1', 'utf-8');
+  fs.writeFileSync(path.join(tmp, 'illustration_2.png'), 'PNG2', 'utf-8');
+
+  const updateRes = statusUpdate(tmp, 'completed', 'Generated article and illustrations', ['article.md', 'illustration_*.png']);
+  assert.equal(updateRes.success, true);
+
+  const readRes = statusRead(tmp, ['article.md', 'illustration_*.png'], 'completed');
+  assert.deepEqual(readRes.deliverable, ['article.md', 'illustration_*.png']);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('Deliverable List & Wildcards - Failure Paths: missing file in deliverable array or empty array throws Error', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'agent', 'in_progress');
+  fs.writeFileSync(path.join(tmp, 'article.md'), '# Article', 'utf-8');
+
+  assert.throws(() => statusUpdate(tmp, 'completed', 'Done', []), {
+    name: 'TypeError',
+    message: /CRITICAL: Deliverable array must contain at least one path/
+  });
+
+  assert.throws(() => statusUpdate(tmp, 'completed', 'Done', ['article.md', 'missing_*.png']), {
+    name: 'Error',
+    message: /CRITICAL: Deliverable file does not exist on disk/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('Deferred Mid-Stage Inputs - Happy Path: statusVerify succeeds when Turn-1 inputs exist and mid-stage inputs are pending, then resolves on wakeup', () => {
+  const workspaceRoot = createTempDir();
+  const contextDir = path.join(workspaceRoot, 'output', 'show_test');
+  const showrunnerDir = path.join(contextDir, 'stage02_concept', 'agents', 'showrunner');
+  const sourcer1Dir = path.join(contextDir, 'stage02_concept', 'agents', 'youtube_sourcers', 'youtube_sourcer_01');
+
+  fs.mkdirSync(showrunnerDir, { recursive: true });
+  fs.mkdirSync(sourcer1Dir, { recursive: true });
+
+  const setupFile = path.join(contextDir, '01_setup.md');
+  fs.writeFileSync(setupFile, '# Setup', 'utf-8');
+
+  statusInit(showrunnerDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
+    '01_setup.md',
+    '../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md'
+  ]);
+
+  // Turn 1: 01_setup.md exists, sourced_tracks.md does not exist yet
+  const turn1Res = statusVerify(showrunnerDir, 'showrunner');
+  assert.equal(turn1Res.success, true);
+  assert.equal(turn1Res.resolved_inputs['01_setup.md'], setupFile);
+  assert.deepEqual(turn1Res.pending_inputs, ['../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md']);
+
+  // Mid-stage: youtube_sourcer_01 creates sourced_tracks.md, showrunner wakes up and re-verifies
+  const tracksFile = path.join(sourcer1Dir, 'sourced_tracks.md');
+  fs.writeFileSync(tracksFile, '# Tracks', 'utf-8');
+
+  const wakeupRes = statusVerify(showrunnerDir, 'showrunner');
+  assert.equal(wakeupRes.success, true);
+  assert.equal(wakeupRes.resolved_inputs['01_setup.md'], setupFile);
+  assert.equal(wakeupRes.resolved_inputs['../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md'], tracksFile);
+  assert.deepEqual(wakeupRes.pending_inputs, []);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('Deferred Mid-Stage Inputs - Zero Initial Inputs Path: statusVerify succeeds when zero declared inputs exist on Turn 1 and returns all in pending_inputs', () => {
+  const workspaceRoot = createTempDir();
+  const showrunnerDir = path.join(workspaceRoot, 'output', 'show_test', 'stage02_concept', 'agents', 'showrunner');
+  fs.mkdirSync(showrunnerDir, { recursive: true });
+
+  statusInit(showrunnerDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
+    '../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md'
+  ]);
+
+  const res = statusVerify(showrunnerDir, 'showrunner');
+  assert.equal(res.success, true);
+  assert.deepEqual(res.resolved_inputs, {});
+  assert.deepEqual(res.pending_inputs, ['../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md']);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
 

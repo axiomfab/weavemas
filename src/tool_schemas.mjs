@@ -28,7 +28,7 @@ export const TOOLS = [
         inputs: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Optional list of input file paths (relative to agent directory or workspace root) recorded in status.md frontmatter.'
+          description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved via 3-tier lookup (agent CWD -> output/<context_slug> -> workspace root).'
         }
       },
       required: ['dir']
@@ -53,8 +53,11 @@ export const TOOLS = [
           description: 'Concise summary of progress, decisions, or transition rationale.'
         },
         deliverable: {
-          type: 'string',
-          description: 'Relative path to output deliverable (required if status is completed).'
+          oneOf: [
+            { type: 'string' },
+            { type: 'array', items: { type: 'string' } }
+          ],
+          description: 'Relative path(s) or wildcard pattern(s) to output deliverable(s) (required if status is completed).'
         }
       },
       required: ['dir', 'status']
@@ -62,7 +65,7 @@ export const TOOLS = [
   },
   {
     name: 'status_verify',
-    description: 'Verify that the working directory status.md exists, matches the assigned subagent workspace, and all declared inputs exist on disk.',
+    description: 'Verify that the working directory status.md exists, matches the assigned subagent workspace, and resolves all declared inputs across the 3-tier hierarchy.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -89,8 +92,12 @@ export const TOOLS = [
           description: 'Absolute path to the target directory containing status.md.'
         },
         expected_deliverable: {
-          type: ['string', 'null'],
-          description: 'Optional expected deliverable filename (e.g. "setup.md") or null if agent produces no deliverable.'
+          oneOf: [
+            { type: 'string' },
+            { type: 'array', items: { type: 'string' } },
+            { type: 'null' }
+          ],
+          description: 'Optional expected deliverable filename/pattern, array of filenames/patterns, or null if agent produces no deliverable.'
         },
         expected_status: {
           type: 'string',

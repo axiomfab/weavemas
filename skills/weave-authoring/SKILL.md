@@ -13,6 +13,7 @@ description: >-
 | **Agents** | [`references/authoring_agent.md`](references/authoring_agent.md) | Authoring flat `.agent/agents/<agent_name>.md` definitions. |
 | **Orchestrators** | [`references/authoring_orchestrator.md`](references/authoring_orchestrator.md) | Authoring `orchestrator_trigger.md`, `orchestrator.md`, and `orchestrator/*.md` stage guides. |
 | **Parallelization** | [`references/authoring_parallelization.md`](references/authoring_parallelization.md) | Designing sequential/parallel workflows and ephemeral sub-orchestrators. |
+| **Static Verification** | [`references/authoring_verification.md`](references/authoring_verification.md) | **Mandatory** after authoring or revising any pipeline: verifying the Pipeline Data-Flow Graph and printing the stage-by-stage checkbox report. |
 | **Outcome Revision** | [`references/authoring_revision.md`](references/authoring_revision.md) | Diagnosing user feedback to propose immediate outcome fixes (`c`) and pipeline improvements (`r`). |
 | **UI & Dashboards** | [`references/authoring_ui.md`](references/authoring_ui.md) | Building sidecar extensions and web panels that observe `status.md` files. |
 
