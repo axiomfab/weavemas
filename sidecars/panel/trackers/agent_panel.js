@@ -92,13 +92,33 @@
     }
     const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
 
+    const isDeliverableMode = viewMode === 'deliverable' && fm.deliverable;
+    const isStatusMode = viewMode === 'status';
+
+    const updatesBtnCls = viewMode === 'updates'
+      ? 'bg-slate-800 text-white font-bold border border-slate-700'
+      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+    const statusBtnCls = isStatusMode
+      ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400'
+      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+    const deliverableBtnCls = isDeliverableMode
+      ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400'
+      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+
+    const delivLabel = Array.isArray(fm.deliverable) ? fm.deliverable.join(', ') : fm.deliverable;
+    const tabsHtml = `<div class="flex items-center gap-1 font-mono"><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${updatesBtnCls}" data-status-toggle="${escapeHtml(cardId)}">Updates</button><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${statusBtnCls}" data-raw-status-toggle="${escapeHtml(cardId)}">status.md</button>${fm.deliverable ? `<button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${deliverableBtnCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(delivLabel)}</button>` : ''}</div>`;
+
     let headerActionHtml = '', mainContentHtml = '';
-    if (viewMode === 'deliverable' && fm.deliverable) {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-400 font-bold">📄 ${escapeHtml(fm.deliverable)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
-      const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(fm.deliverable)}) has not been generated yet.`);
+    if (isDeliverableMode) {
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}<span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(delivLabel)}) has not been generated yet.`);
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
+    } else if (isStatusMode) {
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
+      const rawContent = (agentData?.statusContent != null && agentData.statusContent.trim() !== '') ? agentData.statusContent : (body ? `---\ntype: ${fm.type || 'agent'}\nstatus: "${status}"\n---\n\n${body}` : 'No status.md content available.');
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(rawContent)}</div>`;
     } else {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       mainContentHtml = body ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(body)}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
     }
 
@@ -206,6 +226,16 @@
         expandedCards.add(id);
         cardViewModes.set(id, 'updates');
         pendingScrollBottom.add(id);
+        render(container, data, filterStageNum);
+      });
+    });
+
+    container.querySelectorAll('[data-raw-status-toggle]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-raw-status-toggle');
+        expandedCards.add(id);
+        cardViewModes.set(id, 'status');
         render(container, data, filterStageNum);
       });
     });

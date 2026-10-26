@@ -627,3 +627,82 @@ test('Happy Path: Renders stageless agent deliverable content when card is expan
   cardViewModes.clear();
 });
 
+
+
+test('Happy Path: Renders raw status.md content when card is in status view mode and switches tabs', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockStatusRaw = `---\ntype: agent\nstatus: in_progress/outline\ninputs:\n  - "01_setup.md"\ndeliverable: null\n---\n# Status Log\n- 2026-10-26: in_progress`;
+  const mockData = {
+    stages: [
+      {
+        num: 2,
+        name: 'Concept',
+        agents: {
+          showrunner: {
+            id: 'showrunner',
+            frontmatter: { status: 'in_progress/outline', deliverable: 'concept.md' },
+            body: 'Working on outline...',
+            deliverableContent: '# Concept Document',
+            statusContent: mockStatusRaw
+          }
+        }
+      }
+    ]
+  };
+
+  expandedCards.add('card_s2_showrunner');
+
+  // 1. By default, 'updates' mode shows body
+  cardViewModes.set('card_s2_showrunner', 'updates');
+  render(container, mockData);
+  assert.match(container.innerHTML, /Working on outline\.\.\./);
+  assert.match(container.innerHTML, /data-raw-status-toggle="card_s2_showrunner"/);
+
+  // 2. Switch to 'status' mode -> shows full status.md content including frontmatter
+  cardViewModes.set('card_s2_showrunner', 'status');
+  render(container, mockData);
+  assert.match(container.innerHTML, /type: agent/);
+  assert.match(container.innerHTML, /01_setup\.md/);
+  assert.match(container.innerHTML, /in_progress\/outline/);
+  assert.doesNotMatch(container.innerHTML, /Working on outline\.\.\./);
+
+  // 3. Switch to 'deliverable' mode -> shows deliverableContent
+  cardViewModes.set('card_s2_showrunner', 'deliverable');
+  render(container, mockData);
+  assert.match(container.innerHTML, /# Concept Document/);
+  assert.doesNotMatch(container.innerHTML, /type: agent/);
+
+  // Cleanup
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Failure Path: Renders fallback when status.md content is missing and body is empty', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Setup',
+        agents: {
+          director: {
+            id: 'director',
+            frontmatter: { status: 'not_started' },
+            body: '',
+            statusContent: null
+          }
+        }
+      }
+    ]
+  };
+
+  expandedCards.add('card_s1_director');
+  cardViewModes.set('card_s1_director', 'status');
+
+  render(container, mockData);
+  assert.match(container.innerHTML, /No status\.md content available\./);
+
+  // Cleanup
+  expandedCards.clear();
+  cardViewModes.clear();
+});

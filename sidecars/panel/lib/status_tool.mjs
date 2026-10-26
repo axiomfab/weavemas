@@ -164,6 +164,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
           frontmatter: fm,
           body: parsed.body.trim(),
           deliverableContent,
+          statusContent: raw,
           createdAt
         };
       }
@@ -197,6 +198,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
               frontmatter: fm,
               body: parsed.body.trim(),
               deliverableContent,
+              statusContent: raw,
               createdAt
             });
           }
