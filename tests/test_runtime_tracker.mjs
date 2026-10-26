@@ -260,18 +260,19 @@ test('formatHumanLogBody - Happy Path: formats in_progress intervals with exact 
 
   const formatted = RuntimeTracker.formatHumanLogBody(body);
   // in_progress/outline from 10:00:10 to 10:02:02 is 112s = 1m 52s
-  // Verify bold time, duration, and cyan color class for in_progress
+  // Verify bold time, duration, and yellow text color class for in_progress (no boxes)
   assert.match(formatted, /<strong class="text-slate-200 font-bold font-mono">\d{1,2}:\d{2}:\d{2}\s+(?:AM|PM)?<\/strong>\s*<span class="text-slate-400 font-normal">\(1m 52s\)<\/span>/i);
-  assert.match(formatted, /text-cyan-300 bg-cyan-500\/15 border-cyan-500\/40 font-bold.*\[in_progress\/outline\]/i);
+  assert.match(formatted, /text-amber-400 font-bold.*\[in_progress\/outline\]/i);
 
-  // not_started should be slate and not have duration
-  assert.match(formatted, /text-slate-400 bg-slate-800\/80 border-slate-700\/60 font-medium.*\[not_started\]/i);
+  // not_started should be slate text and not have duration or boxes
+  assert.match(formatted, /text-slate-400 font-medium.*\[not_started\]/i);
 
-  // waiting should be amber and not have duration
-  assert.match(formatted, /text-amber-300 bg-amber-500\/15 border-amber-500\/40 font-medium.*\[waiting\/sourcer\]/i);
+  // waiting should be amber text and not have duration or boxes
+  assert.match(formatted, /text-amber-300 font-medium.*\[waiting\/sourcer\]/i);
 
-  // completed should be emerald and not have duration
-  assert.match(formatted, /text-emerald-300 bg-emerald-500\/15 border-emerald-500\/40 font-semibold.*\[completed\]/i);
+  // completed should be emerald text and not have duration or boxes
+  assert.match(formatted, /text-emerald-400 font-semibold.*\[completed\]/i);
+  assert.doesNotMatch(formatted, /border/);
   assert.doesNotMatch(formatted, /ago\)/);
 });
 
