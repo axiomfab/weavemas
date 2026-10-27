@@ -12,7 +12,7 @@
 ## 📦 1. Ephemeral Sub-Orchestrator Authoring Rules
 
 Use a sub-orchestrator whenever a multi-agent unit has local iterative feedback loops (e.g. Writer $\rightleftarrows$ Fact-Checker) so intermediate drafts and critiques do not bloat the root orchestrator's context:
-1. **Omit from `## Agents`**: Declare only concrete leaf agents in `## Agents` (with their upstream peer deliverables declared in `* **Inputs**:`, e.g. `../writer/draft.md`). Sub-orchestrators are declared solely in `## Execution`.
+1. **Omit from `## Agents`**: Declare only concrete leaf agents in `## Agents` (with their upstream peer outputs declared in `* **Inputs**:`, e.g. `../writer/draft.md`). Sub-orchestrators are declared solely in `## Execution`.
 2. **Standard Flat Agent Paths**: Leaf agents keep their standard stage directories (`stage<NN>_<slug>/agents/<agent_id>/`). Never invent nested `<unit_id>/` subfolders.
 3. **Zero Runtime Boilerplate**: Do not write sub-orchestrator runtime rules (such as zero `weave.md` creation or shared root scoping) into stage guides—`orchestrator-agent-execution` enforces them automatically.
 
@@ -24,7 +24,7 @@ Use a sub-orchestrator whenever a multi-agent unit has local iterative feedback 
 ```markdown
 For each segment (`seg_01` to `seg_05`), run `architect_<seg_id>` in parallel:
 - Inputs: `02_concept.md`, segment parameters.
-- Deliverable: Verify `beats.md`.
+- Output: Verify `beats.md`.
 ```
 ```markdown
 Run the following agents in parallel:

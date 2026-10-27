@@ -3,7 +3,7 @@ name: orchestrator-agent-execution
 description: >-
   Phase 2 WeaveMAS microskill. Discovers initialized agent workspaces via MCP
   discover_agents (with pagination limit), enforces Protocol A/B execution rules,
-  dispatches black-box subagents, and verifies deliverables via weave_read.
+  dispatches black-box subagents, and verifies output(s) via weave_read.
 ---
 
 # 🚀 Phase 2: Orchestrator Agent Execution
@@ -45,7 +45,7 @@ Use the returned `dir`, `agent_id`, `instructions_file`, and `inputs` for `invok
    - context_slug: <context_slug>
    - <param_name>: <param_value>
 
-   Required Deliverable: <deliverable_filename>
+   Required Output: <output_filename>
    ```
 
 ---
@@ -66,22 +66,22 @@ Use the returned `dir`, `agent_id`, `instructions_file`, and `inputs` for `invok
      - ZERO weave.md: NEVER create a weave.md for yourself and NEVER touch root weave.md.
      - Zero File Staging: Child agents already have their input file paths configured in their `weave.md` `inputs` (verified on Turn 1 by `weave_verify`). If any child agent fails `weave_verify`, halt immediately and report the error to the root orchestrator without attempting workarounds.
      - Dispatch child agents sequentially via `invoke_subagent` using each child agent's native `TypeName: "<child_agent_type>"` (the filename stem of its `instructions_file`, omitting `Model` so its frontmatter `model:` is used) and `Role: "<child_agent_id>"`, always including `context_slug: <context_slug>` in `Runtime Parameters` (never execute child agent tasks yourself in the sub-orchestrator context):
-       1. `<child_agent_1_id>` (TypeName: `<child_1_type>`, WD: `<wd_1>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Deliverable: `<deliv_1>`)
-       2. `<child_agent_2_id>` (TypeName: `<child_2_type>`, WD: `<wd_2>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Deliverable: `<deliv_2>`)
+       1. `<child_agent_1_id>` (TypeName: `<child_1_type>`, WD: `<wd_1>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<output_1>`)
+       2. `<child_agent_2_id>` (TypeName: `<child_2_type>`, WD: `<wd_2>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<output_2>`)
      - Local Revision Loop: Route downstream audit corrections directly to the upstream child agent's `conversationId` via `send_message` (max 2 cycles).
-     - Finalization: Verify each child agent's deliverable via `weave_read`, copy/compile `<final_unit_deliverable>` to `<assigned_cluster_dir>`, and message the parent orchestrator.
+     - Finalization: Verify each child agent's output(s) via `weave_read`, copy/compile `<final_unit_output>` to `<assigned_cluster_dir>`, and message the parent orchestrator.
      ```
 
 ---
 
-## 5. Deliverable Verification & User Review Gates (Fail Fast)
+## 5. Outputs Verification & User Review Gates (Fail Fast)
 
 Upon subagent or sub-orchestrator wakeup:
 1. **Fail-Fast on Verification Errors**: If a subagent reports a `weave_verify` error (such as a missing `inputs` file), **halt immediately and report the error to the user**—never attempt workarounds.
 2. **Verify via `weave_read`**:
    Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_outputs": "<expected_filename_or_array_or_null>" }`. Halt immediately if verification fails or the output file is empty.
-3. **Ingest Deliverable**: Copy/compile verified deliverables to the canonical stage handoff path (e.g. `output/<context_slug>/01_setup.md`).
+3. **Ingest Output**: Copy/compile verified output(s) to the canonical stage handoff path (e.g. `output/<context_slug>/01_setup.md`).
 4. **User Review Gate (when declared in stage guide)**:
-   - Write the stage deliverable to `<appDataDir>/brain/<conversation-id>/<stage_deliverable_name>` (`RequestFeedback: true`, `UserFacing: true`) and pause for approval.
+   - Write the stage output to `<appDataDir>/brain/<conversation-id>/<stage_output_name>` (`RequestFeedback: true`, `UserFacing: true`) and pause for approval.
    - **Approved** $\rightarrow$ Advance master status via `weave_update`.
    - **Changes Requested** $\rightarrow$ Route feedback to the existing subagent via `send_message(Recipient: <conversationId>, Message: "<feedback>")`. Never spawn duplicate subagent instances for revisions.

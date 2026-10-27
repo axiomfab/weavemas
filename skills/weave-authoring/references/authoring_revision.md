@@ -7,13 +7,13 @@ Triggered when a user critiques or reports issues with the output of a WeaveMAS 
 ## 🪜 Four-Phase Execution Protocol
 
 ### Phase 1: Decompose Outcome Changes (`c1..cx`) & Triage
-Inspect the target deliverables in `output/<context_slug>/`, break the user's feedback into atomic outcome issues (`c1, c2, ..., cx`), and classify each:
+Inspect the target outputs in `output/<context_slug>/`, break the user's feedback into atomic outcome issues (`c1, c2, ..., cx`), and classify each:
 * **Taste (One-Off Preference)**: Pipeline followed instructions properly, but the user wants a run-specific creative/topical tweak. Maps to **no pipeline revision (`∅`)**—only an immediate fix in `output/<context_slug>/`.
 * **Systemic Flaw (Pipeline Defect)**: An error, mismatch, omission, or quality failure that should never happen in future runs. Requires root-cause analysis (`r1..ry`).
 
 ### Phase 2: Parallel Root-Cause Subagents (1 per Systemic `ci`)
 For every `ci` classified as a **Systemic Flaw**, batch-dispatch a dedicated read-only `research` subagent (`TypeName: "research"`, `Model: "inherit"`) to:
-1. **Audit Runtime Sandbox (`output/<context_slug>/`)**: Compare staged Tier 2 inputs and Tier 1 parameters against `weave.md` logs and deliverables in `<stage_slug>/agents/<agent_id>/`.
+1. **Audit Runtime Sandbox (`output/<context_slug>/`)**: Compare staged Tier 2 inputs and Tier 1 parameters against `weave.md` logs and outputs in `<stage_slug>/agents/<agent_id>/`.
 2. **Audit Pipeline Files (`orchestrator*.md`, `.agent/agents/*.md`)**: Identify whether a Tier 2 input was unstaged, an agent task lacked constraints/verification, or the orchestrator lacked a review loop.
 3. **Return**: (a) Root Cause, (b) Immediate Outcome Fix for `ci` in `output/<context_slug>/`, and (c) Candidate Pipeline Edits to `.agent/agents/*.md` or `orchestrator*.md`.
 

@@ -11,7 +11,7 @@ By combining file-based state machines (`weave.md`) with a lightweight, native M
 * **Pure Native MCP Tooling**: Subagents manage their lifecycle entirely via native MCP tools (`weave_verify`, `weave_update`) via `call_mcp_tool`. Zero CLI wrappers or secondary runner scripts.
 * **Declarative Agent Definitions**: Subagents declare `inheritCustomizations: true`, `inheritMcp: true`, and mount `skills: [weave-core-agent]`.
 * **Deterministic Sandboxing**: Subagent directories are self-contained working spaces.
-* **Instant Observability**: Real-time status, progress logs, and deliverable verification are serialized to standard `weave.md` files observable by the UI and tracker sidecars.
+* **Instant Observability**: Real-time status, progress logs, and output verification are serialized to standard `weave.md` files observable by the UI and tracker sidecars.
 * **Zero npm Dependencies**: Pure native Node.js (standard library only).
 
 ---
@@ -55,7 +55,7 @@ tools:
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
 ## Role Specifics
-* **Deliverable Target**: Save your finalized setup document to `setup.md`.
+* **Output Target**: Save your finalized setup document to `setup.md`.
 ```
 
 ---
@@ -66,7 +66,7 @@ WeaveMAS includes a real-time reactive auxiliary side pane observer:
 * **Directory**: `sidecars/panel/`
 * **Features**:
   * **Interactive Agent Cards**: Hierarchical tree visualization of all subagents discovered across pipeline stages (`agent_panel.js`).
-  * **Deliverable Inspection**: 1-click toggle to inspect deliverable files directly in the card.
+  * **Output Inspection**: 1-click toggle to inspect output files directly in the card.
   * **Runtime Tracking**: Displays elapsed active runtime on the left and last updated time on the right.
   * **Auto-Scrolling Log View**: Auto-scrolls to the newest updates and preserves reading scroll positions during background polling.
   * **Pipeline Stepper**: Real-time status indicators reflecting stage progress.

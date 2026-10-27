@@ -2,7 +2,7 @@
 name: weave-core-agent
 description: >-
   Standard WeaveMAS subagent execution protocol. Enforces CWD sandboxing,
-  pre-flight verification, task lifecycle tracking, and deliverable verification via WeaveMAS MCP status tools.
+  pre-flight verification, task lifecycle tracking, and output verification via WeaveMAS MCP status tools.
 ---
 
 # 🤖 WeaveMAS Subagent Execution Protocol
@@ -13,7 +13,7 @@ All status lifecycle operations use `call_mcp_tool` with `ServerName: "weavemas_
 
 ## 1. Directory Sandbox & Zero Unnecessary Exploration (ZUE)
 
-* **Strict CWD Writes**: Write all scratch notes, intermediate files, and deliverables strictly inside your assigned working directory (`.`). Never write to parent, sibling, or root directories.
+* **Strict CWD Writes**: Write all scratch notes, intermediate files, and outputs strictly inside your assigned working directory (`.`). Never write to parent, sibling, or root directories.
 * **Authorized Input Reads (`inputs`)**: Read only files inside your working directory OR external paths explicitly listed in your `weave.md` `inputs` (verified and returned by `weave_verify`). Never run directory scans (`dir`, `ls`, `Get-ChildItem`), repo searches, or read unassigned files.
 * **No Weave File Reads/Edits**: Never inspect or edit `weave.md`, `weave_*.json`, or tool schema files via `view_file` or file-writing tools. Use `weave_verify` and `weave_update` exclusively.
 
