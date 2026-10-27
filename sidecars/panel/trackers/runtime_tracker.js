@@ -139,7 +139,7 @@
       const leaves = [];
       for (const n of list) {
         if (!n) continue;
-        if (n.type === 'agent' || (!n.type && n.frontmatter)) leaves.push(n);
+        if (n.type === 'agent' || n.type === 'orchestrator' || (!n.type && n.frontmatter)) leaves.push(n);
         else if (n.type === 'group' && Array.isArray(n.children)) leaves.push(...getLeaves(n.children));
       }
       return leaves;
@@ -148,29 +148,86 @@
     const agents = getLeaves(nodes);
     if (agents.length === 0) return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs };
 
+    function isActiveSlug(slug) {
+      if (!slug || typeof slug !== 'string') return false;
+      const base = slug.toLowerCase().split('/')[0];
+      return base === 'in_progress' || base === 'running' || base === 'revising';
+    }
+
+    const rawIntervals = [];
     let isRunning = false;
     let minStartMs = Infinity;
-    let maxEndMs = 0;
+
+    const regex = /-\s+([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z):(?:\s+.*?\(`([^`]+)`\)|(?:\s*`([^`]+)`))/g;
 
     for (const ag of agents) {
       const body = ag.body || '';
-      const st = ag.frontmatter?.status || '';
-      const rt = calculateActiveRuntime(body, st, nowMs);
-      if (rt.isRunning) isRunning = true;
-      if (rt.lastStartMs && rt.lastStartMs < minStartMs) minStartMs = rt.lastStartMs;
-      if (ag.createdAt && ag.createdAt < minStartMs) minStartMs = ag.createdAt;
+      const st = (ag.frontmatter?.status || '').toLowerCase();
+      const entries = [];
+      let match;
+      regex.lastIndex = 0;
+      while ((match = regex.exec(body)) !== null) {
+        const timestamp = Date.parse(match[1]);
+        const slug = (match[2] || match[3] || '').toLowerCase();
+        if (!isNaN(timestamp) && slug) {
+          entries.push({ timestamp, slug });
+        }
+      }
 
-      const updatedMs = Date.parse(ag.frontmatter?.updated_at);
-      if (!isNaN(updatedMs) && updatedMs > maxEndMs) maxEndMs = updatedMs;
-      if (ag.createdAt && ag.createdAt > maxEndMs) maxEndMs = ag.createdAt;
+      if (entries.length > 0) {
+        for (let i = 0; i < entries.length - 1; i++) {
+          const curr = entries[i];
+          const next = entries[i + 1];
+          if (isActiveSlug(curr.slug) && next.timestamp > curr.timestamp) {
+            rawIntervals.push({ start: curr.timestamp, end: next.timestamp });
+            if (curr.timestamp < minStartMs) minStartMs = curr.timestamp;
+          }
+        }
+        const lastEntry = entries[entries.length - 1];
+        const effectiveStatus = st || lastEntry.slug;
+        if (isActiveSlug(effectiveStatus)) {
+          isRunning = true;
+          if (nowMs > lastEntry.timestamp) {
+            rawIntervals.push({ start: lastEntry.timestamp, end: nowMs });
+            if (lastEntry.timestamp < minStartMs) minStartMs = lastEntry.timestamp;
+          }
+        }
+      } else {
+        const startMs = ag.createdAt || 0;
+        const updatedMs = Date.parse(ag.frontmatter?.updated_at);
+        if (isActiveSlug(st) && startMs > 0 && nowMs > startMs) {
+          isRunning = true;
+          rawIntervals.push({ start: startMs, end: nowMs });
+          if (startMs < minStartMs) minStartMs = startMs;
+        } else if ((st === 'completed' || st.startsWith('completed/')) && startMs > 0 && !isNaN(updatedMs) && updatedMs > startMs) {
+          rawIntervals.push({ start: startMs, end: updatedMs });
+          if (startMs < minStartMs) minStartMs = startMs;
+        }
+      }
     }
 
-    let stageSeconds = 0;
-    if (minStartMs !== Infinity) {
-      const endMs = isRunning ? nowMs : Math.max(maxEndMs, minStartMs);
-      stageSeconds = Math.max(0, Math.floor((endMs - minStartMs) / 1000));
+    if (rawIntervals.length === 0) {
+      return { seconds: 0, isRunning, formatted: '0s', minStartMs: minStartMs !== Infinity ? minStartMs : nowMs };
     }
 
+    rawIntervals.sort((a, b) => a.start - b.start);
+    const merged = [rawIntervals[0]];
+    for (let i = 1; i < rawIntervals.length; i++) {
+      const curr = rawIntervals[i];
+      const prev = merged[merged.length - 1];
+      if (curr.start <= prev.end) {
+        prev.end = Math.max(prev.end, curr.end);
+      } else {
+        merged.push(curr);
+      }
+    }
+
+    let totalActiveMs = 0;
+    for (const interval of merged) {
+      totalActiveMs += Math.max(0, interval.end - interval.start);
+    }
+
+    const stageSeconds = Math.max(0, Math.floor(totalActiveMs / 1000));
     return {
       seconds: stageSeconds,
       isRunning,

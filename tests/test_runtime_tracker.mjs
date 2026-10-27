@@ -248,6 +248,67 @@ test('calculateStageRuntime - Failure Path: empty or non-array nodes returns 0s'
   assert.equal(resNull.formatted, '0s');
 });
 
+test('calculateStageRuntime - Happy Path: excludes user input review gaps between agent runs/revisions', () => {
+  const nodes = [
+    {
+      type: 'agent',
+      frontmatter: { status: 'completed' },
+      body: `
+- 2026-10-15T10:00:00.000Z: \`in_progress/drafting\` - Initial drafting
+- 2026-10-15T10:02:00.000Z: \`completed\` - Ready for user review
+- 2026-10-15T10:20:00.000Z: \`in_progress/revising\` - Applying user feedback
+- 2026-10-15T10:22:00.000Z: \`completed\` - Final deliverable completed
+`
+    }
+  ];
+
+  const nowMs = Date.parse('2026-10-15T10:30:00.000Z');
+  const res = RuntimeTracker.calculateStageRuntime(nodes, nowMs);
+  assert.equal(res.seconds, 240);
+  assert.equal(res.formatted, '4m 0s');
+  assert.equal(res.isRunning, false);
+});
+
+test('calculateStageRuntime - Failure Path 1: does not advance runtime while agent is currently in waiting/user_input', () => {
+  const nodes = [
+    {
+      type: 'agent',
+      frontmatter: { status: 'waiting/user_input' },
+      body: `
+- 2026-10-15T10:00:00.000Z: \`in_progress/outline\` - Drafting outline
+- 2026-10-15T10:03:00.000Z: \`waiting/user_input\` - Waiting for user approval
+`
+    }
+  ];
+
+  const nowMs = Date.parse('2026-10-15T10:33:00.000Z');
+  const res = RuntimeTracker.calculateStageRuntime(nodes, nowMs);
+  assert.equal(res.seconds, 180);
+  assert.equal(res.formatted, '3m 0s');
+  assert.equal(res.isRunning, false);
+});
+
+test('calculateStageRuntime - Failure Path 2: excludes internal waiting intervals during multi-step execution', () => {
+  const nodes = [
+    {
+      type: 'agent',
+      frontmatter: { status: 'completed' },
+      body: `
+- 2026-10-15T10:00:00.000Z: \`in_progress/step1\` - Step 1
+- 2026-10-15T10:01:00.000Z: \`waiting/clarification\` - Awaiting user input
+- 2026-10-15T10:15:00.000Z: \`in_progress/step2\` - Resuming after input
+- 2026-10-15T10:16:00.000Z: \`completed\` - All done
+`
+    }
+  ];
+
+  const nowMs = Date.parse('2026-10-15T10:20:00.000Z');
+  const res = RuntimeTracker.calculateStageRuntime(nodes, nowMs);
+  assert.equal(res.seconds, 120);
+  assert.equal(res.formatted, '2m 0s');
+  assert.equal(res.isRunning, false);
+});
+
 test('formatHumanLogBody - Happy Path: formats in_progress intervals with exact duration and no duration on other states', () => {
   const body = `
 # Status Log
