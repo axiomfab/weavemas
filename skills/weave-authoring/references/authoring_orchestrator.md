@@ -56,7 +56,13 @@ trigger: always_on
     1. **Relative to Agent CWD**: `../writer/draft.md` or `../architect_*/beats.md`
     2. **Relative to Run Directory (`runs/<context_slug>/`)**: `01_editorial_approved.md`
     3. **Relative to Workspace Root (`<workspace_root>/`)**: `prompts/personas/<host_id>.md` or `prompts/rules/*.md`
-    - *Named Inputs (Optional)*: You may bind a logical label (e.g. `- Draft: ../writer/draft.md` or `- Approved Article: 01_editorial_approved.md`) so the agent definition can refer to "the Draft" without hardcoding filenames.
+    - *Named Input Aliases (Recommended for Stage Output Decoupling)*:
+      Promoted deliverables in the run directory should use zero-padded numeric prefixes (e.g. `01_setup.md`, `01_host.md`, `02_concept.md`, `03_script.md`) for clean chronological sorting in file explorers.
+      To keep subagents completely decoupled from orchestrator stage numbers, bind a clean semantic alias:
+      `- setup.md: output/<context_slug>/01_setup.md`
+      `- host.md: output/<context_slug>/01_host.md`
+      `- concept.md: output/<context_slug>/02_concept.md`
+      At runtime, `weave_verify` maps these aliases in `resolved_inputs`, allowing the subagent instructions to refer purely to `setup.md`, `host.md`, or `concept.md`.
   - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `runs/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
 * **Orchestrator File Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Output Ingestion / Promotion** copying `stage01_editorial/agents/writer/draft.md` $\rightarrow$ `01_editorial_approved.md` inside `runs/<context_slug>/`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.

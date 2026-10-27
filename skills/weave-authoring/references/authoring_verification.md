@@ -25,6 +25,7 @@ For each Stage (and each sequential step or parallel wave $t$ in `## Execution`)
 1. **Check 1 — Agent/Orchestrator Contract Match (`.agent/agents/<agent>.md` $\leftrightarrow$ `orchestrator/stage<N>.md`)**:
    - Extract the **Agent `.md` Contract**: every **File Input** (not scalar parameter) the agent prompt instructs to read, and every **Output** file/pattern it writes.
    - Extract the **Orchestrator Declaration**: every file in `* **Inputs**:` (under `## Agents`), any mid-stage file referenced in `## Execution`, and the expected output(s).
+     *(When named aliases are used, e.g. `- setup.md: output/<context_slug>/01_setup.md`, the alias `setup.md` satisfies the agent's expectation of `setup.md` without stage prefix coupling).*
    - Compare them side-by-side. Flag (`- [ ] ⚠️`) any file read by the agent prompt or passed in `## Execution` (such as `sourced_tracks.md`, `beats.md`, `draft.md`) that is missing from `* **Inputs**:` or from `.agent/agents/<agent>.md`.
 2. **Check 2 — Input Availability at Consumption Step ($t_{\text{used}}$)**:
    - Even if zero declared file inputs exist on disk when an agent starts at $t_{\text{start}}$ (`weave_verify` returns not-yet-created files in `pending_inputs`), every file input required by a specific task of the agent must exist in $\mathcal{F}_{t_{\text{used}}-1}$ (**strictly prior** to the step $t_{\text{used}}$ where that task runs—never produced in the same parallel wave).
@@ -57,8 +58,8 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 #### Stage 2: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_2>`** (`.agent/agents/<agent_2>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[01_setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) $\rightarrow$ Writes `[concept.md]`
-    - Orchestrator: Inputs `[runs/<context_slug>/01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` $\rightarrow$ Outputs `[concept.md]`
+    - Agent: Reads `[setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) $\rightarrow$ Writes `[concept.md]`
+    - Orchestrator: Inputs `[setup.md: 01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` $\rightarrow$ Outputs `[concept.md]`
   - [x] **Input Availability**:
     - Turn 1 ($t=1$): `01_setup.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
     - Wakeup ($t=3$): `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md` available in agent directory (produced at $t=2$)

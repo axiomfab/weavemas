@@ -264,4 +264,22 @@ describe('Pipeline Panel Stage Evaluation', () => {
       assert.doesNotThrow(() => new Function(code), `Syntax error in ${s}`);
     }
   });
+
+  it('Pipeline Stepper: renders stage name cleanly without timing labels in pipeline view', () => {
+    const jsPath = resolve(__dirname, '..', 'sidecars', 'panel', 'app.js');
+    const appJs = readFileSync(jsPath, 'utf8');
+
+    // Happy Path: Pipeline view renders st.name cleanly without timerLabel
+    assert.match(appJs, /<span class="text-\[10px\] text-slate-500 text-center truncate max-w-\[70px\]" title="\$\{st\.name\}">\$\{st\.name\}<\/span>/);
+    assert.doesNotMatch(appJs, /timerLabel/);
+
+    // Failure Path 1: Pipeline stepper loop must not invoke calculateStageRuntime
+    const stepperSectionMatch = appJs.match(/for\s*\(const st of stageList\)\s*\{([\s\S]*?)stepperRow\.innerHTML\s*=/);
+    assert.ok(stepperSectionMatch, 'Stepper loop block should exist');
+    assert.doesNotMatch(stepperSectionMatch[1], /calculateStageRuntime/);
+
+    // Failure Path 2: Pipeline stepper loop must not contain bullet or timer strings
+    assert.doesNotMatch(stepperSectionMatch[1], /⏱/);
+    assert.doesNotMatch(stepperSectionMatch[1], /formatted/);
+  });
 });
