@@ -18,13 +18,16 @@ export function getAllContextDirs(workspaceDir) {
   if (!workspaceDir || typeof workspaceDir !== 'string') {
     throw new Error('CRITICAL: Workspace directory is required and must be a string');
   }
+  const runsDir = join(workspaceDir, 'runs');
   const outputDir = join(workspaceDir, 'output');
-  if (!existsSync(outputDir)) return [];
+  const targetDir = existsSync(runsDir) ? runsDir : (existsSync(outputDir) ? outputDir : null);
+  if (!targetDir) return [];
 
-  const entries = readdirSync(outputDir, { withFileTypes: true })
+  const baseName = basename(targetDir);
+  const entries = readdirSync(targetDir, { withFileTypes: true })
     .filter(d => {
       if (!d.isDirectory()) return false;
-      const fullPath = join(outputDir, d.name);
+      const fullPath = join(targetDir, d.name);
       try {
         const subEntries = readdirSync(fullPath, { withFileTypes: true });
         return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'weave.md' || sub.name === 'status.md' || (sub.isDirectory() && sub.name === 'agents'));
@@ -33,8 +36,8 @@ export function getAllContextDirs(workspaceDir) {
       }
     })
     .map(d => {
-      const fullPath = join(outputDir, d.name).replace(/\\/g, '/');
-      const dirLabel = `output\\${d.name}`;
+      const fullPath = join(targetDir, d.name).replace(/\\/g, '/');
+      const dirLabel = `${baseName}\\${d.name}`;
       return {
         id: d.name,
         name: d.name,

@@ -459,6 +459,27 @@ test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves CWD, output/
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
+test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves runs/<context_slug> as run directory', () => {
+  const workspaceRoot = createTempDir();
+  const runDir = path.join(workspaceRoot, 'runs', 'show_caledonia');
+  const stageDir = path.join(runDir, 'stage02_concept');
+  const showrunnerDir = path.join(stageDir, 'agents', 'showrunner');
+  fs.mkdirSync(showrunnerDir, { recursive: true });
+
+  const setupFile = path.join(runDir, '01_setup.md');
+  fs.writeFileSync(setupFile, '# Setup in runs/ root', 'utf-8');
+
+  statusInit(showrunnerDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
+    '01_setup.md'
+  ]);
+
+  const verifyRes = statusVerify(showrunnerDir, 'showrunner');
+  assert.equal(verifyRes.success, true);
+  assert.equal(verifyRes.resolved_inputs['01_setup.md'], setupFile);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
 test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'stage01', 'agents', 'checker');

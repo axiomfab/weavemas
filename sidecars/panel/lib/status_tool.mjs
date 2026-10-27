@@ -69,7 +69,8 @@ export function executeStatusUpdate(params, workspaceRoot) {
   if (mode !== 'append' && mode !== 'overwrite') throw new TypeError(`CRITICAL: mode must be 'append' or 'overwrite', got '${mode}'`);
   if (!workspaceRoot || typeof workspaceRoot !== 'string') throw new TypeError('CRITICAL: workspaceRoot parameter is required and must be a string');
 
-  const agentsDir = path.join(workspaceRoot, 'output', show, stage, 'agents');
+  const baseDir = fs.existsSync(path.join(workspaceRoot, 'runs')) ? 'runs' : 'output';
+  const agentsDir = path.join(workspaceRoot, baseDir, show, stage, 'agents');
   const agentDir = path.join(agentsDir, agent);
   if (!fs.existsSync(agentDir)) fs.mkdirSync(agentDir, { recursive: true });
 
@@ -247,13 +248,17 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
   return map;
 }
 
+function resolveShowFullPath(showDir, workspaceRoot) {
+  if (path.isAbsolute(showDir) && fs.existsSync(showDir)) return showDir;
+  const runsPath = path.join(workspaceRoot, 'runs', showDir);
+  return fs.existsSync(runsPath) ? runsPath : path.join(workspaceRoot, 'output', showDir);
+}
+
 export function readStageAgents(showDir, stageName, workspaceRoot) {
   if (!showDir || !stageName || !workspaceRoot) {
     throw new TypeError('CRITICAL: showDir, stageName, and workspaceRoot are required strings');
   }
-  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
-    ? showDir
-    : path.join(workspaceRoot, 'output', showDir);
+  const showFullPath = resolveShowFullPath(showDir, workspaceRoot);
   let agentsDir = path.join(showFullPath, stageName, 'agents');
   if (!fs.existsSync(agentsDir)) {
     const altStage = stageName.startsWith('stage') ? stageName.replace(/^stage/, '') : `stage${stageName}`;
@@ -271,9 +276,7 @@ export function readDirectAgents(showDir, workspaceRoot) {
   if (!showDir || typeof showDir !== 'string' || !workspaceRoot || typeof workspaceRoot !== 'string') {
     throw new TypeError('CRITICAL: showDir and workspaceRoot are required strings');
   }
-  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
-    ? showDir
-    : path.join(workspaceRoot, 'output', showDir);
+  const showFullPath = resolveShowFullPath(showDir, workspaceRoot);
   const agentsDir = path.join(showFullPath, 'agents');
   if (!fs.existsSync(agentsDir)) {
     return {};
@@ -285,9 +288,7 @@ export function readAllStagesAgents(showDir, workspaceRoot) {
   if (!showDir || typeof showDir !== 'string' || !workspaceRoot || typeof workspaceRoot !== 'string') {
     throw new TypeError('CRITICAL: showDir and workspaceRoot are required strings');
   }
-  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
-    ? showDir
-    : path.join(workspaceRoot, 'output', showDir);
+  const showFullPath = resolveShowFullPath(showDir, workspaceRoot);
   if (!fs.existsSync(showFullPath)) {
     return [];
   }

@@ -28,7 +28,7 @@ export const TOOLS = [
         inputs: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved via 3-tier lookup (agent CWD -> output/<context_slug> -> workspace root).'
+          description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved via 3-tier lookup (agent CWD -> runs/<context_slug> -> workspace root).'
         }
       },
       required: ['dir']
@@ -115,7 +115,7 @@ export const TOOLS = [
       properties: {
         directory: {
           type: 'string',
-          description: 'Absolute path to the target stage or context directory (e.g. "<workspace_root>/output/<context_slug>/<stage_slug>").'
+          description: 'Absolute path to the target stage or context directory (e.g. "<workspace_root>/runs/<context_slug>/<stage_slug>").'
         },
         filter_status: {
           type: 'string',

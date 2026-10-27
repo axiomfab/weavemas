@@ -76,11 +76,11 @@
       const currentVal = norm(activePath || sel.value);
 
       if (availableItems.length === 0) {
-        sel.innerHTML = '<option value="">No shows in output/</option>';
+        sel.innerHTML = '<option value="">No shows in output/ (or runs/)</option>';
       } else {
         sel.innerHTML = availableItems.map(s => {
           const isSel = norm(s.path) === currentVal;
-          const label = s.displayPath || s.title || (s.name ? `output\\${s.name}` : s.path);
+          const label = s.displayPath || s.title || (s.name ? `runs\\${s.name}` : s.path);
           return `<option value="${escapeHtml(s.path)}" ${isSel ? 'selected' : ''}>${escapeHtml(label)}</option>`;
         }).join('');
       }

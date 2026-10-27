@@ -39,8 +39,10 @@ function resolveContextDir(ws, data) {
   if (data && data.showDir && existsSync(data.showDir)) return data.showDir;
   if (data && (data.contextId || data.showId)) {
     const id = data.contextId || data.showId;
-    const candidate = join(ws, 'output', id);
-    if (existsSync(candidate)) return candidate;
+    const runsCandidate = join(ws, 'runs', id);
+    if (existsSync(runsCandidate)) return runsCandidate;
+    const outputCandidate = join(ws, 'output', id);
+    if (existsSync(outputCandidate)) return outputCandidate;
   }
   return getActiveShowDir(ws);
 }
@@ -55,7 +57,7 @@ app.api('/api/pipeline', (data) => {
 
   if (!showDir) {
     return {
-      error: 'No pipeline directories found under output/',
+      error: 'No pipeline directories found under runs/ (or output/)',
       showTitle: 'WeaveMAS Pipeline',
       contextTitle: 'WeaveMAS Pipeline',
       availableShows: [],
@@ -94,7 +96,7 @@ app.api('/api/tracker/concept', (data) => {
   const showDir = resolveShowDir(ws, data);
   if (!showDir) {
     return {
-      error: 'No active show directory found under output/',
+      error: 'No active show directory found under runs/ (or output/)',
       agents: {},
       conceptFileContent: null
     };

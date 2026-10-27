@@ -1,12 +1,12 @@
 # Authoring Guide: WeaveMAS UI & Dashboard Tooling
 
-In WeaveMAS, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `weave.md` files to `output/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
+In WeaveMAS, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `weave.md` files to `runs/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
 
 ---
 
 ## 📂 1. Filesystem Discovery Pattern
 
-Recursively scan `output/<context_slug>/` to support both multi-stage and stageless layouts:
+Recursively scan `runs/<context_slug>/` to support both multi-stage and stageless layouts:
 
 ```javascript
 import fs from 'node:fs';

@@ -54,11 +54,11 @@ trigger: always_on
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
   - **File Inputs (`* **Inputs**:`)**: Never copy or stage input files into agent directories, and never inline prior outputs into prompts. Instead, list all required input files under `* **Inputs**:` using **portable relative paths** (with optional logical names `- <Name>: <path>` and optional `*` wildcards):
     1. **Relative to Agent CWD**: `../writer/draft.md` or `../architect_*/beats.md`
-    2. **Relative to Output Context Directory (`output/<context_slug>/`)**: `01_editorial_approved.md`
+    2. **Relative to Run Directory (`runs/<context_slug>/`)**: `01_editorial_approved.md`
     3. **Relative to Workspace Root (`<workspace_root>/`)**: `prompts/personas/<host_id>.md` or `prompts/rules/*.md`
     - *Named Inputs (Optional)*: You may bind a logical label (e.g. `- Draft: ../writer/draft.md` or `- Approved Article: 01_editorial_approved.md`) so the agent definition can refer to "the Draft" without hardcoding filenames.
-  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `output/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
-* **Orchestrator File Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Output Ingestion / Promotion** copying `stage01_editorial/agents/writer/draft.md` $\rightarrow$ `01_editorial_approved.md` inside `output/<context_slug>/`).
+  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `runs/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
+* **Orchestrator File Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Output Ingestion / Promotion** copying `stage01_editorial/agents/writer/draft.md` $\rightarrow$ `01_editorial_approved.md` inside `runs/<context_slug>/`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.
 
@@ -75,8 +75,8 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 ## Inputs
 - `param1`: ...
 
-## Output Structure
-Every run is scoped to `output/<context_slug>/`.
+## Run Directory Structure
+Every run is scoped to `runs/<context_slug>/`.
 
 ## Execution
 
@@ -101,8 +101,8 @@ Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` s
 ## Inputs
 - `param1`: ...
 
-## Output Structure
-Every run is scoped to `output/<context_slug>/`.
+## Run Directory Structure
+Every run is scoped to `runs/<context_slug>/`.
 
 ## Agents
 
@@ -119,7 +119,7 @@ Every run is scoped to `output/<context_slug>/`.
 ## Execution
 1. **`<agent_1>`**: Pass runtime inputs and verify `<output_1>.md`.
 2. **`<agent_2>`**: Audit `<output_1>.md` and produce `<output_2>.md`. If revisions are required (max 2 cycles), route feedback to `<agent_1>` via `send_message`.
-3. **Output Ingestion**: Copy verified output to `output/<context_slug>/<final_output>.md`.
+3. **Output Ingestion**: Copy verified output to `runs/<context_slug>/<final_output>.md`.
 ```
 
 ### Template C: Modular Stage Guide (`orchestrator/stage<N>_<slug>.md`)
@@ -140,6 +140,6 @@ Every run is scoped to `output/<context_slug>/`.
 
 ## Execution
 1. **`<role1>_<item_id>`**: Execute with stage parameters and verify `<output_name>.md`.
-2. **Output Ingestion**: Save verified output to `output/<context_slug>/<NN>_<stage_output>.md`.
+2. **Output Ingestion**: Save verified output to `runs/<context_slug>/<NN>_<stage_output>.md`.
 3. **User Review Gate** *(Optional)*: Present `<NN>_<stage_output>.md` for approval; route any revision feedback to `<role1>_<item_id>` via `send_message`.
 ```

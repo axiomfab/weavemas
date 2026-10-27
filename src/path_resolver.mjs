@@ -30,8 +30,8 @@ export function parseInputEntry(entry) {
 /**
  * Infers the 3-tier lookup roots from an agent's absolute working directory:
  * 1. agentDir (CWD of the agent)
- * 2. contextDir (output/<context_slug>/)
- * 3. workspaceRoot (parent of output/)
+ * 2. contextDir (runs/<context_slug>/ or legacy output/<context_slug>/)
+ * 3. workspaceRoot (parent of runs/ or output/)
  * @param {string} agentDir
  * @returns {{ agentDir: string, contextDir: string | null, workspaceRoot: string | null }}
  */
@@ -42,11 +42,14 @@ export function inferLookupRoots(agentDir) {
   const resolvedAgentDir = path.resolve(agentDir);
   const parts = resolvedAgentDir.split(path.sep);
 
-  // Locate the 'output' segment to identify <workspaceRoot>/output/<context_slug>
-  const outputIdx = parts.lastIndexOf('output');
-  if (outputIdx > 0 && outputIdx + 1 < parts.length) {
-    const workspaceRoot = parts.slice(0, outputIdx).join(path.sep);
-    const contextDir = parts.slice(0, outputIdx + 2).join(path.sep);
+  // Locate the 'runs' or legacy 'output' segment to identify <workspaceRoot>/runs/<context_slug>
+  let runsIdx = parts.lastIndexOf('runs');
+  if (runsIdx === -1) {
+    runsIdx = parts.lastIndexOf('output');
+  }
+  if (runsIdx > 0 && runsIdx + 1 < parts.length) {
+    const workspaceRoot = parts.slice(0, runsIdx).join(path.sep);
+    const contextDir = parts.slice(0, runsIdx + 2).join(path.sep);
     return { agentDir: resolvedAgentDir, contextDir, workspaceRoot };
   }
 
@@ -140,7 +143,7 @@ export function expandPathPattern(baseDir, targetPattern) {
 /**
  * Resolves a single input entry across the 3-tier hierarchy:
  * 1. Agent CWD (agentDir)
- * 2. Output Context Directory (output/<context_slug>/)
+ * 2. Run Context Directory (runs/<context_slug>/ or output/<context_slug>/)
  * 3. Workspace Root (<workspace_root>/)
  * Throws a CRITICAL error if no matching file exists in any tier.
  * @param {string} agentDir

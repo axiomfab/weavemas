@@ -14,10 +14,10 @@ All status and discovery operations use `call_mcp_tool` with `ServerName: "weave
 
 ## 1. Workspace Sandbox & Boundaries
 
-* **Master Execution Root**: Scope every run to `output/<context_slug>/`. Never write files to the workspace root (`./`).
+* **Master Execution Root**: Scope every run to `runs/<context_slug>/`. Never write files to the workspace root (`./`).
 * **Zero Runtime Code Creation**: Never create or modify code files, scripts, helpers, or tests during a pipeline run.
 * **Universal MCP Status Mandate**: Never read (`view_file`) or manually edit (`write_to_file`) any `weave.md` file. Translate all declarative `weave.md` directives in stage guides into `weavemas_weave` MCP tool calls:
-  - `weave_init`: Used by the root orchestrator **ONLY** for the root master status (`output/<context_slug>/weave.md`).
+  - `weave_init`: Used by the root orchestrator **ONLY** for the root master status (`runs/<context_slug>/weave.md`).
   - `weave_update`: Advance or complete master pipeline status.
   - `weave_read`: Verify subagent completion and output existence.
   - `discover_agents`: Discover provisioned stage subagents (including their `instructions_file` and `inputs`).
@@ -29,9 +29,9 @@ All status and discovery operations use `call_mcp_tool` with `ServerName: "weave
 ## 2. Step 0: Upfront Stage Scaffolding & Master Status
 
 Before running any stage:
-1. **Pre-Create Stage Directories**: If the pipeline declares stages, create all empty stage directories (e.g. `output/<context_slug>/stage01_setup/`, `stage02_concept/`) upfront so the UI sidecar renders the full pipeline stepper immediately. (Skip for single-file/stageless pipelines).
+1. **Pre-Create Stage Directories**: If the pipeline declares stages, create all empty stage directories (e.g. `runs/<context_slug>/stage01_setup/`, `stage02_concept/`) upfront so the UI sidecar renders the full pipeline stepper immediately. (Skip for single-file/stageless pipelines).
 2. **Initialize Master Status**:
-   Call `weave_init`: `{ "dir": "<workspace_root>/output/<context_slug>", "type": "orchestrator", "status": "in_progress/<first_stage_or_step>" }`
+   Call `weave_init`: `{ "dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "in_progress/<first_stage_or_step>" }`
 3. **Announce UI Tracker**: Output `[WeaveMAS UI](sidecar://weavemas/panel/)` at pipeline start and at the start of every stage.
 
 ---
@@ -47,6 +47,6 @@ Execute every stage (or stageless manifest) by chaining these two microskills in
 ## 4. Stage Transitions & Pipeline Completion
 
 * **Advance to Next Stage**:
-  Call `weave_update`: `{ "dir": "<workspace_root>/output/<context_slug>", "status": "in_progress/<next_stage>", "progress": "<Stage handoff summary>" }`, output `[WeaveMAS UI](sidecar://weavemas/panel/)`, and repeat the Two-Phase loop.
+  Call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "status": "in_progress/<next_stage>", "progress": "<Stage handoff summary>" }`, output `[WeaveMAS UI](sidecar://weavemas/panel/)`, and repeat the Two-Phase loop.
 * **Final Pipeline Completion**:
-  Call `weave_update`: `{ "dir": "<workspace_root>/output/<context_slug>", "status": "completed", "outputs": "<final_pipeline_output_path>", "progress": "<Final execution summary>" }`
+  Call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "status": "completed", "outputs": "<final_pipeline_output_path>", "progress": "<Final execution summary>" }`

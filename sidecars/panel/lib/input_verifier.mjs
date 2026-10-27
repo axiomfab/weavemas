@@ -19,7 +19,11 @@ export function checkAgentInputs(agentDir, inputs, workspaceRoot, showDir) {
   const { contextDir, workspaceRoot: inferredRoot } = inferLookupRoots(agentDir);
   const effectiveWs = workspaceRoot || inferredRoot;
   const effectiveContext = (showDir && effectiveWs)
-    ? (path.isAbsolute(showDir) ? showDir : path.join(effectiveWs, 'output', showDir))
+    ? (path.isAbsolute(showDir)
+        ? showDir
+        : (fs.existsSync(path.join(effectiveWs, 'runs', showDir))
+            ? path.join(effectiveWs, 'runs', showDir)
+            : path.join(effectiveWs, 'output', showDir)))
     : contextDir;
 
   return inputs.map(rawInput => {
@@ -100,7 +104,11 @@ export function resolveAgentOutputs(dir, rawOutputs, workspaceRoot, showDir, sta
   }
 
   const showFullPath = (showDir && workspaceRoot)
-    ? ((path.isAbsolute(showDir) && fs.existsSync(showDir)) ? showDir : path.join(workspaceRoot, 'output', showDir))
+    ? ((path.isAbsolute(showDir) && fs.existsSync(showDir))
+        ? showDir
+        : (fs.existsSync(path.join(workspaceRoot, 'runs', showDir))
+            ? path.join(workspaceRoot, 'runs', showDir)
+            : path.join(workspaceRoot, 'output', showDir)))
     : null;
 
   const candidateRoots = [

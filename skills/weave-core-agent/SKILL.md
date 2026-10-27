@@ -26,7 +26,7 @@ Before starting any task work, verify your working directory, pre-initialized `w
 * `ToolName`: `"weave_verify"`, `Arguments`: `{ "dir": "<absolute_working_directory>" }`
 * **Directory Resolution Hierarchy & Deferred Inputs**: `weave_verify` resolves every relative, named (`"Name: path"`), or wildcard (`*`) entry in your `weave.md` `inputs` across:
   1. Agent Directory (`.`)
-  2. Run Directory (`output/<context_slug>/` or `runs/<context_slug>/`)
+  2. Run Directory (`runs/<context_slug>/` or legacy `output/<context_slug>/`)
   3. Workspace Directory (`<workspace_root>/`)
   It returns `Resolved paths` (files currently on disk mapped to their absolute path(s)) and `Pending inputs` (declared inputs that will be created by a peer agent later in the stage).
 * **Task-Level Fail Fast (Zero Exploration)**: Before starting your current task, check that every input file needed for **this** task is present in `Resolved paths`. If an input required for your current task is missing or still listed in `Pending inputs`, **HALT immediately and report the error**—never search for missing files or invent workarounds.

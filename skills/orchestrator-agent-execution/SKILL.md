@@ -25,7 +25,7 @@ Scan `## Execution` for the keyword `sub-orchestrator` (e.g. `cluster into a sub
 Query `discover_agents` in batches (never scan directories or rely on chat history):
 ```json
 {
-  "directory": "<workspace_root>/output/<context_slug>/<stage_slug>",
+  "directory": "<workspace_root>/runs/<context_slug>/<stage_slug>",
   "filter_status": "initialized",
   "limit": 10
 }
@@ -62,7 +62,7 @@ Use the returned `dir`, `agent_id`, `instructions_file`, and `inputs` for `invok
      Context Slug: <context_slug>
 
      Execution Constraints:
-     - Shared Execution Root: Operates in output/<context_slug>/ (use standard child agent paths; never create nested <unit_id>/ folders).
+     - Shared Execution Root: Operates in runs/<context_slug>/ (use standard child agent paths; never create nested <unit_id>/ folders).
      - ZERO weave.md: NEVER create a weave.md for yourself and NEVER touch root weave.md.
      - Zero File Staging: Child agents already have their input file paths configured in their `weave.md` `inputs` (verified on Turn 1 by `weave_verify`). If any child agent fails `weave_verify`, halt immediately and report the error to the root orchestrator without attempting workarounds.
      - Dispatch child agents sequentially via `invoke_subagent` using each child agent's native `TypeName: "<child_agent_type>"` (the filename stem of its `instructions_file`, omitting `Model` so its frontmatter `model:` is used) and `Role: "<child_agent_id>"`, always including `context_slug: <context_slug>` in `Runtime Parameters` (never execute child agent tasks yourself in the sub-orchestrator context):
@@ -80,7 +80,7 @@ Upon subagent or sub-orchestrator wakeup:
 1. **Fail-Fast on Verification Errors**: If a subagent reports a `weave_verify` error (such as a missing `inputs` file), **halt immediately and report the error to the user**—never attempt workarounds.
 2. **Verify via `weave_read`**:
    Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_outputs": "<expected_filename_or_array_or_null>" }`. Halt immediately if verification fails or the output file is empty.
-3. **Ingest Output**: Copy/compile verified output(s) to the canonical stage handoff path (e.g. `output/<context_slug>/01_setup.md`).
+3. **Ingest Output**: Copy/compile verified output(s) to the canonical stage handoff path (e.g. `runs/<context_slug>/01_setup.md`).
 4. **User Review Gate (when declared in stage guide)**:
    - Write the stage output to `<appDataDir>/brain/<conversation-id>/<stage_output_name>` (`RequestFeedback: true`, `UserFacing: true`) and pause for approval.
    - **Approved** $\rightarrow$ Advance master status via `weave_update`.

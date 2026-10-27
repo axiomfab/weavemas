@@ -16,7 +16,7 @@ Always distinguish between physical **File Inputs** and scalar **Runtime Paramet
 
 Trace the **Pipeline Data-Flow Graph (DFG)** from start to finish by maintaining the set of available files $\mathcal{F}$ across three lookup scopes:
 1. **Agent Directory (`agentDir`)**: `<stage_slug>/agents/<agent_id>/` (or `agents/<agent_id>/` in stageless pipelines). Paths starting with `./` or `../` resolve **exclusively** against `agentDir`.
-2. **Run Directory (`runDir`)**: Active run / context directory (e.g. `output/<context_slug>/` or `runs/<context_slug>/`) containing stage-promoted outputs (e.g. `01_setup.md`, `02_concept.md`).
+2. **Run Directory (`runDir`)**: Active run directory (`runs/<context_slug>/` or legacy `output/<context_slug>/`) containing stage-promoted outputs (e.g. `01_setup.md`, `02_concept.md`).
 3. **Workspace Directory (`workspaceDir`)**: Root repository directory outside the run directory (e.g. `prompts/personas/*.md`).
 
 ### Four Mandatory Checks Per Stage
@@ -58,7 +58,7 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 - [x] **`<agent_2>`** (`.agent/agents/<agent_2>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
     - Agent: Reads `[01_setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) $\rightarrow$ Writes `[concept.md]`
-    - Orchestrator: Inputs `[output/<context_slug>/01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` $\rightarrow$ Outputs `[concept.md]`
+    - Orchestrator: Inputs `[runs/<context_slug>/01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` $\rightarrow$ Outputs `[concept.md]`
   - [x] **Input Availability**:
     - Turn 1 ($t=1$): `01_setup.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
     - Wakeup ($t=3$): `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md` available in agent directory (produced at $t=2$)
