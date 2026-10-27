@@ -2,7 +2,7 @@
 name: orchestrator-agent-instantiation
 description: >-
   Phase 1 WeaveMAS microskill. Delegates pre-spawn subagent workspace creation and
-  status.md initialization (with instructions_file and inputs) to the isolated Provisioner subagent.
+  weave.md initialization (with instructions_file and inputs) to the isolated Provisioner subagent.
 ---
 
 # 🛠️ Phase 1: Orchestrator Agent Instantiation
@@ -16,5 +16,5 @@ Execute at the start of every stage before evaluating `## Execution` or spawning
    Target Directory: <workspace_root>/output/<context_slug>/<stage_slug>
    Context Slug: <context_slug>
    ```
-2. **Phase Gate**: Wait reactively for `PROVISIONING_COMPLETE`. Do NOT inspect agent `status.md` files or evaluate `## Execution` while the Provisioner runs.
+2. **Phase Gate**: Wait reactively for `PROVISIONING_COMPLETE`. Do NOT inspect agent `weave.md` files or evaluate `## Execution` while the Provisioner runs.
 3. **Handoff to Phase 2**: Once `PROVISIONING_COMPLETE` arrives, immediately expand and execute `orchestrator-agent-execution`.

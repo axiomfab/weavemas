@@ -1,6 +1,6 @@
 # Authoring Guide: WeaveMAS UI & Dashboard Tooling
 
-In WeaveMAS, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `status.md` files to `output/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
+In WeaveMAS, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `weave.md` files to `output/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
 
 ---
 
@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export function discoverWeaveNodes(contextDir) {
-  const orchStatus = path.join(contextDir, 'status.md');
+  const orchStatus = path.join(contextDir, 'weave.md');
   const nodes = {
     orchestrator: fs.existsSync(orchStatus) ? parseWeaveStatusFile(orchStatus) : null,
     agents: {}
@@ -24,7 +24,7 @@ export function discoverWeaveNodes(contextDir) {
       if (!entry.isDirectory()) continue;
       const fullPath = path.join(dir, entry.name);
       const nextRel = path.join(rel, entry.name).replace(/\\/g, '/');
-      const statusFile = path.join(fullPath, 'status.md');
+      const statusFile = path.join(fullPath, 'weave.md');
       if (fs.existsSync(statusFile)) {
         nodes.agents[nextRel] = parseWeaveStatusFile(statusFile);
       } else {

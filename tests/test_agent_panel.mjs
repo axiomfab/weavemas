@@ -629,7 +629,7 @@ test('Happy Path: Renders stageless agent deliverable content when card is expan
 
 
 
-test('Happy Path: Renders raw status.md content when card is in status view mode and switches tabs', () => {
+test('Happy Path: Renders raw weave.md content when card is in status view mode and switches tabs', () => {
   const container = { innerHTML: '', querySelectorAll: () => [] };
   const mockStatusRaw = `---\ntype: agent\nstatus: in_progress/outline\ninputs:\n  - "01_setup.md"\ndeliverable: null\n---\n# Status Log\n- 2026-10-26: in_progress`;
   const mockData = {
@@ -657,8 +657,9 @@ test('Happy Path: Renders raw status.md content when card is in status view mode
   render(container, mockData);
   assert.match(container.innerHTML, /Working on outline\.\.\./);
   assert.match(container.innerHTML, /data-raw-status-toggle="card_s2_showrunner"/);
+  assert.match(container.innerHTML, />weave\.md</);
 
-  // 2. Switch to 'status' mode -> shows full status.md content including frontmatter
+  // 2. Switch to 'status' mode -> shows full weave.md content including frontmatter
   cardViewModes.set('card_s2_showrunner', 'status');
   render(container, mockData);
   assert.match(container.innerHTML, /type<\/span>:\s+<span[^>]*>"agent"/);

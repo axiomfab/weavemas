@@ -35,8 +35,8 @@ tools:
 
 1. **`# Role Specifics`**:
    - Always declare `* **Deliverable Target**: Save your finalized <type> to <filename_or_list>.` (supports a single filename, a list of files such as `article.md` and `illustration.png`, or wildcard patterns like `segment_*.md`).
-   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They may refer to inputs naturally by logical name (e.g. "the **Approved Article**", when bound as `- Approved Article: 01_editorial_approved.md` in the orchestrator) or by filename/description (`weave-core-agent`'s `status_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1).
-   - Never mention `status.md`, `status_verify`, or "staged copies" in `# Role Specifics`.
+   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They may refer to inputs naturally by logical name (e.g. "the **Approved Article**", when bound as `- Approved Article: 01_editorial_approved.md` in the orchestrator) or by filename/description (`weave-core-agent`'s `weave_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1).
+   - Never mention `weave.md`, `weave_verify`, or "staged copies" in `# Role Specifics`.
 2. **Multi-Task Agents (`# Tasks` & `# Lifecycle`)**:
    - Declare each step as `## Task: <NN>_<short_slug>` (lowercase snake_case, zero-padded `01_`, `02_`, 1–2 words max so UI badges do not truncate).
    - List the execution sequence or branching rules under `# Lifecycle`.

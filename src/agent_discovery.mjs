@@ -19,7 +19,7 @@ export function readFirst1KB(filePath) {
 }
 
 /**
- * Recursively scans directory for agent status.md files located under agents/ subdirectories.
+ * Recursively scans directory for agent weave.md files located under agents/ subdirectories.
  * @param {string} baseDir 
  * @returns {Array<{ agent_id: string, dir: string, statusFile: string }>}
  */
@@ -33,7 +33,7 @@ export function scanForAgents(baseDir) {
       if (ent.name === 'node_modules' || ent.name === '.git') continue;
       const fullPath = path.join(agentsDir, ent.name);
       if (ent.isDirectory()) {
-        const statusFile = path.join(fullPath, 'status.md');
+        const statusFile = path.join(fullPath, 'weave.md');
         if (fs.existsSync(statusFile) && fs.statSync(statusFile).isFile()) {
           found.push({
             agent_id: ent.name,

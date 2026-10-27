@@ -19,7 +19,7 @@ describe('Pipeline Panel Stage Evaluation', () => {
     mkdirSync(join(showDir, 'ignored_folder'), { recursive: true });
     mkdirSync(join(showDir, '01_legacy_stage'), { recursive: true });
 
-    writeFileSync(join(showDir, 'stage01_data_ingest', 'status.md'), '---\nstatus: completed\n---\nDone');
+    writeFileSync(join(showDir, 'stage01_data_ingest', 'weave.md'), '---\nstatus: completed\n---\nDone');
 
     try {
       const activeShow = getActiveShowDir(tmp);
@@ -103,11 +103,11 @@ describe('Pipeline Panel Stage Evaluation', () => {
     }
   });
 
-  it('happy path: parseOrchestratorState tolerates both stage2 and stage02 formats in status.md and state.md', () => {
+  it('happy path: parseOrchestratorState tolerates both stage2 and stage02 formats in weave.md and state.md', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'tm-orch-'));
     try {
-      // Test status.md with stage2
-      writeFileSync(join(tmp, 'status.md'), '---\nstatus: in_progress/stage2_concept\n---\n');
+      // Test weave.md with stage2
+      writeFileSync(join(tmp, 'weave.md'), '---\nstatus: in_progress/stage2_concept\n---\n');
       let parsed = parseOrchestratorState(tmp);
       assert.ok(parsed);
       assert.equal(parsed.stageNum, 2);
@@ -115,7 +115,7 @@ describe('Pipeline Panel Stage Evaluation', () => {
       assert.equal(parsed.isCompleted, false);
 
       // Test state.md with stage03 completed
-      rmSync(join(tmp, 'status.md'));
+      rmSync(join(tmp, 'weave.md'));
       writeFileSync(join(tmp, 'state.md'), '---\nstatus: completed/stage03_writing\n---\n');
       parsed = parseOrchestratorState(tmp);
       assert.ok(parsed);
@@ -153,7 +153,7 @@ describe('Pipeline Panel Stage Evaluation', () => {
     writeFileSync(join(showDir, 'stage03_writing', 'script.md'), '# Script');
 
     // Orchestrator says stage2 is in progress
-    writeFileSync(join(showDir, 'status.md'), '---\nstatus: in_progress/stage2_concept\n---\n');
+    writeFileSync(join(showDir, 'weave.md'), '---\nstatus: in_progress/stage2_concept\n---\n');
 
     try {
       const res = evaluatePipelineStages(showDir);

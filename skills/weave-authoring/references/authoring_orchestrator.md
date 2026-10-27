@@ -46,9 +46,9 @@ trigger: always_on
   Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
   ```
 * **Pure Declarative Authoring (Zero Runtime Mechanics)**:
-  Stage files declare **what** (agents, inputs, deliverables, and sequence); `weave-core-orchestrator` handles **how** (upfront stage folder creation, Phase 1 `provisioner` delegation, Phase 2 `discover_agents`, black-box prompts, and `status_read`).
+  Stage files declare **what** (agents, inputs, deliverables, and sequence); `weave-core-orchestrator` handles **how** (upfront stage folder creation, Phase 1 `provisioner` delegation, Phase 2 `discover_agents`, black-box prompts, and `weave_read`).
   - **NEVER** author a `Step 0: Upfront Scaffolding` section in `orchestrator.md`.
-  - **NEVER** author `invoke_subagent` prompt templates, `status_init` calls, or polling reminders in stage files.
+  - **NEVER** author `invoke_subagent` prompt templates, `weave_init` calls, or polling reminders in stage files.
 * **Agent Declarations & `inputs` (`## Agents`)**:
   - Use lowercase `snake_case` slugs (parameterized with zero-padded indices for loops, e.g. `writer_a<AA>_s<SS>`).
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
@@ -57,7 +57,7 @@ trigger: always_on
     2. **Relative to Output Context Directory (`output/<context_slug>/`)**: `01_editorial_approved.md`
     3. **Relative to Workspace Root (`<workspace_root>/`)**: `prompts/personas/<host_id>.md` or `prompts/rules/*.md`
     - *Named Inputs (Optional)*: You may bind a logical label (e.g. `- Draft: ../writer/draft.md` or `- Approved Article: 01_editorial_approved.md`) so the agent definition can refer to "the Draft" without hardcoding filenames.
-  - During Phase 1, the `provisioner` records these relative/named entries directly in `status.md` `inputs`. When the agent starts and calls `status_verify` on Turn 1, `status_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `output/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
+  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `output/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
 * **Orchestrator File Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Deliverable Ingestion / Promotion** copying `stage01_editorial/agents/writer/draft.md` $\rightarrow$ `01_editorial_approved.md` inside `output/<context_slug>/`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.

@@ -1,5 +1,5 @@
 /**
- * Frontmatter parser and serializer for WeaveMAS status.md files.
+ * Frontmatter parser and serializer for WeaveMAS weave.md files.
  */
 
 export const ALLOWED_FRONTMATTER_KEYS = new Set([
@@ -84,7 +84,7 @@ export function serializeStatus(frontmatter, body) {
   }
   for (const key of Object.keys(frontmatter)) {
     if (!ALLOWED_FRONTMATTER_KEYS.has(key)) {
-      throw new Error(`CRITICAL: Forbidden frontmatter key '${key}'. The status.md schema is strictly closed to: ${Array.from(ALLOWED_FRONTMATTER_KEYS).join(', ')}`);
+      throw new Error(`CRITICAL: Forbidden frontmatter key '${key}'. The weave.md schema is strictly closed to: ${Array.from(ALLOWED_FRONTMATTER_KEYS).join(', ')}`);
     }
   }
   const lines = ['---'];

@@ -1,4 +1,4 @@
-// Runtime Tracker Module - Calculates Active Execution Time from status.md Event Logs
+// Runtime Tracker Module - Calculates Active Execution Time from weave.md Event Logs
 (function() {
   function formatRuntime(totalSeconds) {
     const s = Math.max(0, Math.floor(totalSeconds || 0));

@@ -145,7 +145,7 @@ test('statusInit - Failure Path: invalid inputs (non-array or empty string item)
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusInit - Happy Path: creates directory and status.md with not_started', () => {
+test('statusInit - Happy Path: creates directory and weave.md with not_started', () => {
   const tmp = createTempDir();
   const res = statusInit(tmp, 'agent', 'not_started');
   assert.equal(res.success, true);
@@ -213,7 +213,7 @@ test('statusUpdate - Happy Path: transitions state and appends progress', () => 
   const res = statusUpdate(tmp, 'in_progress/outline', 'Drafting 5-act arc.', null);
   assert.equal(res.success, true);
   assert.equal(res.status, 'in_progress/outline');
-  const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
+  const fileContent = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
   assert.match(fileContent, /status: "in_progress\/outline"/);
   assert.match(fileContent, /Drafting 5-act arc/);
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -271,11 +271,11 @@ test('statusVerify - Failure Path 1: role mismatch throws Error', () => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusVerify - Failure Path 2: missing status.md throws Error', () => {
+test('statusVerify - Failure Path 2: missing weave.md throws Error', () => {
   const tmp = createTempDir();
   assert.throws(() => statusVerify(tmp, 'any_role'), {
     name: 'Error',
-    message: /CRITICAL: status.md not found in directory/
+    message: /CRITICAL: weave.md not found in directory/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -359,11 +359,11 @@ test('statusRead - Failure Path 1: relative targetDir throws Error', () => {
   });
 });
 
-test('statusRead - Failure Path 2: missing status.md throws Error', () => {
+test('statusRead - Failure Path 2: missing weave.md throws Error', () => {
   const tmp = createTempDir();
   assert.throws(() => statusRead(tmp), {
     name: 'Error',
-    message: /CRITICAL: status.md not found in directory/
+    message: /CRITICAL: weave.md not found in directory/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });

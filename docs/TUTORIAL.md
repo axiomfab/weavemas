@@ -4,7 +4,7 @@
 
 This guide is split into two parts:
 * **[Part 1: User Guide](#part-1-user-guide)** — Understand Multi-Agent Systems, why WeaveMAS is needed over barebones Antigravity, how **Orchestrators**, **Agents**, and **Stages** interact, and two hands-on tutorials (**without stages** and **with stages**).
-* **[Part 2: Technical Guide](#part-2-technical-guide)** — Explore the internal architecture, the 5-key `status.md` state machine, sandboxing rules, and MCP tool specifications.
+* **[Part 2: Technical Guide](#part-2-technical-guide)** — Explore the internal architecture, the 6-key `weave.md` state machine, sandboxing rules, and MCP tool specifications.
 
 ---
 
@@ -123,8 +123,8 @@ The guiding philosophy of WeaveMAS is **Convention over Configuration**. You nev
 
 1. **Declarative Agent & Orchestrator Markdown**:
    Every agent and orchestrator is a clean Markdown file with standardized headings (`# Role Specifics`, `# Tasks`, `# Lifecycle`). You only declare *what* each agent does and *what file* it produces—WeaveMAS's built-in skills handle all the coordination behind the scenes.
-2. **A `status.md` File in Every Folder**:
-   Every pipeline run lives in its own predictable folder (`output/<context_slug>/`), and both the orchestrator and every agent maintain a standardized `status.md` checklist inside their directory. Because every agent reports progress in the exact same structure, WeaveMAS automatically verifies outputs and renders a live visual dashboard in the Antigravity side panel.
+2. **A `weave.md` File in Every Folder**:
+   Every pipeline run lives in its own predictable folder (`output/<context_slug>/`), and both the orchestrator and every agent maintain a standardized `weave.md` checklist inside their directory. Because every agent reports progress in the exact same structure, WeaveMAS automatically verifies outputs and renders a live visual dashboard in the Antigravity side panel.
 3. **File-Based Handoffs**:
    Agents never pass work through lossy chat summaries. Each agent writes a real file on disk (`draft.md`, `audit.md`, `rocket.png`), and the next agent reads that exact file in its own folder.
 4. **Authoring from a Single Prompt**:
@@ -305,31 +305,31 @@ flowchart TD
     Trigger[".agent/rules/orchestrator_trigger.md<br/>(Workspace Trigger Rule)"] --> Orch["Primary Agent / Orchestrator<br/>(mounts weave-core-orchestrator)"]
     
     subgraph Workspace ["output/kidswiki_rocket_age4/ (Context Root)"]
-        MasterStatus["status.md<br/>(type: orchestrator)"]
+        MasterStatus["weave.md<br/>(type: orchestrator)"]
         
         subgraph Stage1 ["stage01_editorial/"]
-            W_Dir["agents/writer/<br/>status.md + draft.md"]
-            FC_Dir["agents/fact_checker/<br/>status.md + audit.md"]
+            W_Dir["agents/writer/<br/>weave.md + draft.md"]
+            FC_Dir["agents/fact_checker/<br/>weave.md + audit.md"]
         end
 
         subgraph Stage2 ["stage02_publishing/"]
-            IL_Dir["agents/illustrator/<br/>status.md + illustration.png + article.md"]
+            IL_Dir["agents/illustrator/<br/>weave.md + illustration.png + article.md"]
         end
         
         FinalOut["rocket.md + illustration.png<br/>(Compiled Final Deliverable)"]
     end
 
-    MCP["WeaveMAS MCP Server (weavemas_weave)<br/>status_init | discover_agents | status_verify | status_update | status_read"]
+    MCP["WeaveMAS MCP Server (weavemas_weave)<br/>weave_init | discover_agents | weave_verify | weave_update | weave_read"]
     UI["WeaveMAS Sidecar UI<br/>(sidecar://weavemas/panel/)"]
 
-    Orch -->|"1. Upfront Stage Scaffolding & Master status_init"| MasterStatus
+    Orch -->|"1. Upfront Stage Scaffolding & Master weave_init"| MasterStatus
     Orch -->|"2. Phase 1: invoke_subagent (TypeName: 'provisioner')"| Provisioner["Ephemeral Provisioner<br/>(Scaffolding & Input Staging)"]
-    Provisioner -->|"status_init & Tier 2 Staging"| Stage1
+    Provisioner -->|"weave_init & Tier 2 Staging"| Stage1
     Orch -->|"3. Phase 2: discover_agents & invoke_subagent"| Subagents["Sandboxed Subagents<br/>(mount weave-core-agent)"]
     Orch <-->|"4. Revisions via send_message(conversationId)"| Subagents
-    Orch -->|"5. status_read & Ingest"| FinalOut
+    Orch -->|"5. weave_read & Ingest"| FinalOut
 
-    Subagents -->|"Turn 1: status_verify<br/>Steps: status_update"| MCP
+    Subagents -->|"Turn 1: weave_verify<br/>Steps: weave_update"| MCP
     MCP -->|"Atomic File I/O"| MasterStatus
     MCP -->|"Atomic File I/O"| Stage1
     MCP -->|"Atomic File I/O"| Stage2
@@ -340,50 +340,50 @@ flowchart TD
 
 1. **Startup & Upfront Stage Scaffolding**:
    * The orchestrator reads `orchestrator.md`, outputs the `[WeaveMAS UI](sidecar://weavemas/panel/)` badge, and pre-creates **all** stage folders upfront (`stage01_editorial/` and `stage02_publishing/`) so the UI sidecar immediately renders the full 2-stage stepper.
-   * Calls `status_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `status: "in_progress/stage01_editorial"`).
+   * Calls `weave_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `status: "in_progress/stage01_editorial"`).
 2. **Phase 1: Agent Instantiation via Provisioner (`orchestrator-agent-instantiation`)**:
    * Orchestrator invokes the ephemeral `provisioner` subagent (`TypeName: "provisioner"`, `Model: "flash"`, `Role: "provisioner"`), passing the stage guide path and target execution directory.
-   * `provisioner` parses the `## Agents` block, initializes declared agent workspaces (`writer`, `fact_checker`) via `status_init` (with `instructions_file`), and stages any Tier 2 handoff files.
+   * `provisioner` parses the `## Agents` block, initializes declared agent workspaces (`writer`, `fact_checker`) via `weave_init` (with `instructions_file`), and stages any Tier 2 handoff files.
    * `provisioner` returns `PROVISIONING_COMPLETE`.
 3. **Phase 2: Black-Box Dispatch & Execution (`orchestrator-agent-execution`)**:
    * Orchestrator calls `discover_agents` to discover initialized workspaces in `stage01_editorial/`.
    * Dispatches `writer` via `invoke_subagent` using `TypeName: "self"`, `Role: "writer"`, `Model: "flash"`, passing the discovered instruction path, assigned working directory, and Tier 1 parameters (`Topic: Rocket`, `Target Age: 4`).
    * Inside its sandbox, `writer` executes:
-     1. `status_verify` on Turn 1.
-     2. `status_update` (`status: "in_progress/01_concepts"`).
-     3. `status_update` (`status: "in_progress/02_draft"`).
-     4. Writes `draft.md` and calls `status_update` (`status: "completed"`, `deliverable: "draft.md"`).
+     1. `weave_verify` on Turn 1.
+     2. `weave_update` (`status: "in_progress/01_concepts"`).
+     3. `weave_update` (`status: "in_progress/02_draft"`).
+     4. Writes `draft.md` and calls `weave_update` (`status: "completed"`, `deliverable: "draft.md"`).
 4. **Deliverable Verification & In-Place Revision Loop (`fact_checker`)**:
-   * Orchestrator validates `writer` completion via `status_read`, stages `draft.md` into `fact_checker`'s workspace, and dispatches `fact_checker`.
+   * Orchestrator validates `writer` completion via `weave_read`, stages `draft.md` into `fact_checker`'s workspace, and dispatches `fact_checker`.
    * If `fact_checker` writes `VERDICT: REVISION_REQUIRED` in `audit.md`, the orchestrator sends correction bullets to the existing `writer` session via `send_message(Recipient: <writer_conversationId>)`—preserving context and avoiding subagent churn.
    * Once approved, the orchestrator copies the approved draft to `01_editorial_approved.md` and transitions master status to `in_progress/stage02_publishing`.
 5. **Stage 2 & Final Compilation (`illustrator`)**:
    * Orchestrator runs Phase 1 (`provisioner`) to initialize `stage02_publishing/agents/illustrator/` and stage `01_editorial_approved.md`.
    * Orchestrator queries `discover_agents` (Phase 2) and dispatches `illustrator`.
-   * `illustrator` generates `illustration.png`, copies `01_editorial_approved.md` as `article.md`, and calls `status_update(status: "completed", deliverable: "article.md")`.
-   * Orchestrator validates via `status_read`, copies `article.md` as `rocket.md` and `illustration.png` to `output/kidswiki_rocket_age4/`, and marks master `status.md` as `completed`.
+   * `illustrator` generates `illustration.png`, copies `01_editorial_approved.md` as `article.md`, and calls `weave_update(status: "completed", deliverable: "article.md")`.
+   * Orchestrator validates via `weave_read`, copies `article.md` as `rocket.md` and `illustration.png` to `output/kidswiki_rocket_age4/`, and marks master `weave.md` as `completed`.
 
 #### Resulting Run Directory Tree:
 
 ```text
 output/kidswiki_rocket_age4/
-├── status.md                                      # Master orchestrator status (completed)
+├── weave.md                                       # Master orchestrator status (completed)
 ├── 01_editorial_approved.md                       # Stage 1 canonical handoff
 ├── illustration.png                               # Final generated illustration
 ├── rocket.md                                      # Final illustrated article deliverable
 ├── stage01_editorial/
 │   └── agents/
 │       ├── writer/
-│       │   ├── status.md                          # Writer task log (01_concepts -> 02_draft -> completed)
+│       │   ├── weave.md                           # Writer task log (01_concepts -> 02_draft -> completed)
 │       │   └── draft.md
 │       └── fact_checker/
-│           ├── status.md                          # Fact Checker log (01_claims -> 02_verify -> 03_verdict)
+│           ├── weave.md                           # Fact Checker log (01_claims -> 02_verify -> 03_verdict)
 │           ├── draft.md                           # Staged Tier 2 input
 │           └── audit.md
 └── stage02_publishing/
     └── agents/
         └── illustrator/
-            ├── status.md                          # Illustrator log (in_progress -> completed)
+            ├── weave.md                           # Illustrator log (in_progress -> completed)
             ├── 01_editorial_approved.md           # Staged Tier 2 input
             ├── illustration.png
             └── article.md
@@ -398,14 +398,15 @@ output/kidswiki_rocket_age4/
 * Every subagent is confined strictly to its assigned working directory (`output/<context_slug>/<stage_slug>/agents/<agent_id>/`).
 * Subagents are forbidden from traversing parent directories (`../`), running directory scans (`dir`, `ls`, `Get-ChildItem`), or reading external files unless explicitly authorized under `# Role Specifics`.
 
-### Pillar 2: Strictly Closed 5-Key `status.md` State Machine
-* Every orchestrator and subagent workspace contains a `status.md` file managed **exclusively** via the `weavemas_weave` MCP tools (never read via `view_file` or edited manually).
-* The YAML frontmatter is strictly locked to **5 keys**:
+### Pillar 2: Strictly Closed 6-Key `weave.md` State Machine
+* Every orchestrator and subagent workspace contains a `weave.md` file managed **exclusively** via the `weavemas_weave` MCP tools (never read via `view_file` or edited manually).
+* The YAML frontmatter is strictly locked to **6 keys**:
   ```yaml
   ---
   type: "agent" # or "orchestrator"
-  role: "stage1_writer"
   status: "in_progress/02_draft"
+  instructions_file: ".agent/agents/stage1_writer.md"
+  inputs: []
   deliverable: null # set to relative filename upon "completed"
   updated_at: "2026-10-16T09:30:00.000Z"
   ---
@@ -430,8 +431,8 @@ output/kidswiki_rocket_age4/
 | Skill | Target Persona | Purpose |
 | :--- | :--- | :--- |
 | `weave-authoring` | Pipeline Author / Designer | Guides the LLM in generating compliant WeaveMAS orchestrator and agent files from a high-level user prompt. |
-| `weave-core-orchestrator` | Root Orchestrator | Enforces upfront stage directory creation, master `status.md` initialization, Two-Phase stage chaining (Phase 1 provisioner delegation -> Phase 2 agent dispatch), and `status_read` ingestion. |
-| `weave-core-agent` | Leaf Subagents | Enforces CWD sandboxing, Turn 1 `status_verify` pre-flight check, automatic `# Tasks` slug progression (`in_progress/<task_slug>`), and deliverable verification. |
+| `weave-core-orchestrator` | Root Orchestrator | Enforces upfront stage directory creation, master `weave.md` initialization, Two-Phase stage chaining (Phase 1 provisioner delegation -> Phase 2 agent dispatch), and `weave_read` ingestion. |
+| `weave-core-agent` | Leaf Subagents | Enforces CWD sandboxing, Turn 1 `weave_verify` pre-flight check, automatic `# Tasks` slug progression (`in_progress/<task_slug>`), and deliverable verification. |
 | `weave-core` | Shared Reference | Core status contract specifications and CLI fallback utilities. |
 
 ### Native MCP Server Tools (`weavemas_weave`)
@@ -439,11 +440,11 @@ All `dir` arguments **must be absolute paths**.
 
 | Tool | Caller | Required Arguments | Behavior |
 | :--- | :--- | :--- | :--- |
-| `status_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`)* | Creates target directory recursively and writes initial `status.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
+| `weave_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`, `inputs`)* | Creates target directory recursively and writes initial `weave.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
 | `discover_agents` | Orchestrator (Phase 2) | `directory` *(opt: `filter_status`, `limit`)* | Discovers provisioned subagents under a stage directory, returning agent ids, directories, and instruction paths. |
-| `status_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `status.md` exists and is ready for execution. Fails fast on missing status. |
-| `status_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `deliverable`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `deliverable` exists on disk when `status == "completed"`. |
-| `status_read` | Orchestrator | `dir` *(opt: `expected_deliverable`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
+| `weave_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `weave.md` exists and is ready for execution. Fails fast on missing status. |
+| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `deliverable`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `deliverable` exists on disk when `status == "completed"`. |
+| `weave_read` | Orchestrator | `dir` *(opt: `expected_deliverable`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
 
 ### Two Pipeline Structural Modes
 * **Mode 1: Multi-Stage Modular Pipeline (`orchestrator.md` + `orchestrator/stage<N>_<slug>.md`)**: Best for pipelines with distinct phases and review gates (like our 2-stage KidsWiki example). The UI sidecar renders a visual stage stepper across the top for every `stage<NN>_<name>/` directory.

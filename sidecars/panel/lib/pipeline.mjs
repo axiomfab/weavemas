@@ -27,7 +27,7 @@ export function getAllContextDirs(workspaceDir) {
       const fullPath = join(outputDir, d.name);
       try {
         const subEntries = readdirSync(fullPath, { withFileTypes: true });
-        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'status.md' || (sub.isDirectory() && sub.name === 'agents'));
+        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'weave.md' || sub.name === 'status.md' || (sub.isDirectory() && sub.name === 'agents'));
       } catch {
         return false;
       }
@@ -96,12 +96,14 @@ export function extractContextTitle(showDir) {
     }
   }
 
-  // 3. Check status.md
-  const statusPath = join(showDir, 'status.md');
-  if (existsSync(statusPath)) {
-    const text = readFileSync(statusPath, 'utf8');
-    const topicMatch = text.match(/topic:\s*"?([^"\r\n]+)"?/i);
-    if (topicMatch) return topicMatch[1].trim();
+  // 3. Check weave.md (or legacy status.md)
+  for (const statusName of ['weave.md', 'status.md']) {
+    const statusPath = join(showDir, statusName);
+    if (existsSync(statusPath)) {
+      const text = readFileSync(statusPath, 'utf8');
+      const topicMatch = text.match(/topic:\s*"?([^"\r\n]+)"?/i);
+      if (topicMatch) return topicMatch[1].trim();
+    }
   }
 
   const base = basename(showDir);
@@ -122,7 +124,7 @@ export function parseOrchestratorState(showDir) {
   if (!showDir || typeof showDir !== 'string') {
     throw new Error('CRITICAL: Show directory is required and must be a string');
   }
-  const candidates = [join(showDir, 'state.md'), join(showDir, 'status.md')];
+  const candidates = [join(showDir, 'weave.md'), join(showDir, 'state.md'), join(showDir, 'status.md')];
   for (const c of candidates) {
     if (existsSync(c)) {
       const text = readFileSync(c, 'utf8');
@@ -202,17 +204,19 @@ export function evaluatePipelineStages(showDir) {
         tag = `STAGE ${s.num}: PENDING`;
       }
     } else {
-      // Heuristic fallback when orchestrator status file is absent
-      const stageStatusPath = join(stagePath, 'status.md');
-      if (existsSync(stageStatusPath)) {
-        const text = readFileSync(stageStatusPath, 'utf8');
-        const sm = text.match(/status:\s*"?([^"\r\n]+)"?/i);
-        if (sm && (sm[1].startsWith('completed') || sm[1] === 'done')) isCompleted = true;
+      // Heuristic fallback when orchestrator weave file is absent
+      for (const statusName of ['weave.md', 'status.md']) {
+        const stageStatusPath = join(stagePath, statusName);
+        if (existsSync(stageStatusPath)) {
+          const text = readFileSync(stageStatusPath, 'utf8');
+          const sm = text.match(/status:\s*"?([^"\r\n]+)"?/i);
+          if (sm && (sm[1].startsWith('completed') || sm[1] === 'done')) isCompleted = true;
+        }
       }
 
       if (!isCompleted) {
         const filesInStage = readdirSync(stagePath, { withFileTypes: true })
-          .filter(f => f.isFile() && f.name.endsWith('.md') && f.name !== 'status.md');
+          .filter(f => f.isFile() && f.name.endsWith('.md') && f.name !== 'weave.md' && f.name !== 'status.md');
         if (filesInStage.length > 0) isCompleted = true;
       }
 

@@ -73,16 +73,21 @@ export function executeStatusUpdate(params, workspaceRoot) {
   const agentDir = path.join(agentsDir, agent);
   if (!fs.existsSync(agentDir)) fs.mkdirSync(agentDir, { recursive: true });
 
-  const filePath = path.join(agentDir, 'status.md');
+  const filePath = path.join(agentDir, 'weave.md');
   let currentFm = {}, currentBody = '';
   if (fs.existsSync(filePath)) {
     const parsed = parseFrontmatter(fs.readFileSync(filePath, 'utf-8'));
     currentFm = parsed.frontmatter;
     currentBody = parsed.body.trim();
   } else {
-    const legacyPath = path.join(agentsDir, `${agent}.md`);
-    if (fs.existsSync(legacyPath)) {
-      const parsed = parseFrontmatter(fs.readFileSync(legacyPath, 'utf-8'));
+    const legacyStatusPath = path.join(agentDir, 'status.md');
+    const legacyFlatPath = path.join(agentsDir, `${agent}.md`);
+    if (fs.existsSync(legacyStatusPath)) {
+      const parsed = parseFrontmatter(fs.readFileSync(legacyStatusPath, 'utf-8'));
+      currentFm = parsed.frontmatter;
+      currentBody = parsed.body.trim();
+    } else if (fs.existsSync(legacyFlatPath)) {
+      const parsed = parseFrontmatter(fs.readFileSync(legacyFlatPath, 'utf-8'));
       currentFm = parsed.frontmatter;
       currentBody = parsed.body.trim();
     }
@@ -141,7 +146,9 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
   }
 
   function scanDir(dir, rel = '') {
-    const statusFile = path.join(dir, 'status.md');
+    const weaveFile = path.join(dir, 'weave.md');
+    const legacyStatusFile = path.join(dir, 'status.md');
+    const statusFile = fs.existsSync(weaveFile) ? weaveFile : legacyStatusFile;
     if (rel && fs.existsSync(statusFile)) {
       const raw = fs.readFileSync(statusFile, 'utf-8');
       const parsed = parseFrontmatter(raw);
@@ -162,7 +169,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
           type: 'agent',
           id: rel.replace(/\//g, '_'),
           name: path.basename(dir),
-          filename: 'status.md',
+          filename: path.basename(statusFile),
           frontmatter: fm,
           body: parsed.body.trim(),
           deliverableContent,
@@ -178,7 +185,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
 
     if (!rel) {
       for (const ent of entries) {
-        if (ent.isFile() && ent.name.endsWith('.md') && ent.name !== 'status.md') {
+        if (ent.isFile() && ent.name.endsWith('.md') && ent.name !== 'weave.md' && ent.name !== 'status.md') {
           const filePath = path.join(dir, ent.name);
           const raw = fs.readFileSync(filePath, 'utf-8');
           const parsed = parseFrontmatter(raw);

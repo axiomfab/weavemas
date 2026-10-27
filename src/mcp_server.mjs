@@ -1,7 +1,7 @@
 import readline from 'node:readline';
 import path from 'node:path';
 import { TOOLS } from './tool_schemas.mjs';
-import { statusInit, statusUpdate, statusVerify, statusRead, discoverAgents } from './status_manager.mjs';
+import { weaveInit, weaveUpdate, weaveVerify, weaveRead, discoverAgents } from './status_manager.mjs';
 
 const PROTOCOL_VERSION = '2024-11-05';
 
@@ -66,7 +66,7 @@ export function handleMessage(msg) {
     const { name, arguments: args = {} } = params || {};
     try {
       let resultText = '';
-      if (name === 'status_init') {
+      if (name === 'weave_init' || name === 'status_init') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
@@ -75,9 +75,9 @@ export function handleMessage(msg) {
         const status = args.status || 'not_started';
         const instructionsFile = args.instructions_file || null;
         const inputs = args.inputs !== undefined ? args.inputs : null;
-        const res = statusInit(targetDir, type, status, instructionsFile, inputs);
+        const res = weaveInit(targetDir, type, status, instructionsFile, inputs);
         resultText = res.message;
-      } else if (name === 'status_update') {
+      } else if (name === 'weave_update' || name === 'status_update') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
@@ -85,31 +85,31 @@ export function handleMessage(msg) {
         const status = args.status;
         const progress = args.progress || null;
         const deliverable = args.deliverable !== undefined ? args.deliverable : null;
-        if (!status) throw new Error("CRITICAL: 'status' argument is required for status_update.");
-        const res = statusUpdate(targetDir, status, progress, deliverable);
+        if (!status) throw new Error("CRITICAL: 'status' argument is required for weave_update.");
+        const res = weaveUpdate(targetDir, status, progress, deliverable);
         resultText = res.message;
-      } else if (name === 'status_verify') {
+      } else if (name === 'weave_verify' || name === 'status_verify') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
         const expectedRole = args.expected_role || args.expected_id || null;
-        const res = statusVerify(targetDir, expectedRole);
+        const res = weaveVerify(targetDir, expectedRole);
         const pendingSummary = res.pending_inputs && res.pending_inputs.length > 0
           ? ` | Pending inputs (not on disk yet — HALT if required for current task): ${JSON.stringify(res.pending_inputs)}`
           : '';
         const inputsSummary = res.inputs && res.inputs.length > 0
           ? ` | Verified inputs: ${JSON.stringify(res.inputs)} | Resolved paths: ${JSON.stringify(res.resolved_inputs)}${pendingSummary}`
           : '';
-        resultText = `STATUS_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status}${inputsSummary})`;
-      } else if (name === 'status_read') {
+        resultText = `WEAVE_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status}${inputsSummary})`;
+      } else if (name === 'weave_read' || name === 'status_read') {
         const targetDir = args.dir;
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
         const expectedDeliverable = args.expected_deliverable !== undefined ? args.expected_deliverable : undefined;
         const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
-        const res = statusRead(targetDir, expectedDeliverable, expectedStatus);
+        const res = weaveRead(targetDir, expectedDeliverable, expectedStatus);
         resultText = JSON.stringify(res, null, 2);
       } else if (name === 'discover_agents') {
         const directory = args.directory;

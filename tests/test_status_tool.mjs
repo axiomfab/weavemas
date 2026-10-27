@@ -73,7 +73,7 @@ test('Happy Path 2: readStageAgents recursively discovers agents in nested act_i
   const archDir = path.join(testOutputDir, writingStage, 'agents', 'act_1', 'A1_01', 'architect');
   fs.mkdirSync(archDir, { recursive: true });
   fs.writeFileSync(
-    path.join(archDir, 'status.md'),
+    path.join(archDir, 'weave.md'),
     `---
 type: agent
 act: "act_1"
@@ -93,13 +93,13 @@ deliverable: beats.md
   assert.equal(stageData.act_1_A1_01_architect.frontmatter.deliverable, 'beats.md');
 });
 
-test('Happy Path 3: readStageAgents parses status.md containing UTF-8 BOM with not_started status', () => {
+test('Happy Path 3: readStageAgents parses weave.md containing UTF-8 BOM with not_started status', () => {
   const writingStage = 'stage03_writing';
   const writerDir = path.join(testOutputDir, writingStage, 'agents', 'act_1', 'A1_01', 'writer');
   fs.mkdirSync(writerDir, { recursive: true });
   // Prepend \uFEFF (UTF-8 BOM)
   const bomContent = '\uFEFF---\ntype: agent\nstatus: not_started\ndeliverable: null\n---\nWriter ready.';
-  fs.writeFileSync(path.join(writerDir, 'status.md'), bomContent, 'utf-8');
+  fs.writeFileSync(path.join(writerDir, 'weave.md'), bomContent, 'utf-8');
 
   const stageData = readStageAgents(testShow, writingStage, workspaceRoot);
   assert.ok(stageData.act_1_A1_01_writer, 'Should discover writer agent');
@@ -112,7 +112,7 @@ test('Happy Path: readStageAgents loads deliverableContent when deliverable file
   const dirDir = path.join(testOutputDir, setupStage, 'agents', 'director');
   fs.mkdirSync(dirDir, { recursive: true });
   fs.writeFileSync(
-    path.join(dirDir, 'status.md'),
+    path.join(dirDir, 'weave.md'),
     '---\ntype: agent\nstatus: completed\ndeliverable: setup.md\n---\nInit done.',
     'utf-8'
   );
@@ -129,7 +129,7 @@ test('Failure Path: readStageAgents sets deliverableContent to null when deliver
   const missingDir = path.join(testOutputDir, setupStage, 'agents', 'director_missing');
   fs.mkdirSync(missingDir, { recursive: true });
   fs.writeFileSync(
-    path.join(missingDir, 'status.md'),
+    path.join(missingDir, 'weave.md'),
     '---\ntype: agent\nstatus: in_progress\ndeliverable: nonexistent.md\n---\nWorking...',
     'utf-8'
   );
@@ -144,7 +144,7 @@ test('Failure Path: readStageAgents sets deliverableContent to null when deliver
   const noDelivDir = path.join(testOutputDir, setupStage, 'agents', 'director_none');
   fs.mkdirSync(noDelivDir, { recursive: true });
   fs.writeFileSync(
-    path.join(noDelivDir, 'status.md'),
+    path.join(noDelivDir, 'weave.md'),
     '---\ntype: agent\nstatus: in_progress\ndeliverable: null\n---\nNo deliverable yet.',
     'utf-8'
   );
@@ -160,7 +160,7 @@ test('Happy Path: readDirectAgents discovers agents in stageless pipeline and lo
   const factcheckerDir = path.join(stagelessDir, 'agents', 'factchecker');
   fs.mkdirSync(factcheckerDir, { recursive: true });
   fs.writeFileSync(
-    path.join(factcheckerDir, 'status.md'),
+    path.join(factcheckerDir, 'weave.md'),
     '---\ntype: agent\nstatus: completed\ndeliverable: audit_report.md\n---\nAudit verified.',
     'utf-8'
   );

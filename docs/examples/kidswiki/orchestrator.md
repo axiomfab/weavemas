@@ -43,7 +43,7 @@ The pipeline executes through sequential stages. For each stage, follow the refe
 ```
 
 ### How Each Part Works
-* **Skill Mandate (`weave-core-orchestrator`)**: Instructs the primary agent to load the built-in orchestrator skill. That skill teaches the agent how to pre-create stage directories upfront, initialize master `status.md`, and surface the `[WeaveMAS UI](sidecar://weavemas/panel/)` badge.
+* **Skill Mandate (`weave-core-orchestrator`)**: Instructs the primary agent to load the built-in orchestrator skill. That skill teaches the agent how to pre-create stage directories upfront, initialize master `weave.md`, and surface the `[WeaveMAS UI](sidecar://weavemas/panel/)` badge.
 * **`## Inputs`**: Defines the runtime parameters (`topic` and `target_age`) that the orchestrator extracts from the user's chat prompt.
 * **`## Output Structure`**: Establishes the deterministic folder naming convention (`output/kidswiki_<topic_slug>_age<target_age>/`) so multiple runs never overwrite each other.
 * **`## Execution` & Stage Gates**: Maps out each stage's execution directory (`stage01_editorial/`, `stage02_publishing/`), protocol file, stage-level deliverable, and optional **User Review Gate**. Because both stages are declared here, the orchestrator creates both empty stage directories at startup so the UI progress bar immediately knows this is a 2-stage pipeline.

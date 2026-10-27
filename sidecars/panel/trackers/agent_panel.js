@@ -168,18 +168,12 @@
     const isDeliverableMode = viewMode === 'deliverable' && fm.deliverable;
     const isStatusMode = viewMode === 'status';
 
-    const updatesBtnCls = viewMode === 'updates'
-      ? 'bg-slate-800 text-white font-bold border border-slate-700'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
-    const statusBtnCls = isStatusMode
-      ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
-    const deliverableBtnCls = isDeliverableMode
-      ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+    const updatesBtnCls = viewMode === 'updates' ? 'bg-slate-800 text-white font-bold border border-slate-700' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+    const statusBtnCls = isStatusMode ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
+    const deliverableBtnCls = isDeliverableMode ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
 
     const delivLabel = Array.isArray(fm.deliverable) ? fm.deliverable.join(', ') : fm.deliverable;
-    const tabsHtml = `<div class="flex items-center gap-1 font-mono"><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${updatesBtnCls}" data-status-toggle="${escapeHtml(cardId)}">Updates</button><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${statusBtnCls}" data-raw-status-toggle="${escapeHtml(cardId)}">status.md</button>${fm.deliverable ? `<button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${deliverableBtnCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(delivLabel)}</button>` : ''}</div>`;
+    const tabsHtml = `<div class="flex items-center gap-1 font-mono"><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${updatesBtnCls}" data-status-toggle="${escapeHtml(cardId)}">Updates</button><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${statusBtnCls}" data-raw-status-toggle="${escapeHtml(cardId)}">weave.md</button>${fm.deliverable ? `<button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${deliverableBtnCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(delivLabel)}</button>` : ''}</div>`;
 
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
@@ -348,30 +342,13 @@
   }
 
   const trackerApi = {
-    render,
-    renderAllAgents: render,
-    formatAgentTitle,
-    formatFrontmatterOnly,
-    formatHumanLogBody,
-    getAgentIcon,
-    getStatusBadge,
-    getAgentValueChip,
-    getShowrunnerChip,
-    getSourcerChip,
-    getGroupSummary,
-    getGroupSummaryChip,
-    expandedCards,
-    expandedGroups,
-    cardViewModes,
-    pendingScrollBottom
+    render, renderAllAgents: render, formatAgentTitle, formatFrontmatterOnly, formatHumanLogBody,
+    getAgentIcon, getStatusBadge, getAgentValueChip, getShowrunnerChip, getSourcerChip,
+    getGroupSummary, getGroupSummaryChip, expandedCards, expandedGroups, cardViewModes, pendingScrollBottom
   };
 
   if (typeof window !== 'undefined') {
-    window.AgentPanel = trackerApi;
-    window.ConceptTracker = trackerApi;
-    window.AgentsTracker = trackerApi;
+    window.AgentPanel = window.ConceptTracker = window.AgentsTracker = trackerApi;
   }
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = trackerApi;
-  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = trackerApi;
 })();

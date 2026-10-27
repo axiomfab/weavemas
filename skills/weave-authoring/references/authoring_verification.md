@@ -7,7 +7,7 @@ Run this static analysis **purely on the authored pipeline files** (`orchestrato
 ## 🔍 1. Core Concepts: File Inputs vs. Runtime Parameters
 
 Always distinguish between physical **File Inputs** and scalar **Runtime Parameters**:
-* **File Inputs (`* **Inputs**:` in `## Agents`)**: Physical files on disk (e.g. `01_setup.md`, `../writer/draft.md`, `../act_*/segment_*/writer/draft.md`, `prompts/personas/<host_id>.md`) recorded in `status.md` `inputs`, resolved by `status_verify`, and read via `view_file`.
+* **File Inputs (`* **Inputs**:` in `## Agents`)**: Physical files on disk (e.g. `01_setup.md`, `../writer/draft.md`, `../act_*/segment_*/writer/draft.md`, `prompts/personas/<host_id>.md`) recorded in `weave.md` `inputs`, resolved by `weave_verify`, and read via `view_file`.
 * **Runtime Parameters (`## Execution` / `invoke_subagent`)**: Scalar values (e.g. `topic`, `target_duration`, `show_title`, `host_wpm`, `segment_id`) passed in the `Runtime Parameters:` block of the dispatch prompt. Do **not** flag scalar parameters as missing file inputs.
 
 ---
@@ -27,8 +27,8 @@ For each Stage (and each sequential step or parallel wave $t$ in `## Execution`)
    - Extract the **Orchestrator Declaration**: every file in `* **Inputs**:` (under `## Agents`), any mid-stage file referenced in `## Execution`, and the expected deliverable(s).
    - Compare them side-by-side. Flag (`- [ ] ⚠️`) any file read by the agent prompt or passed in `## Execution` (such as `sourced_tracks.md`, `beats.md`, `draft.md`) that is missing from `* **Inputs**:` or from `.agent/agents/<agent>.md`.
 2. **Check 2 — 3-Tier Input Availability at Consumption Step ($t_{\text{used}}$)**:
-   - Even if zero declared file inputs exist on disk when an agent starts at $t_{\text{start}}$ (`status_verify` returns not-yet-created files in `pending_inputs`), every file input required by a specific task of the agent must exist in $\mathcal{F}_{t_{\text{used}}-1}$ (**strictly prior** to the step $t_{\text{used}}$ where that task runs—never produced in the same parallel wave).
-   - If an agent pauses (`waiting/...`) while peer agents run and then resumes via `send_message` at step $t_{\text{resume}}$, any input consumed on resume (e.g. `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md`) must be declared in `* **Inputs**:` and must exist in $\mathcal{F}_{t_{\text{resume}}-1}$ when the agent wakes up and re-runs `status_verify`.
+   - Even if zero declared file inputs exist on disk when an agent starts at $t_{\text{start}}$ (`weave_verify` returns not-yet-created files in `pending_inputs`), every file input required by a specific task of the agent must exist in $\mathcal{F}_{t_{\text{used}}-1}$ (**strictly prior** to the step $t_{\text{used}}$ where that task runs—never produced in the same parallel wave).
+   - If an agent pauses (`waiting/...`) while peer agents run and then resumes via `send_message` at step $t_{\text{resume}}$, any input consumed on resume (e.g. `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md`) must be declared in `* **Inputs**:` and must exist in $\mathcal{F}_{t_{\text{resume}}-1}$ when the agent wakes up and re-runs `weave_verify`.
 3. **Check 3 — Provisioner Dynamic Placeholder Resolution**:
    - For every `<placeholder>` in `* **Working Directory**:` or `* **Inputs**:` (e.g. `<AA>`, `<SS>`, `<host_id>`), verify that the value can be extracted from an existing upstream stage deliverable referenced in `## Agents` (such as `01_setup.md`, `02_concept.md`, or `03_script.md`).
 4. **Check 4 — Zero File-Staging into Agent Directories & Post-Step Deliverable Registration ($\mathcal{F}_t$)**:

@@ -4,14 +4,14 @@
 
 export const TOOLS = [
   {
-    name: 'status_init',
-    description: 'Initialize a WeaveMAS status.md file in the specified directory.',
+    name: 'weave_init',
+    description: 'Initialize a WeaveMAS weave.md file in the specified directory.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to target directory to initialize status.md in.'
+          description: 'Absolute path to target directory to initialize weave.md in.'
         },
         type: {
           type: 'string',
@@ -35,14 +35,14 @@ export const TOOLS = [
     }
   },
   {
-    name: 'status_update',
-    description: 'Update the WeaveMAS status.md with a new lifecycle state and progress note.',
+    name: 'weave_update',
+    description: 'Update the WeaveMAS weave.md with a new lifecycle state and progress note.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to the target directory containing status.md.'
+          description: 'Absolute path to the target directory containing weave.md.'
         },
         status: {
           type: 'string',
@@ -64,14 +64,14 @@ export const TOOLS = [
     }
   },
   {
-    name: 'status_verify',
-    description: 'Verify that the working directory status.md exists, matches the assigned subagent workspace, and resolves all declared inputs across the 3-tier hierarchy.',
+    name: 'weave_verify',
+    description: 'Verify that the working directory weave.md exists, matches the assigned subagent workspace, and resolves all declared inputs across the 3-tier hierarchy.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to the target directory containing status.md.'
+          description: 'Absolute path to the target directory containing weave.md.'
         },
         expected_role: {
           type: 'string',
@@ -82,14 +82,14 @@ export const TOOLS = [
     }
   },
   {
-    name: 'status_read',
-    description: 'Read and verify status metadata from a WeaveMAS status.md without reading full markdown.',
+    name: 'weave_read',
+    description: 'Read and verify status metadata from a WeaveMAS weave.md without reading full markdown.',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to the target directory containing status.md.'
+          description: 'Absolute path to the target directory containing weave.md.'
         },
         expected_deliverable: {
           oneOf: [
@@ -119,7 +119,7 @@ export const TOOLS = [
         },
         filter_status: {
           type: 'string',
-          description: 'Status string to match in status.md (default: "initialized").'
+          description: 'Status string to match in weave.md (default: "initialized").'
         },
         limit: {
           type: 'number',

@@ -46,57 +46,57 @@ test('MCP Discovery - Happy Path: tools/list returns Weave status tools', () => 
   const res = captureResponse(req);
   assert.equal(res.id, 2);
   const toolNames = res.result.tools.map(t => t.name);
-  assert.ok(toolNames.includes('status_init'));
-  assert.ok(toolNames.includes('status_update'));
-  assert.ok(toolNames.includes('status_verify'));
-  assert.ok(toolNames.includes('status_read'));
+  assert.ok(toolNames.includes('weave_init'));
+  assert.ok(toolNames.includes('weave_update'));
+  assert.ok(toolNames.includes('weave_verify'));
+  assert.ok(toolNames.includes('weave_read'));
   assert.ok(toolNames.includes('discover_agents'));
 });
 
-test('MCP Tool Call - Happy Path: executes status_init and status_update', () => {
+test('MCP Tool Call - Happy Path: executes weave_init and weave_update', () => {
   const tmp = createTempDir();
   const agentDir = path.join(tmp, 'agent_showrunner');
-  // 1. status_init
+  // 1. weave_init
   const initReq = {
     jsonrpc: '2.0',
     id: 3,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { dir: agentDir }
     }
   };
   const initRes = captureResponse(initReq);
   assert.equal(initRes.id, 3);
-  assert.match(initRes.result.content[0].text, /STATUS_INIT_OK/);
+  assert.match(initRes.result.content[0].text, /WEAVE_INIT_OK/);
 
-  // 2. status_verify
+  // 2. weave_verify
   const verifyReq = {
     jsonrpc: '2.0',
     id: 4,
     method: 'tools/call',
     params: {
-      name: 'status_verify',
+      name: 'weave_verify',
       arguments: { dir: agentDir, expected_role: 'agent_showrunner' }
     }
   };
   const verifyRes = captureResponse(verifyReq);
   assert.equal(verifyRes.id, 4);
-  assert.match(verifyRes.result.content[0].text, /STATUS_VERIFY_OK/);
+  assert.match(verifyRes.result.content[0].text, /WEAVE_VERIFY_OK/);
 
-  // 3. status_update
+  // 3. weave_update
   const updateReq = {
     jsonrpc: '2.0',
     id: 5,
     method: 'tools/call',
     params: {
-      name: 'status_update',
+      name: 'weave_update',
       arguments: { dir: agentDir, status: 'in_progress/outline', progress: 'Outline generated.' }
     }
   };
   const updateRes = captureResponse(updateReq);
   assert.equal(updateRes.id, 5);
-  assert.match(updateRes.result.content[0].text, /STATUS_UPDATE_OK: status -> in_progress\/outline/);
+  assert.match(updateRes.result.content[0].text, /WEAVE_UPDATE_OK: status -> in_progress\/outline/);
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -122,14 +122,14 @@ test('MCP Failure Path 2: unknown tool returns JSON-RPC error -32601', () => {
   assert.match(res.error.message, /Tool not found/);
 });
 
-test('MCP Failure Path 3: status_update validation failure returns isError: true result', () => {
+test('MCP Failure Path 3: weave_update validation failure returns isError: true result', () => {
   const tmp = createTempDir();
   const req = {
     jsonrpc: '2.0',
     id: 12,
     method: 'tools/call',
     params: {
-      name: 'status_update',
+      name: 'weave_update',
       arguments: { dir: tmp, status: 'invalid_status' }
     }
   };
@@ -145,14 +145,14 @@ test('MCP Failure Path 4: invalid request format returns error -32600', () => {
   assert.equal(res.error.code, -32600);
 });
 
-test('MCP Tool Call - Happy Path 2: status_init initializes orchestrator node', () => {
+test('MCP Tool Call - Happy Path 2: weave_init initializes orchestrator node', () => {
   const tmp = createTempDir();
   const initReq = {
     jsonrpc: '2.0',
     id: 13,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: {
         dir: tmp,
         role: 'orchestrator',
@@ -163,21 +163,21 @@ test('MCP Tool Call - Happy Path 2: status_init initializes orchestrator node', 
   };
   const initRes = captureResponse(initReq);
   assert.equal(initRes.id, 13);
-  assert.match(initRes.result.content[0].text, /STATUS_INIT_OK/);
-  const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
+  assert.match(initRes.result.content[0].text, /WEAVE_INIT_OK/);
+  const fileContent = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
   assert.match(fileContent, /type: "orchestrator"/);
   assert.doesNotMatch(fileContent, /^role:/m);
   assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Failure Path 5: status_init without dir returns isError: true result', () => {
+test('MCP Failure Path 5: weave_init without dir returns isError: true result', () => {
   const req = {
     jsonrpc: '2.0',
     id: 14,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { role: 'stage1_setup/agent_director' }
     }
   };
@@ -187,13 +187,13 @@ test('MCP Failure Path 5: status_init without dir returns isError: true result',
   assert.match(res.result.content[0].text, /CRITICAL: 'dir' argument is required and must be an absolute path/);
 });
 
-test('MCP Failure Path 6: status_init with relative dir returns isError: true result', () => {
+test('MCP Failure Path 6: weave_init with relative dir returns isError: true result', () => {
   const req = {
     jsonrpc: '2.0',
     id: 15,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { dir: 'relative/dir', role: 'stage1_setup/agent_director' }
     }
   };
@@ -203,14 +203,14 @@ test('MCP Failure Path 6: status_init with relative dir returns isError: true re
   assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
 });
 
-test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deliverable status', () => {
+test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and deliverable status', () => {
   const tmp = createTempDir();
   handleMessage({
     jsonrpc: '2.0',
     id: 16,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { dir: tmp, role: 'stage1_setup/agent_director' }
     }
   });
@@ -221,7 +221,7 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
     id: 17,
     method: 'tools/call',
     params: {
-      name: 'status_update',
+      name: 'weave_update',
       arguments: { dir: tmp, status: 'completed', deliverable: 'setup.md', progress: 'Setup completed' }
     }
   });
@@ -231,7 +231,7 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
     id: 18,
     method: 'tools/call',
     params: {
-      name: 'status_read',
+      name: 'weave_read',
       arguments: { dir: tmp, expected_deliverable: 'setup.md', expected_status: 'completed' }
     }
   };
@@ -246,13 +246,13 @@ test('MCP Tool Call - Happy Path 3: status_read returns parsed metadata and deli
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Failure Path 7: status_read without dir returns isError: true result', () => {
+test('MCP Failure Path 7: weave_read without dir returns isError: true result', () => {
   const req = {
     jsonrpc: '2.0',
     id: 19,
     method: 'tools/call',
     params: {
-      name: 'status_read',
+      name: 'weave_read',
       arguments: {}
     }
   };
@@ -262,13 +262,13 @@ test('MCP Failure Path 7: status_read without dir returns isError: true result',
   assert.match(res.result.content[0].text, /CRITICAL: 'dir' argument is required and must be an absolute path/);
 });
 
-test('MCP Failure Path 8: status_read with relative dir returns isError: true result', () => {
+test('MCP Failure Path 8: weave_read with relative dir returns isError: true result', () => {
   const req = {
     jsonrpc: '2.0',
     id: 20,
     method: 'tools/call',
     params: {
-      name: 'status_read',
+      name: 'weave_read',
       arguments: { dir: 'relative/path' }
     }
   };
@@ -278,13 +278,13 @@ test('MCP Failure Path 8: status_read with relative dir returns isError: true re
   assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
 });
 
-test('MCP Failure Path: status_init without dir (e.g. passing items) returns isError: true result', () => {
+test('MCP Failure Path: weave_init without dir (e.g. passing items) returns isError: true result', () => {
   const req = {
     jsonrpc: '2.0',
     id: 21,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: {
         items: [
           { dir: 'C:\\test\\dir' }
@@ -298,14 +298,14 @@ test('MCP Failure Path: status_init without dir (e.g. passing items) returns isE
   assert.match(res.result.content[0].text, /CRITICAL: 'dir' argument is required and must be an absolute path/);
 });
 
-test('MCP Tool Call - Happy Path: status_init with instructions_file', () => {
+test('MCP Tool Call - Happy Path: weave_init with instructions_file', () => {
   const tmp = createTempDir();
   const req = {
     jsonrpc: '2.0',
     id: 23,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: {
         dir: tmp,
         instructions_file: '.agent/agents/architect.md'
@@ -315,8 +315,8 @@ test('MCP Tool Call - Happy Path: status_init with instructions_file', () => {
   const res = captureResponse(req);
   assert.equal(res.id, 23);
   assert.equal(res.result.isError, undefined);
-  assert.match(res.result.content[0].text, /STATUS_INIT_OK/);
-  const fileContent = fs.readFileSync(path.join(tmp, 'status.md'), 'utf-8');
+  assert.match(res.result.content[0].text, /WEAVE_INIT_OK/);
+  const fileContent = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
   assert.match(fileContent, /instructions_file: "\.agent\/agents\/architect\.md"/);
   assert.doesNotMatch(fileContent, /^role:/m);
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -334,7 +334,7 @@ test('MCP Tool Call - Happy Path: discover_agents discovers agents with paginati
     id: 24,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { dir: agent1Dir, status: 'initialized', instructions_file: '.agent/agents/alpha.md' }
     }
   });
@@ -343,7 +343,7 @@ test('MCP Tool Call - Happy Path: discover_agents discovers agents with paginati
     id: 25,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: { dir: agent2Dir, status: 'initialized', instructions_file: '.agent/agents/beta.md' }
     }
   });
@@ -409,7 +409,7 @@ test('MCP Failure Path 11: discover_agents with relative directory returns isErr
   assert.match(res.result.content[0].text, /CRITICAL: Directory must be an absolute path/);
 });
 
-test('MCP Tool Call - Happy Path: status_init with inputs and status_verify checks input file existence', () => {
+test('MCP Tool Call - Happy Path: weave_init with inputs and weave_verify checks input file existence', () => {
   const tmp = createTempDir();
   const writerDir = path.join(tmp, 'writer');
   const checkerDir = path.join(tmp, 'checker');
@@ -420,7 +420,7 @@ test('MCP Tool Call - Happy Path: status_init with inputs and status_verify chec
     id: 29,
     method: 'tools/call',
     params: {
-      name: 'status_init',
+      name: 'weave_init',
       arguments: {
         dir: checkerDir,
         status: 'initialized',
@@ -437,7 +437,7 @@ test('MCP Tool Call - Happy Path: status_init with inputs and status_verify chec
     id: 30,
     method: 'tools/call',
     params: {
-      name: 'status_verify',
+      name: 'weave_verify',
       arguments: { dir: checkerDir }
     }
   });
@@ -451,7 +451,7 @@ test('MCP Tool Call - Happy Path: status_init with inputs and status_verify chec
     id: 31,
     method: 'tools/call',
     params: {
-      name: 'status_verify',
+      name: 'weave_verify',
       arguments: { dir: checkerDir }
     }
   });

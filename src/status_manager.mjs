@@ -43,9 +43,9 @@ function validateInputsArray(inputs) {
 }
 
 /**
- * Initializes a new status.md in target directory.
+ * Initializes a new weave.md in target directory.
  */
-export function statusInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null) {
+export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -84,7 +84,7 @@ export function statusInit(targetDir, type = 'agent', initialStatus = 'not_start
     fs.mkdirSync(resolvedDir, { recursive: true });
   }
 
-  const statusPath = path.join(resolvedDir, 'status.md');
+  const statusPath = path.join(resolvedDir, 'weave.md');
   const now = new Date().toISOString();
 
   const frontmatter = {
@@ -105,15 +105,15 @@ export function statusInit(targetDir, type = 'agent', initialStatus = 'not_start
 
   return {
     success: true,
-    message: `STATUS_INIT_OK: Initialized ${resolvedType} status at ${statusPath}`,
+    message: `WEAVE_INIT_OK: Initialized ${resolvedType} weave at ${statusPath}`,
     path: statusPath
   };
 }
 
 /**
- * Updates status.md in target directory with new status, optional progress note, and optional deliverable.
+ * Updates weave.md in target directory with new status, optional progress note, and optional deliverable.
  */
-export function statusUpdate(targetDir, status, progress = null, deliverable = null) {
+export function weaveUpdate(targetDir, status, progress = null, deliverable = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -131,9 +131,9 @@ export function statusUpdate(targetDir, status, progress = null, deliverable = n
   }
 
   const resolvedDir = path.resolve(targetDir);
-  const statusPath = path.join(resolvedDir, 'status.md');
+  const statusPath = path.join(resolvedDir, 'weave.md');
   if (!fs.existsSync(statusPath)) {
-    throw new Error(`CRITICAL: status.md not found in directory: ${resolvedDir}`);
+    throw new Error(`CRITICAL: weave.md not found in directory: ${resolvedDir}`);
   }
 
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
@@ -168,15 +168,15 @@ export function statusUpdate(targetDir, status, progress = null, deliverable = n
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, updatedBody), 'utf-8');
   return {
     success: true,
-    message: `STATUS_UPDATE_OK: status -> ${status}`,
+    message: `WEAVE_UPDATE_OK: status -> ${status}`,
     status
   };
 }
 
 /**
- * Verifies that the agent status.md exists, matches expectations, and all declared inputs exist on disk.
+ * Verifies that the agent weave.md exists, matches expectations, and all declared inputs exist on disk.
  */
-export function statusVerify(targetDir, expectedId = null) {
+export function weaveVerify(targetDir, expectedId = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -189,9 +189,9 @@ export function statusVerify(targetDir, expectedId = null) {
     }
   }
   const resolvedDir = path.resolve(targetDir);
-  const statusPath = path.join(resolvedDir, 'status.md');
+  const statusPath = path.join(resolvedDir, 'weave.md');
   if (!fs.existsSync(statusPath)) {
-    throw new Error(`CRITICAL: status.md not found in directory: ${resolvedDir}`);
+    throw new Error(`CRITICAL: weave.md not found in directory: ${resolvedDir}`);
   }
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter } = parseFrontmatter(fileContent);
@@ -234,10 +234,10 @@ export function statusVerify(targetDir, expectedId = null) {
 }
 
 /**
- * Reads status.md from targetDir, parses frontmatter, optionally verifies expected deliverable/status,
- * and returns status metadata matching status.md schema.
+ * Reads weave.md from targetDir, parses frontmatter, optionally verifies expected deliverable/status,
+ * and returns status metadata matching weave.md schema.
  */
-export function statusRead(targetDir, expectedDeliverable = undefined, expectedStatus = undefined) {
+export function weaveRead(targetDir, expectedDeliverable = undefined, expectedStatus = undefined) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -245,9 +245,9 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
     throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
   }
   const resolvedDir = path.resolve(targetDir);
-  const statusPath = path.join(resolvedDir, 'status.md');
+  const statusPath = path.join(resolvedDir, 'weave.md');
   if (!fs.existsSync(statusPath)) {
-    throw new Error(`CRITICAL: status.md not found in directory: ${resolvedDir}`);
+    throw new Error(`CRITICAL: weave.md not found in directory: ${resolvedDir}`);
   }
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter } = parseFrontmatter(fileContent);
@@ -266,14 +266,14 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
       throw new TypeError('CRITICAL: Expected status must be a non-empty string.');
     }
     if (!status.startsWith(expectedStatus)) {
-      throw new Error(`CRITICAL: Status mismatch. Expected status '${expectedStatus}', but status.md defines '${status}'.`);
+      throw new Error(`CRITICAL: Status mismatch. Expected status '${expectedStatus}', but weave.md defines '${status}'.`);
     }
   }
 
   if (expectedDeliverable !== undefined) {
     if (expectedDeliverable === null) {
       if (deliverable !== null) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected null, but status.md defines '${JSON.stringify(deliverable)}'.`);
+        throw new Error(`CRITICAL: Deliverable mismatch. Expected null, but weave.md defines '${JSON.stringify(deliverable)}'.`);
       }
     } else {
       const normExpected = normalizeDeliverable(expectedDeliverable);
@@ -281,7 +281,7 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
       const actualList = Array.isArray(deliverable) ? deliverable : (deliverable ? [deliverable] : []);
       const matches = expectedList.length === actualList.length && expectedList.every((val, idx) => val === actualList[idx]);
       if (!matches) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected '${JSON.stringify(normExpected)}', but status.md defines '${JSON.stringify(deliverable)}'.`);
+        throw new Error(`CRITICAL: Deliverable mismatch. Expected '${JSON.stringify(normExpected)}', but weave.md defines '${JSON.stringify(deliverable)}'.`);
       }
       verifyDeliverableFiles(resolvedDir, deliverable);
     }
@@ -296,3 +296,10 @@ export function statusRead(targetDir, expectedDeliverable = undefined, expectedS
     updated_at: updatedAt
   };
 }
+
+export {
+  weaveInit as statusInit,
+  weaveUpdate as statusUpdate,
+  weaveVerify as statusVerify,
+  weaveRead as statusRead
+};

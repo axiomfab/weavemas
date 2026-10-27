@@ -64,11 +64,11 @@ Tasks are executed sequentially:
 
 ### 1. Frontmatter Configuration
 * **`inheritCustomizations: true` & `inheritMcp: true`**: Gives the subagent access to the WeaveMAS skills and the `weavemas_weave` MCP server.
-* **`skills: [weave-core-agent]`**: Automatically injects the WeaveMAS subagent execution protocol (sandbox confinement, Turn 1 `status_verify`, task status updates, and deliverable verification).
+* **`skills: [weave-core-agent]`**: Automatically injects the WeaveMAS subagent execution protocol (sandbox confinement, Turn 1 `weave_verify`, task status updates, and deliverable verification).
 * **`tools`**: Restricted strictly to `view_file` and `write_to_file`—following the principle of least privilege.
 
 ### 2. `# Role Specifics`
-* Declares **`Deliverable Target: draft.md`**. When the agent finishes, `weave-core-agent` requires it to pass `deliverable: "draft.md"` to `status_update`, which verifies the file actually exists on disk before allowing the agent to mark itself `completed`.
+* Declares **`Deliverable Target: draft.md`**. When the agent finishes, `weave-core-agent` requires it to pass `deliverable: "draft.md"` to `weave_update`, which verifies the file actually exists on disk before allowing the agent to mark itself `completed`.
 
 ### 3. Why the In-Place Image Placeholder Pattern Works
 * Instead of putting an illustration description in an awkward side section that has to be parsed or deleted later, the Writer embeds the image tag directly in its intended final position:
@@ -83,4 +83,4 @@ Tasks are executed sequentially:
 
 ### 4. `# Tasks` & `# Lifecycle`
 * Each `## Task: <slug>` heading uses a short 1–2 word identifier (`01_concepts`, `02_draft`).
-* Because `weave-core-agent` is mounted, the agent automatically updates its `status.md` frontmatter to `in_progress/01_concepts` and then `in_progress/02_draft` as it works—updating the live WeaveMAS UI dashboard in real time without needing a single line of MCP code in this file.
+* Because `weave-core-agent` is mounted, the agent automatically updates its `weave.md` frontmatter to `in_progress/01_concepts` and then `in_progress/02_draft` as it works—updating the live WeaveMAS UI dashboard in real time without needing a single line of MCP code in this file.

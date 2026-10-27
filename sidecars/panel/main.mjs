@@ -122,7 +122,12 @@ app.api('/api/tracker/concept', (data) => {
   };
 }, 'GET');
 
-// API: Universal status_update endpoint
+// API: Universal weave_update endpoint
+app.api('/api/weave_update', (data) => {
+  const ws = resolveWorkspace(data);
+  return executeStatusUpdate(data, ws);
+}, 'POST');
+
 app.api('/api/status_update', (data) => {
   const ws = resolveWorkspace(data);
   return executeStatusUpdate(data, ws);

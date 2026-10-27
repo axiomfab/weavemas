@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { discoverAgents, readFirst1KB } from '../src/agent_discovery.mjs';
-import { statusInit } from '../src/status_manager.mjs';
+import { weaveInit } from '../src/status_manager.mjs';
 
 function createTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-discovery-test-'));
@@ -19,9 +19,9 @@ test('discoverAgents - Happy Path: discovers initialized agents sorted determini
   const agentADir = path.join(stageDir, 'agents', 'a_architect');
   const agentCDir = path.join(stageDir, 'agents', 'c_critic');
 
-  statusInit(agentBDir, 'agent', 'initialized', '.agent/agents/writer.md', ['../a_architect/beats.md']);
-  statusInit(agentADir, 'agent', 'initialized', '.agent/agents/architect.md', ['../../02_concept.md']);
-  statusInit(agentCDir, 'agent', 'completed', '.agent/agents/critic.md');
+  weaveInit(agentBDir, 'agent', 'initialized', '.agent/agents/writer.md', ['../a_architect/beats.md']);
+  weaveInit(agentADir, 'agent', 'initialized', '.agent/agents/architect.md', ['../../02_concept.md']);
+  weaveInit(agentCDir, 'agent', 'completed', '.agent/agents/critic.md');
 
   // Discover with default filter_status = "initialized"
   const res = discoverAgents(stageDir);
@@ -54,7 +54,7 @@ test('discoverAgents - Happy Path: pagination limits results and sets remaining_
   for (let i = 1; i <= 5; i++) {
     const pad = String(i).padStart(2, '0');
     const agentDir = path.join(stageDir, 'agents', `agent_${pad}`);
-    statusInit(agentDir, 'agent', 'initialized', `.agent/agents/role_${pad}.md`);
+    weaveInit(agentDir, 'agent', 'initialized', `.agent/agents/role_${pad}.md`);
   }
 
   // Slice to limit = 2
@@ -73,7 +73,7 @@ test('discoverAgents - Happy Path: custom filter_status finds completed agents',
   const root = createTempDir();
   const stageDir = path.join(root, 'stage03');
   const agentDir = path.join(stageDir, 'agents', 'worker');
-  statusInit(agentDir, 'agent', 'completed', '.agent/agents/worker.md');
+  weaveInit(agentDir, 'agent', 'completed', '.agent/agents/worker.md');
 
   const res = discoverAgents(stageDir, 'completed');
   assert.equal(res.total_matching, 1);

@@ -5,6 +5,6 @@
   "suggestedPrompts": [
     "Use the weave-authoring skill to create a minimal, single-file (stageless) KidsWiki pipeline that writes short text articles for children aged 3 to 12 (defaulting to age 4). Include two agents: a Writer (responsible for age-appropriate readability) and a Fact Checker (strictly verifying factual accuracy, with an in-place revision loop if any statement is wrong), saving the final verified text article to article.md in output/<topic_slug>_<age>yo/.",
     "Verify subagent status in the current working directory",
-    "Inspect the master pipeline status.md"
+    "Inspect the master pipeline weave.md"
   ]
 }
