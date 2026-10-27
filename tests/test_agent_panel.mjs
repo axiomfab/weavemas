@@ -794,3 +794,51 @@ test('Failure Path: Wildcard with 0 matches is colored red with (0)', () => {
   expandedCards.clear();
   cardViewModes.clear();
 });
+
+test('Happy Path: Multi-output chip displays "<N> outputs" and stacks all file contents in preview', () => {
+  const chip10 = getAgentValueChip({
+    outputs: ['f1.md', 'f2.md', 'f3.md', 'f4.md', 'f5.md', 'f6.md', 'f7.md', 'f8.md', 'f9.md', 'f10.md']
+  }, 'card_s1_multi', false);
+  assert.match(chip10, /📄 10 outputs/);
+  assert.doesNotMatch(chip10, /f1\.md, f2\.md/);
+
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Setup',
+        agents: {
+          multi_writer: {
+            id: 'multi_writer',
+            frontmatter: { status: 'completed', outputs: ['part1.md', 'part2.md'] },
+            body: 'Generated 2 parts.',
+            deliverableContent: '── 📄 part1.md ──\nPart 1 text\n\n── 📄 part2.md ──\nPart 2 text',
+            outputItems: [
+              { name: 'part1.md', content: 'Part 1 text', exists: true },
+              { name: 'part2.md', content: 'Part 2 text', exists: true }
+            ]
+          }
+        }
+      }
+    ]
+  };
+
+  expandedCards.add('card_s1_multi_writer');
+  cardViewModes.set('card_s1_multi_writer', 'deliverable');
+  render(container, mockData);
+
+  assert.match(container.innerHTML, /📄 2 outputs/);
+  assert.match(container.innerHTML, /── 📄 part1\.md ──/);
+  assert.match(container.innerHTML, /Part 1 text/);
+  assert.match(container.innerHTML, /── 📄 part2\.md ──/);
+  assert.match(container.innerHTML, /Part 2 text/);
+
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Failure Path: Multi-output chip returns empty string when outputItems is empty array and outputs is empty', () => {
+  assert.equal(getAgentValueChip({ outputs: [] }, 'card_1', false, []), '');
+  assert.equal(getAgentValueChip(null, 'card_1', false, null), '');
+});

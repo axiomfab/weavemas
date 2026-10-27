@@ -32,7 +32,8 @@
     return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cursor} transition-all" ${attr}>${escapeHtml(label)}</span>`;
   }
 
-  function getOutputsList(fm) {
+  function getOutputsList(fm, outputItems = null) {
+    if (Array.isArray(outputItems) && outputItems.length > 0) return outputItems.map(it => String(it.name));
     if (!fm) return [];
     const raw = fm.outputs !== undefined ? fm.outputs : fm.deliverable;
     if (!raw || raw === 'null' || raw === 'None') return [];
@@ -40,18 +41,19 @@
     return [String(raw).trim()];
   }
 
-  function getAgentValueChip(fm, cardId = '', isDeliverableActive = false) {
-    if (!fm) return '';
-    const outs = getOutputsList(fm);
+  function getAgentValueChip(fm, cardId = '', isDeliverableActive = false, outputItems = null) {
+    if (!fm && (!Array.isArray(outputItems) || outputItems.length === 0)) return '';
+    const outs = getOutputsList(fm, outputItems);
     if (outs.length > 0) {
+      const chipLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
       const activeCls = isDeliverableActive
         ? 'bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400'
         : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
-      return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(outs.join(', '))}</button>`;
+      return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(chipLabel)}</button>`;
     }
-    if (fm.progress) return `${escapeHtml(fm.progress)} Verified`;
-    if (fm.total_acts != null && fm.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
-    if (fm.words != null) return `${fm.words} words`;
+    if (fm?.progress) return `${escapeHtml(fm.progress)} Verified`;
+    if (fm?.total_acts != null && fm?.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
+    if (fm?.words != null) return `${fm.words} words`;
     return '';
   }
 
@@ -172,15 +174,16 @@
     }
     const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
 
-    const outs = getOutputsList(fm);
+    const outs = getOutputsList(fm, agentData?.outputItems);
     const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
-    const delivLabel = outs.join(', ');
+    const delivLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
 
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
       const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(delivLabel)}) has not been generated yet.`);
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
+      const formattedDeliv = escapeHtml(delivContent).replace(/^── 📄 (.+?) ──$/gm, '<span class="text-indigo-300 font-bold">── 📄 $1 ──</span>');
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${formattedDeliv}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
@@ -201,9 +204,7 @@
   function getNodeCreationTime(node) {
     if (!node) return 0;
     if (typeof node.createdAt === 'number' && node.createdAt > 0) return node.createdAt;
-    if (node.type === 'group' && Array.isArray(node.children) && node.children.length > 0) {
-      return Math.min(...node.children.map(getNodeCreationTime));
-    }
+    if (node.type === 'group' && Array.isArray(node.children) && node.children.length > 0) return Math.min(...node.children.map(getNodeCreationTime));
     return 0;
   }
 
@@ -213,17 +214,15 @@
       const isExpanded = expandedGroups.has(groupId);
       const title = formatAgentTitle(node.name || node.id);
       const sortedChildren = (node.children || []).slice().sort((a, b) => {
-        const ta = getNodeCreationTime(a);
-        const tb = getNodeCreationTime(b);
-        if (ta && tb && ta !== tb) return ta - tb;
-        return (a.name || a.id).localeCompare(b.name || b.id);
+        const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
+        return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
       });
       return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const title = formatAgentTitle(node.name || node.id);
     const isDelivActive = cardViewModes.get(cardId) === 'deliverable';
-    const chip = getAgentValueChip(node.frontmatter, cardId, isDelivActive);
+    const chip = getAgentValueChip(node.frontmatter, cardId, isDelivActive, node.outputItems);
     return renderAgentCard(cardId, title, node, chip);
   }
 

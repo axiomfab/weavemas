@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { checkAgentInputs } from './input_verifier.mjs';
+import { checkAgentInputs, resolveAgentOutputs } from './input_verifier.mjs';
 
 function parseScalarValue(raw) {
   const val = raw.trim();
@@ -117,25 +117,6 @@ export function executeStatusUpdate(params, workspaceRoot) {
   return { filePath, frontmatter: currentFm, body: finalBody };
 }
 
-function readDeliverableContent(dir, rawOutputs, workspaceRoot, showDir, stageName) {
-  const deliverable = Array.isArray(rawOutputs) ? rawOutputs[0] : rawOutputs;
-  if (!deliverable || typeof deliverable !== 'string' || deliverable === 'null' || deliverable === 'None') return null;
-  const showFullPath = (path.isAbsolute(showDir) && fs.existsSync(showDir))
-    ? showDir
-    : path.join(workspaceRoot, 'output', showDir);
-  const candidates = [
-    path.join(dir, deliverable),
-    stageName ? path.join(showFullPath, stageName, deliverable) : null,
-    path.join(showFullPath, deliverable)
-  ].filter(Boolean);
-  for (const cand of candidates) {
-    if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
-      try { return fs.readFileSync(cand, 'utf-8'); } catch { /* continue */ }
-    }
-  }
-  return null;
-}
-
 function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
   function getNodeTime(n) {
     if (!n) return 0;
@@ -156,7 +137,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
       const fm = parsed.frontmatter;
       if (fm && (!fm.type || fm.type === 'agent')) {
         const rawOut = fm.outputs !== undefined ? fm.outputs : fm.deliverable;
-        const deliverableContent = readDeliverableContent(dir, rawOut, workspaceRoot, showDir, stageName);
+        const { deliverableContent, outputItems } = resolveAgentOutputs(dir, rawOut, workspaceRoot, showDir, stageName);
         const inputStatuses = Array.isArray(fm.inputs) ? checkAgentInputs(dir, fm.inputs, workspaceRoot, showDir) : [];
         let createdAt = 0;
         try {
@@ -175,6 +156,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
           frontmatter: fm,
           body: parsed.body.trim(),
           deliverableContent,
+          outputItems,
           statusContent: raw,
           inputStatuses,
           createdAt
@@ -195,7 +177,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
           if (fm && (fm.type === 'agent' || fm.status)) {
             const key = path.basename(ent.name, '.md');
             const rawOut = fm.outputs !== undefined ? fm.outputs : fm.deliverable;
-            const deliverableContent = readDeliverableContent(dir, rawOut, workspaceRoot, showDir, stageName);
+            const { deliverableContent, outputItems } = resolveAgentOutputs(dir, rawOut, workspaceRoot, showDir, stageName);
             let createdAt = 0;
             try {
               const stat = fs.statSync(filePath);
@@ -211,6 +193,7 @@ function scanAgentsDir(agentsDir, workspaceRoot, showDir, stageName) {
               frontmatter: fm,
               body: parsed.body.trim(),
               deliverableContent,
+              outputItems,
               statusContent: raw,
               createdAt
             });

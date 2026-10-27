@@ -204,3 +204,40 @@ test('Failure Path 2: readDirectAgents returns empty object when agents director
   }
 });
 
+test('Happy Path: resolveAgentOutputs stacks multiple output files and expands wildcards with media summary', () => {
+  const multiStage = 'stage05_multi';
+  const agentDir = path.join(testOutputDir, multiStage, 'agents', 'batch_agent');
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(agentDir, 'weave.md'),
+    '---\ntype: agent\nstatus: completed\noutputs:\n  - "seg_*.md"\n  - "clip.mp3"\n---\nDone.',
+    'utf-8'
+  );
+  fs.writeFileSync(path.join(agentDir, 'seg_01.md'), '# Segment 1 Content', 'utf-8');
+  fs.writeFileSync(path.join(agentDir, 'seg_02.md'), '# Segment 2 Content', 'utf-8');
+  fs.writeFileSync(path.join(agentDir, 'clip.mp3'), 'FAKE_MP3_BYTES', 'utf-8');
+
+  const stageData = readStageAgents(testShow, multiStage, workspaceRoot);
+  assert.ok(stageData.batch_agent);
+  assert.equal(stageData.batch_agent.outputItems.length, 3);
+  assert.match(stageData.batch_agent.deliverableContent, /── 📄 seg_01\.md ──\n# Segment 1 Content/);
+  assert.match(stageData.batch_agent.deliverableContent, /── 📄 seg_02\.md ──\n# Segment 2 Content/);
+  assert.match(stageData.batch_agent.deliverableContent, /\[Media\/Binary file: clip\.mp3 • 14 B\]/);
+});
+
+test('Failure Path: resolveAgentOutputs returns null deliverableContent when none of the multiple outputs exist on disk', () => {
+  const multiStage = 'stage05_multi_missing';
+  const agentDir = path.join(testOutputDir, multiStage, 'agents', 'missing_batch');
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(agentDir, 'weave.md'),
+    '---\ntype: agent\nstatus: in_progress\noutputs:\n  - "missing_1.md"\n  - "missing_2.md"\n---\nWorking...',
+    'utf-8'
+  );
+
+  const stageData = readStageAgents(testShow, multiStage, workspaceRoot);
+  assert.ok(stageData.missing_batch);
+  assert.equal(stageData.missing_batch.outputItems.length, 2);
+  assert.equal(stageData.missing_batch.deliverableContent, null);
+});
+
