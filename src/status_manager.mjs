@@ -7,8 +7,8 @@ import {
   inferLookupRoots,
   expandPathPattern,
   resolveInputEntry,
-  normalizeDeliverable,
-  verifyDeliverableFiles
+  normalizeOutputs,
+  verifyOutputFiles
 } from './path_resolver.mjs';
 
 export {
@@ -92,7 +92,7 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
     status: resolvedStatus,
     ...(resolvedInstructions ? { instructions_file: resolvedInstructions } : {}),
     ...(validatedInputs !== null ? { inputs: validatedInputs } : {}),
-    deliverable: null,
+    outputs: [],
     updated_at: now
   };
 
@@ -111,9 +111,9 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
 }
 
 /**
- * Updates weave.md in target directory with new status, optional progress note, and optional deliverable.
+ * Updates weave.md in target directory with new status, optional progress note, and optional outputs.
  */
-export function weaveUpdate(targetDir, status, progress = null, deliverable = null) {
+export function weaveUpdate(targetDir, status, progress = null, outputs = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -138,17 +138,25 @@ export function weaveUpdate(targetDir, status, progress = null, deliverable = nu
 
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter, body } = parseFrontmatter(fileContent);
-  const normalizedDeliverable = normalizeDeliverable(deliverable);
+  const normalizedOutputs = normalizeOutputs(outputs);
+
+  const rawExisting = frontmatter.outputs !== undefined ? frontmatter.outputs : frontmatter.deliverable;
+  delete frontmatter.deliverable;
+  const existingOutputs = Array.isArray(rawExisting)
+    ? rawExisting.map(String)
+    : (rawExisting ? [String(rawExisting)] : []);
 
   if (status.startsWith('completed')) {
-    const finalDeliverable = normalizedDeliverable !== null ? normalizedDeliverable : frontmatter.deliverable;
-    if (!finalDeliverable || (Array.isArray(finalDeliverable) && finalDeliverable.length === 0)) {
-      throw new Error('CRITICAL: Deliverable path is required when setting status to completed.');
+    const finalOutputs = normalizedOutputs !== null ? normalizedOutputs : existingOutputs;
+    if (!finalOutputs || finalOutputs.length === 0) {
+      throw new Error('CRITICAL: Outputs path is required when setting status to completed.');
     }
-    verifyDeliverableFiles(resolvedDir, finalDeliverable);
-    frontmatter.deliverable = finalDeliverable;
-  } else if (normalizedDeliverable !== null) {
-    frontmatter.deliverable = normalizedDeliverable;
+    verifyOutputFiles(resolvedDir, finalOutputs);
+    frontmatter.outputs = finalOutputs;
+  } else if (normalizedOutputs !== null) {
+    frontmatter.outputs = normalizedOutputs;
+  } else {
+    frontmatter.outputs = existingOutputs;
   }
 
   const now = new Date().toISOString();
@@ -234,10 +242,10 @@ export function weaveVerify(targetDir, expectedId = null) {
 }
 
 /**
- * Reads weave.md from targetDir, parses frontmatter, optionally verifies expected deliverable/status,
+ * Reads weave.md from targetDir, parses frontmatter, optionally verifies expected outputs/status,
  * and returns status metadata matching weave.md schema.
  */
-export function weaveRead(targetDir, expectedDeliverable = undefined, expectedStatus = undefined) {
+export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus = undefined) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -256,9 +264,10 @@ export function weaveRead(targetDir, expectedDeliverable = undefined, expectedSt
   const type = String(frontmatter.type ?? 'agent');
   const instructionsFile = frontmatter.instructions_file ? String(frontmatter.instructions_file) : null;
   const inputs = Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [];
-  const deliverable = Array.isArray(frontmatter.deliverable)
-    ? frontmatter.deliverable.map(String)
-    : (frontmatter.deliverable ? String(frontmatter.deliverable) : null);
+  const rawOutputs = frontmatter.outputs !== undefined ? frontmatter.outputs : frontmatter.deliverable;
+  const outputs = Array.isArray(rawOutputs)
+    ? rawOutputs.map(String)
+    : (rawOutputs ? [String(rawOutputs)] : []);
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
   if (expectedStatus !== undefined && expectedStatus !== null) {
@@ -270,20 +279,18 @@ export function weaveRead(targetDir, expectedDeliverable = undefined, expectedSt
     }
   }
 
-  if (expectedDeliverable !== undefined) {
-    if (expectedDeliverable === null) {
-      if (deliverable !== null) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected null, but weave.md defines '${JSON.stringify(deliverable)}'.`);
+  if (expectedOutputs !== undefined) {
+    if (expectedOutputs === null || (Array.isArray(expectedOutputs) && expectedOutputs.length === 0)) {
+      if (outputs.length > 0) {
+        throw new Error(`CRITICAL: Outputs mismatch. Expected empty outputs, but weave.md defines '${JSON.stringify(outputs)}'.`);
       }
     } else {
-      const normExpected = normalizeDeliverable(expectedDeliverable);
-      const expectedList = Array.isArray(normExpected) ? normExpected : [normExpected];
-      const actualList = Array.isArray(deliverable) ? deliverable : (deliverable ? [deliverable] : []);
-      const matches = expectedList.length === actualList.length && expectedList.every((val, idx) => val === actualList[idx]);
+      const expectedList = normalizeOutputs(expectedOutputs);
+      const matches = expectedList.length === outputs.length && expectedList.every((val, idx) => val === outputs[idx]);
       if (!matches) {
-        throw new Error(`CRITICAL: Deliverable mismatch. Expected '${JSON.stringify(normExpected)}', but weave.md defines '${JSON.stringify(deliverable)}'.`);
+        throw new Error(`CRITICAL: Outputs mismatch. Expected '${JSON.stringify(expectedList)}', but weave.md defines '${JSON.stringify(outputs)}'.`);
       }
-      verifyDeliverableFiles(resolvedDir, deliverable);
+      verifyOutputFiles(resolvedDir, outputs);
     }
   }
 
@@ -291,7 +298,7 @@ export function weaveRead(targetDir, expectedDeliverable = undefined, expectedSt
     status,
     instructions_file: instructionsFile,
     inputs,
-    deliverable,
+    outputs,
     type,
     updated_at: updatedAt
   };

@@ -108,5 +108,5 @@ You extract the illustration prompt from the **Approved Article** input, generat
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
-* **Deliverable Target**: Save `article.md` and `illustration.png` (deliverable: `["article.md", "illustration.png"]`).
+* **Deliverable Target**: Save `article.md` and `illustration.png` (outputs: `["article.md", "illustration.png"]`).
 ```

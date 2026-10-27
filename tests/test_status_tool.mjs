@@ -79,7 +79,8 @@ type: agent
 act: "act_1"
 segment: "A1_01"
 status: completed
-deliverable: beats.md
+outputs:
+  - "beats.md"
 ---
 ### 5 Narrative Beats
 1. **Hook**: Opening beat.
@@ -90,7 +91,7 @@ deliverable: beats.md
   const stageData = readStageAgents(testShow, writingStage, workspaceRoot);
   assert.ok(stageData.act_1_A1_01_architect, 'Should discover nested architect agent');
   assert.equal(stageData.act_1_A1_01_architect.frontmatter.status, 'completed');
-  assert.equal(stageData.act_1_A1_01_architect.frontmatter.deliverable, 'beats.md');
+  assert.deepEqual(stageData.act_1_A1_01_architect.frontmatter.outputs, ['beats.md']);
 });
 
 test('Happy Path 3: readStageAgents parses weave.md containing UTF-8 BOM with not_started status', () => {
@@ -98,7 +99,7 @@ test('Happy Path 3: readStageAgents parses weave.md containing UTF-8 BOM with no
   const writerDir = path.join(testOutputDir, writingStage, 'agents', 'act_1', 'A1_01', 'writer');
   fs.mkdirSync(writerDir, { recursive: true });
   // Prepend \uFEFF (UTF-8 BOM)
-  const bomContent = '\uFEFF---\ntype: agent\nstatus: not_started\ndeliverable: null\n---\nWriter ready.';
+  const bomContent = '\uFEFF---\ntype: agent\nstatus: not_started\noutputs: []\n---\nWriter ready.';
   fs.writeFileSync(path.join(writerDir, 'weave.md'), bomContent, 'utf-8');
 
   const stageData = readStageAgents(testShow, writingStage, workspaceRoot);
@@ -107,30 +108,30 @@ test('Happy Path 3: readStageAgents parses weave.md containing UTF-8 BOM with no
   assert.equal(stageData.act_1_A1_01_writer.body, 'Writer ready.');
 });
 
-test('Happy Path: readStageAgents loads deliverableContent when deliverable file exists', () => {
+test('Happy Path: readStageAgents loads deliverableContent when outputs file exists', () => {
   const setupStage = 'stage01_setup';
   const dirDir = path.join(testOutputDir, setupStage, 'agents', 'director');
   fs.mkdirSync(dirDir, { recursive: true });
   fs.writeFileSync(
     path.join(dirDir, 'weave.md'),
-    '---\ntype: agent\nstatus: completed\ndeliverable: setup.md\n---\nInit done.',
+    '---\ntype: agent\nstatus: completed\noutputs:\n  - "setup.md"\n---\nInit done.',
     'utf-8'
   );
   fs.writeFileSync(path.join(dirDir, 'setup.md'), '# Setup Deliverable Content\nPersona: Jack Turner', 'utf-8');
 
   const stageData = readStageAgents(testShow, setupStage, workspaceRoot);
   assert.ok(stageData.director);
-  assert.equal(stageData.director.frontmatter.deliverable, 'setup.md');
+  assert.deepEqual(stageData.director.frontmatter.outputs, ['setup.md']);
   assert.equal(stageData.director.deliverableContent, '# Setup Deliverable Content\nPersona: Jack Turner');
 });
 
-test('Failure Path: readStageAgents sets deliverableContent to null when deliverable file does not exist', () => {
+test('Failure Path: readStageAgents sets deliverableContent to null when outputs file does not exist', () => {
   const setupStage = 'stage01_setup';
   const missingDir = path.join(testOutputDir, setupStage, 'agents', 'director_missing');
   fs.mkdirSync(missingDir, { recursive: true });
   fs.writeFileSync(
     path.join(missingDir, 'weave.md'),
-    '---\ntype: agent\nstatus: in_progress\ndeliverable: nonexistent.md\n---\nWorking...',
+    '---\ntype: agent\nstatus: in_progress\noutputs:\n  - "nonexistent.md"\n---\nWorking...',
     'utf-8'
   );
 
@@ -139,13 +140,13 @@ test('Failure Path: readStageAgents sets deliverableContent to null when deliver
   assert.equal(stageData.director_missing.deliverableContent, null);
 });
 
-test('Failure Path: readStageAgents sets deliverableContent to null when deliverable is null or undefined in frontmatter', () => {
+test('Failure Path: readStageAgents sets deliverableContent to null when outputs is empty or undefined in frontmatter', () => {
   const setupStage = 'stage01_setup';
   const noDelivDir = path.join(testOutputDir, setupStage, 'agents', 'director_none');
   fs.mkdirSync(noDelivDir, { recursive: true });
   fs.writeFileSync(
     path.join(noDelivDir, 'weave.md'),
-    '---\ntype: agent\nstatus: in_progress\ndeliverable: null\n---\nNo deliverable yet.',
+    '---\ntype: agent\nstatus: in_progress\noutputs: []\n---\nNo output yet.',
     'utf-8'
   );
 
@@ -154,14 +155,14 @@ test('Failure Path: readStageAgents sets deliverableContent to null when deliver
   assert.equal(stageData.director_none.deliverableContent, null);
 });
 
-test('Happy Path: readDirectAgents discovers agents in stageless pipeline and loads deliverable', () => {
+test('Happy Path: readDirectAgents discovers agents in stageless pipeline and loads outputs', () => {
   const stagelessShow = 'show_stageless_test';
   const stagelessDir = path.join(workspaceRoot, 'output', stagelessShow);
   const factcheckerDir = path.join(stagelessDir, 'agents', 'factchecker');
   fs.mkdirSync(factcheckerDir, { recursive: true });
   fs.writeFileSync(
     path.join(factcheckerDir, 'weave.md'),
-    '---\ntype: agent\nstatus: completed\ndeliverable: audit_report.md\n---\nAudit verified.',
+    '---\ntype: agent\nstatus: completed\noutputs:\n  - "audit_report.md"\n---\nAudit verified.',
     'utf-8'
   );
   fs.writeFileSync(path.join(factcheckerDir, 'audit_report.md'), '# Verified Claims', 'utf-8');
@@ -170,7 +171,7 @@ test('Happy Path: readDirectAgents discovers agents in stageless pipeline and lo
     const agents = readDirectAgents(stagelessShow, workspaceRoot);
     assert.ok(agents.factchecker);
     assert.equal(agents.factchecker.frontmatter.status, 'completed');
-    assert.equal(agents.factchecker.frontmatter.deliverable, 'audit_report.md');
+    assert.deepEqual(agents.factchecker.frontmatter.outputs, ['audit_report.md']);
     assert.equal(agents.factchecker.deliverableContent, '# Verified Claims');
 
     const allStages = readAllStagesAgents(stagelessShow, workspaceRoot);

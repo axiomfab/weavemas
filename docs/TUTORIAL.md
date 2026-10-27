@@ -407,7 +407,7 @@ output/kidswiki_rocket_age4/
   status: "in_progress/02_draft"
   instructions_file: ".agent/agents/stage1_writer.md"
   inputs: []
-  deliverable: null # set to relative filename upon "completed"
+  outputs: [] # populated with relative filename(s) upon "completed"
   updated_at: "2026-10-16T09:30:00.000Z"
   ---
   ```
@@ -443,8 +443,8 @@ All `dir` arguments **must be absolute paths**.
 | `weave_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`, `inputs`)* | Creates target directory recursively and writes initial `weave.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
 | `discover_agents` | Orchestrator (Phase 2) | `directory` *(opt: `filter_status`, `limit`)* | Discovers provisioned subagents under a stage directory, returning agent ids, directories, and instruction paths. |
 | `weave_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `weave.md` exists and is ready for execution. Fails fast on missing status. |
-| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `deliverable`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `deliverable` exists on disk when `status == "completed"`. |
-| `weave_read` | Orchestrator | `dir` *(opt: `expected_deliverable`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
+| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `outputs`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `outputs` exists on disk when `status == "completed"`. |
+| `weave_read` | Orchestrator | `dir` *(opt: `expected_outputs`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
 
 ### Two Pipeline Structural Modes
 * **Mode 1: Multi-Stage Modular Pipeline (`orchestrator.md` + `orchestrator/stage<N>_<slug>.md`)**: Best for pipelines with distinct phases and review gates (like our 2-stage KidsWiki example). The UI sidecar renders a visual stage stepper across the top for every `stage<NN>_<name>/` directory.

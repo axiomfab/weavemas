@@ -629,9 +629,9 @@ test('Happy Path: Renders stageless agent deliverable content when card is expan
 
 
 
-test('Happy Path: Renders raw weave.md content when card is in status view mode and switches tabs', () => {
+test('Happy Path: Renders combined weave.md frontmatter and updates in a single unified view without inner tabs', () => {
   const container = { innerHTML: '', querySelectorAll: () => [] };
-  const mockStatusRaw = `---\ntype: agent\nstatus: in_progress/outline\ninputs:\n  - "01_setup.md"\ndeliverable: null\n---\n# Status Log\n- 2026-10-26: in_progress`;
+  const mockStatusRaw = `---\ntype: agent\nstatus: in_progress/outline\ninputs:\n  - "01_setup.md"\noutputs: []\n---\n# Status Log\n- 2026-10-26: in_progress`;
   const mockData = {
     stages: [
       {
@@ -640,7 +640,7 @@ test('Happy Path: Renders raw weave.md content when card is in status view mode 
         agents: {
           showrunner: {
             id: 'showrunner',
-            frontmatter: { status: 'in_progress/outline', deliverable: 'concept.md' },
+            frontmatter: { status: 'in_progress/outline', outputs: ['concept.md'] },
             body: 'Working on outline...',
             deliverableContent: '# Concept Document',
             statusContent: mockStatusRaw
@@ -652,26 +652,22 @@ test('Happy Path: Renders raw weave.md content when card is in status view mode 
 
   expandedCards.add('card_s2_showrunner');
 
-  // 1. By default, 'updates' mode shows body
+  // 1. Default ('updates') mode shows BOTH formatted frontmatter AND updates log, with no inner tab buttons
   cardViewModes.set('card_s2_showrunner', 'updates');
-  render(container, mockData);
-  assert.match(container.innerHTML, /Working on outline\.\.\./);
-  assert.match(container.innerHTML, /data-raw-status-toggle="card_s2_showrunner"/);
-  assert.match(container.innerHTML, />weave\.md</);
-
-  // 2. Switch to 'status' mode -> shows full weave.md content including frontmatter
-  cardViewModes.set('card_s2_showrunner', 'status');
   render(container, mockData);
   assert.match(container.innerHTML, /type<\/span>:\s+<span[^>]*>"agent"/);
   assert.match(container.innerHTML, /01_setup\.md/);
   assert.match(container.innerHTML, /in_progress\/outline/);
-  assert.doesNotMatch(container.innerHTML, /Working on outline\.\.\./);
+  assert.match(container.innerHTML, /Working on outline\.\.\./);
+  assert.doesNotMatch(container.innerHTML, /data-raw-status-toggle/);
+  assert.doesNotMatch(container.innerHTML, />Updates</);
+  assert.doesNotMatch(container.innerHTML, />weave\.md</);
 
-  // 3. Switch to 'deliverable' mode -> shows deliverableContent
+  // 2. Switch to 'deliverable' mode -> shows deliverableContent
   cardViewModes.set('card_s2_showrunner', 'deliverable');
   render(container, mockData);
   assert.match(container.innerHTML, /# Concept Document/);
-  assert.doesNotMatch(container.innerHTML, /type: agent/);
+  assert.doesNotMatch(container.innerHTML, /Working on outline\.\.\./);
 
   // Cleanup
   expandedCards.clear();

@@ -22,5 +22,5 @@ description: >-
 ## 🏛️ Core Authoring Constraints
 
 1. **Concrete Inlining (Zero Meta-Optionality)**: Author only exact role-specific paths, deliverables, and tasks—never abstract menus of options or raw MCP tool JSON payloads.
-2. **Closed 6-Key `weave.md` Frontmatter**: Locked strictly to `type`, `status`, `instructions_file`, `inputs`, `deliverable`, `updated_at`. Never invent extra keys (e.g., `role`, `is_completed`, `progress`) without explicit user permission.
+2. **Closed 6-Key `weave.md` Frontmatter**: Locked strictly to `type`, `status`, `instructions_file`, `inputs`, `outputs`, `updated_at`. Never invent extra keys (e.g., `role`, `is_completed`, `progress`) without explicit user permission.
 3. **Model Selection**: Configure subagents with `flash` (recommended default), `pro`, or `inherit`. **NEVER use `flash_lite`** (fails to invoke `call_mcp_tool` reliably).

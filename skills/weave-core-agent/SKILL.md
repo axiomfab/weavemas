@@ -45,14 +45,14 @@ As you start each task in your instructions, update `weave.md`:
   }
   ```
 
-### Completion & Deliverable Verification
-Once your required deliverable(s) are written to disk inside your working directory, mark your status `completed` (the tool automatically verifies every file or wildcard pattern exists on disk; `deliverable` may be a single filename/pattern string or an array of strings):
+### Completion & Outputs Verification
+Once your required output(s) are written to disk inside your working directory, mark your status `completed` (the tool automatically verifies every file or wildcard pattern exists on disk; `outputs` may be a single filename/pattern string or an array of strings):
 * `ToolName`: `"weave_update"`, `Arguments`:
   ```json
   {
     "dir": "<absolute_working_directory>",
     "status": "completed",
-    "deliverable": "<relative_deliverable_filename_or_array>",
+    "outputs": "<relative_output_filename_or_array>",
     "progress": "<Final executive summary of output>"
   }
   ```

@@ -203,7 +203,7 @@ test('MCP Failure Path 6: weave_init with relative dir returns isError: true res
   assert.match(res.result.content[0].text, /CRITICAL: Target directory must be an absolute path/);
 });
 
-test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and deliverable status', () => {
+test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and outputs status', () => {
   const tmp = createTempDir();
   handleMessage({
     jsonrpc: '2.0',
@@ -222,7 +222,7 @@ test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and deliv
     method: 'tools/call',
     params: {
       name: 'weave_update',
-      arguments: { dir: tmp, status: 'completed', deliverable: 'setup.md', progress: 'Setup completed' }
+      arguments: { dir: tmp, status: 'completed', outputs: 'setup.md', progress: 'Setup completed' }
     }
   });
 
@@ -232,7 +232,7 @@ test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and deliv
     method: 'tools/call',
     params: {
       name: 'weave_read',
-      arguments: { dir: tmp, expected_deliverable: 'setup.md', expected_status: 'completed' }
+      arguments: { dir: tmp, expected_outputs: 'setup.md', expected_status: 'completed' }
     }
   };
   const readRes = captureResponse(readReq);
@@ -240,7 +240,7 @@ test('MCP Tool Call - Happy Path 3: weave_read returns parsed metadata and deliv
   assert.equal(readRes.result.isError, undefined);
   const data = JSON.parse(readRes.result.content[0].text);
   assert.equal(data.status, 'completed');
-  assert.equal(data.deliverable, 'setup.md');
+  assert.deepEqual(data.outputs, ['setup.md']);
   assert.equal(data.type, 'agent');
   assert.ok(data.updated_at);
   fs.rmSync(tmp, { recursive: true, force: true });

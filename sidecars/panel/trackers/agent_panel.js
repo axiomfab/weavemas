@@ -32,13 +32,22 @@
     return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cursor} transition-all" ${attr}>${escapeHtml(label)}</span>`;
   }
 
+  function getOutputsList(fm) {
+    if (!fm) return [];
+    const raw = fm.outputs !== undefined ? fm.outputs : fm.deliverable;
+    if (!raw || raw === 'null' || raw === 'None') return [];
+    if (Array.isArray(raw)) return raw.map(s => String(s).trim()).filter(s => s && s !== 'null' && s !== 'None');
+    return [String(raw).trim()];
+  }
+
   function getAgentValueChip(fm, cardId = '', isDeliverableActive = false) {
     if (!fm) return '';
-    if (fm.deliverable && fm.deliverable !== 'null' && fm.deliverable !== 'None') {
+    const outs = getOutputsList(fm);
+    if (outs.length > 0) {
       const activeCls = isDeliverableActive
         ? 'bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400'
         : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
-      return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(fm.deliverable)}</button>`;
+      return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(outs.join(', '))}</button>`;
     }
     if (fm.progress) return `${escapeHtml(fm.progress)} Verified`;
     if (fm.total_acts != null && fm.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
@@ -100,13 +109,14 @@
             lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] ${cls}">"${escapeHtml(itemStr)}"${badge}</span>`);
           }
         }
+      } else if (k === 'outputs') {
+        const outArr = Array.isArray(v) ? v : (v && v !== 'null' ? [v] : []);
+        if (outArr.length === 0) lines.push(`<span class="text-indigo-300 font-mono">outputs</span>: <span class="text-slate-400 font-mono">[]</span>`);
+        else { lines.push(`<span class="text-indigo-300 font-mono">outputs</span>:`); for (const it of outArr) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
       } else if (v === null) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-500 font-mono">null</span>`);
       else if (Array.isArray(v)) {
         if (v.length === 0) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
-        else {
-          lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`);
-          for (const it of v) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`);
-        }
+        else { lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`); for (const it of v) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
       } else if (typeof v === 'string') lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
       else lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-cyan-300 font-mono">${escapeHtml(String(v))}</span>`);
     }
@@ -129,10 +139,7 @@
       return { total: 1, completed: (base === 'completed' || base === 'approved') ? 1 : 0, inProgress: (base === 'in_progress' || base === 'revising' || base === 'running') ? 1 : 0 };
     }
     if (node.type === 'group' && Array.isArray(node.children)) {
-      return node.children.reduce((acc, c) => {
-        const s = getGroupSummary(c);
-        return { total: acc.total + s.total, completed: acc.completed + s.completed, inProgress: acc.inProgress + s.inProgress };
-      }, { total: 0, completed: 0, inProgress: 0 });
+      return node.children.reduce((acc, c) => { const s = getGroupSummary(c); return { total: acc.total + s.total, completed: acc.completed + s.completed, inProgress: acc.inProgress + s.inProgress }; }, { total: 0, completed: 0, inProgress: 0 });
     }
     return { total: 1, completed: 0, inProgress: 0 };
   }
@@ -165,29 +172,27 @@
     }
     const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
 
-    const isDeliverableMode = viewMode === 'deliverable' && fm.deliverable;
-    const isStatusMode = viewMode === 'status';
-
-    const updatesBtnCls = viewMode === 'updates' ? 'bg-slate-800 text-white font-bold border border-slate-700' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
-    const statusBtnCls = isStatusMode ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
-    const deliverableBtnCls = isDeliverableMode ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 ring-1 ring-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50';
-
-    const delivLabel = Array.isArray(fm.deliverable) ? fm.deliverable.join(', ') : fm.deliverable;
-    const tabsHtml = `<div class="flex items-center gap-1 font-mono"><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${updatesBtnCls}" data-status-toggle="${escapeHtml(cardId)}">Updates</button><button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${statusBtnCls}" data-raw-status-toggle="${escapeHtml(cardId)}">weave.md</button>${fm.deliverable ? `<button type="button" class="px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${deliverableBtnCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(delivLabel)}</button>` : ''}</div>`;
+    const outs = getOutputsList(fm);
+    const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
+    const delivLabel = outs.join(', ');
 
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}<span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
       const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(delivLabel)}) has not been generated yet.`);
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${escapeHtml(delivContent)}</div>`;
-    } else if (isStatusMode) {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
-      const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${fmContent}</div>`;
     } else {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${tabsHtml}${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
+      const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
+      const hasFm = fmContent && fmContent !== 'No frontmatter available.';
       const formattedLog = formatHumanLogBody(body);
-      mainContentHtml = formattedLog ? `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${formattedLog}</div>` : `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No logs recorded yet. Agent is pending or starting up...</div>`;
+      if (hasFm || formattedLog) {
+        const logSection = formattedLog || `<span class="text-slate-500 italic">No logs recorded yet. Agent is pending or starting up...</span>`;
+        const combined = hasFm ? `${fmContent}\n\n${logSection}` : formattedLog;
+        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${combined}</div>`;
+      } else {
+        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
+      }
     }
 
     return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
@@ -299,16 +304,6 @@
         expandedCards.add(id);
         cardViewModes.set(id, 'updates');
         pendingScrollBottom.add(id);
-        render(container, data, filterStageNum);
-      });
-    });
-
-    container.querySelectorAll('[data-raw-status-toggle]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-raw-status-toggle');
-        expandedCards.add(id);
-        cardViewModes.set(id, 'status');
         render(container, data, filterStageNum);
       });
     });

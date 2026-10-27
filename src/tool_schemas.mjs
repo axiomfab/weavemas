@@ -52,12 +52,12 @@ export const TOOLS = [
           type: 'string',
           description: 'Concise summary of progress, decisions, or transition rationale.'
         },
-        deliverable: {
+        outputs: {
           oneOf: [
             { type: 'string' },
             { type: 'array', items: { type: 'string' } }
           ],
-          description: 'Relative path(s) or wildcard pattern(s) to output deliverable(s) (required if status is completed).'
+          description: 'Relative path(s) or wildcard pattern(s) to output file(s) (required if status is completed).'
         }
       },
       required: ['dir', 'status']
@@ -91,13 +91,13 @@ export const TOOLS = [
           type: 'string',
           description: 'Absolute path to the target directory containing weave.md.'
         },
-        expected_deliverable: {
+        expected_outputs: {
           oneOf: [
             { type: 'string' },
             { type: 'array', items: { type: 'string' } },
             { type: 'null' }
           ],
-          description: 'Optional expected deliverable filename/pattern, array of filenames/patterns, or null if agent produces no deliverable.'
+          description: 'Optional expected output filename/pattern, array of filenames/patterns, or null/[] if agent produces no outputs.'
         },
         expected_status: {
           type: 'string',

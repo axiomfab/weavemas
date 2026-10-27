@@ -65,7 +65,7 @@ test('serializeStatus - Failure Path 3: forbidden frontmatter key throws Error',
   const invalid = {
     type: 'agent',
     status: 'not_started',
-    deliverable: null,
+    outputs: [],
     updated_at: new Date().toISOString(),
     role: 'forbidden_role'
   };
@@ -76,7 +76,7 @@ test('serializeStatus - Failure Path 3: forbidden frontmatter key throws Error',
 });
 
 test('Frontmatter Contract - Integrity Canary: exactly 6 closed keys', () => {
-  const EXPECTED_KEYS = ['deliverable', 'inputs', 'instructions_file', 'status', 'type', 'updated_at'];
+  const EXPECTED_KEYS = ['inputs', 'instructions_file', 'outputs', 'status', 'type', 'updated_at'];
   assert.deepEqual(Array.from(ALLOWED_FRONTMATTER_KEYS).sort(), EXPECTED_KEYS);
   assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 6);
 });
@@ -87,7 +87,7 @@ test('parseFrontmatter & serializeStatus - Happy Path: round-trips multi-line YA
     status: 'initialized',
     instructions_file: '.agent/agents/factchecker.md',
     inputs: ['../writer/draft.md', '../../prompts/persona.md'],
-    deliverable: null,
+    outputs: [],
     updated_at: '2026-10-25T01:50:00.000Z'
   };
   const serialized = serializeStatus(fm, 'Initialized.');
@@ -229,22 +229,22 @@ test('statusUpdate - Failure Path 1: invalid status state throws Error', () => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusUpdate - Failure Path 2: completed status without deliverable throws Error', () => {
+test('statusUpdate - Failure Path 2: completed status without outputs throws Error', () => {
   const tmp = createTempDir();
   statusInit(tmp);
   assert.throws(() => statusUpdate(tmp, 'completed', 'done', null), {
     name: 'Error',
-    message: /CRITICAL: Deliverable path is required when setting status to completed/
+    message: /CRITICAL: Outputs path is required when setting status to completed/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusUpdate - Failure Path 3: completed status with non-existent deliverable file throws Error', () => {
+test('statusUpdate - Failure Path 3: completed status with non-existent output file throws Error', () => {
   const tmp = createTempDir();
   statusInit(tmp);
   assert.throws(() => statusUpdate(tmp, 'completed', 'done', 'missing_output.md'), {
     name: 'Error',
-    message: /CRITICAL: Deliverable file does not exist on disk/
+    message: /CRITICAL: Output file does not exist on disk/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -312,42 +312,42 @@ test('statusVerify - Failure Path 3: relative targetDir throws Error', () => {
   });
 });
 
-test('statusRead - Happy Path: reads status and matches expected deliverable', () => {
+test('statusRead - Happy Path: reads status and matches expected outputs', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'agent', 'not_started');
 
   // Verify initial read
   const initial = statusRead(tmp);
   assert.equal(initial.status, 'not_started');
-  assert.equal(initial.deliverable, null);
+  assert.deepEqual(initial.outputs, []);
   assert.equal(initial.type, 'agent');
   assert.ok(initial.updated_at);
 
-  // Create deliverable and complete status
+  // Create output and complete status
   fs.writeFileSync(path.join(tmp, 'setup.md'), '# Creative Setup Deliverable', 'utf-8');
   statusUpdate(tmp, 'completed/setup_ready', 'Finished setup', 'setup.md');
 
   const completed = statusRead(tmp);
   assert.equal(completed.status, 'completed/setup_ready');
-  assert.equal(completed.deliverable, 'setup.md');
+  assert.deepEqual(completed.outputs, ['setup.md']);
   assert.equal(completed.type, 'agent');
   assert.ok(completed.updated_at);
 
-  // Verify with expected deliverable & status matching
+  // Verify with expected outputs & status matching
   const matched = statusRead(tmp, 'setup.md', 'completed');
-  assert.equal(matched.deliverable, 'setup.md');
+  assert.deepEqual(matched.outputs, ['setup.md']);
   assert.equal(matched.status, 'completed/setup_ready');
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusRead - Happy Path 2: reads agent status with null deliverable', () => {
+test('statusRead - Happy Path 2: reads agent status with empty outputs', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'agent', 'not_started');
-  // Complete status without deliverable (e.g. auditor)
+  // Update status without outputs (e.g. waiting)
   statusUpdate(tmp, 'waiting/input', 'Waiting for draft', null);
   const readNull = statusRead(tmp, null);
-  assert.equal(readNull.deliverable, null);
+  assert.deepEqual(readNull.outputs, []);
   assert.equal(readNull.status, 'waiting/input');
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -375,14 +375,14 @@ test('statusRead - Failure Path 3: non-string targetDir throws TypeError', () =>
   });
 });
 
-test('statusRead - Failure Path 4: deliverable mismatch throws Error', () => {
+test('statusRead - Failure Path 4: outputs mismatch throws Error', () => {
   const tmp = createTempDir();
   statusInit(tmp);
   fs.writeFileSync(path.join(tmp, 'setup.md'), 'content', 'utf-8');
   statusUpdate(tmp, 'completed', 'done', 'setup.md');
   assert.throws(() => statusRead(tmp, 'wrong_name.md'), {
     name: 'Error',
-    message: /CRITICAL: Deliverable mismatch/
+    message: /CRITICAL: Outputs mismatch/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -488,7 +488,7 @@ test('3-Tier Input Resolution - Boundary Path 2: wildcard matching zero files st
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
-test('Deliverable List & Wildcards - Happy Path: statusUpdate and statusRead support array of deliverables and wildcards', () => {
+test('Outputs List & Wildcards - Happy Path: statusUpdate and statusRead support array of outputs and wildcards', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'agent', 'in_progress');
   fs.writeFileSync(path.join(tmp, 'article.md'), '# Article', 'utf-8');
@@ -499,24 +499,24 @@ test('Deliverable List & Wildcards - Happy Path: statusUpdate and statusRead sup
   assert.equal(updateRes.success, true);
 
   const readRes = statusRead(tmp, ['article.md', 'illustration_*.png'], 'completed');
-  assert.deepEqual(readRes.deliverable, ['article.md', 'illustration_*.png']);
+  assert.deepEqual(readRes.outputs, ['article.md', 'illustration_*.png']);
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('Deliverable List & Wildcards - Failure Paths: missing file in deliverable array or empty array throws Error', () => {
+test('Outputs List & Wildcards - Failure Paths: missing file in outputs array or empty array throws Error', () => {
   const tmp = createTempDir();
   statusInit(tmp, 'agent', 'in_progress');
   fs.writeFileSync(path.join(tmp, 'article.md'), '# Article', 'utf-8');
 
   assert.throws(() => statusUpdate(tmp, 'completed', 'Done', []), {
     name: 'TypeError',
-    message: /CRITICAL: Deliverable array must contain at least one path/
+    message: /CRITICAL: Outputs array must contain at least one path/
   });
 
   assert.throws(() => statusUpdate(tmp, 'completed', 'Done', ['article.md', 'missing_*.png']), {
     name: 'Error',
-    message: /CRITICAL: Deliverable file does not exist on disk/
+    message: /CRITICAL: Output file does not exist on disk/
   });
 
   fs.rmSync(tmp, { recursive: true, force: true });

@@ -168,53 +168,57 @@ export function resolveInputEntry(agentDir, entry) {
 }
 
 /**
- * Validates and normalizes deliverable argument (string or string[]).
- * @param {unknown} deliverable
- * @returns {string | string[] | null}
+ * Validates and normalizes outputs argument (string or string[]) into a string[] (or null if omitted).
+ * @param {unknown} outputs
+ * @returns {string[] | null}
  */
-export function normalizeDeliverable(deliverable) {
-  if (deliverable === null || deliverable === undefined) return null;
-  if (typeof deliverable === 'string') {
-    const trimmed = deliverable.trim();
+export function normalizeOutputs(outputs) {
+  if (outputs === null || outputs === undefined) return null;
+  if (typeof outputs === 'string') {
+    const trimmed = outputs.trim();
     if (!trimmed) {
-      throw new TypeError('CRITICAL: Deliverable string must be non-empty.');
+      throw new TypeError('CRITICAL: Outputs string must be non-empty.');
     }
-    return trimmed;
+    return [trimmed];
   }
-  if (Array.isArray(deliverable)) {
-    if (deliverable.length === 0) {
-      throw new TypeError('CRITICAL: Deliverable array must contain at least one path.');
+  if (Array.isArray(outputs)) {
+    if (outputs.length === 0) {
+      throw new TypeError('CRITICAL: Outputs array must contain at least one path.');
     }
-    return deliverable.map(item => {
+    return outputs.map(item => {
       if (typeof item !== 'string' || !item.trim()) {
-        throw new TypeError('CRITICAL: Each entry in deliverable array must be a non-empty string.');
+        throw new TypeError('CRITICAL: Each entry in outputs array must be a non-empty string.');
       }
       return item.trim();
     });
   }
-  throw new TypeError('CRITICAL: Deliverable must be a non-empty string or array of strings.');
+  throw new TypeError('CRITICAL: Outputs must be a non-empty string or array of strings.');
 }
 
 /**
- * Verifies that every deliverable entry (supporting wildcards) exists on disk relative to resolvedDir.
+ * Verifies that every output entry (supporting wildcards) exists on disk relative to resolvedDir.
  * @param {string} resolvedDir
- * @param {string | string[]} deliverable
+ * @param {string | string[]} outputs
  * @returns {string[]}
  */
-export function verifyDeliverableFiles(resolvedDir, deliverable) {
-  const normalized = normalizeDeliverable(deliverable);
-  if (!normalized) {
-    throw new Error('CRITICAL: Deliverable path is required when setting status to completed.');
+export function verifyOutputFiles(resolvedDir, outputs) {
+  const normalized = normalizeOutputs(outputs);
+  if (!normalized || normalized.length === 0) {
+    throw new Error('CRITICAL: Outputs path is required when setting status to completed.');
   }
-  const items = Array.isArray(normalized) ? normalized : [normalized];
   const allMatches = [];
-  for (const item of items) {
+  for (const item of normalized) {
     const matches = expandPathPattern(resolvedDir, item);
     if (matches.length === 0) {
       const targetPath = path.isAbsolute(item) ? item : path.join(resolvedDir, item);
-      throw new Error(`CRITICAL: Deliverable file does not exist on disk: ${targetPath}`);
+      throw new Error(`CRITICAL: Output file does not exist on disk: ${targetPath}`);
     }
     allMatches.push(...matches);
   }
   return allMatches;
 }
+
+export {
+  normalizeOutputs as normalizeDeliverable,
+  verifyOutputFiles as verifyDeliverableFiles
+};

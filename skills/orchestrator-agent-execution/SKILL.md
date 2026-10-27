@@ -79,7 +79,7 @@ Use the returned `dir`, `agent_id`, `instructions_file`, and `inputs` for `invok
 Upon subagent or sub-orchestrator wakeup:
 1. **Fail-Fast on Verification Errors**: If a subagent reports a `weave_verify` error (such as a missing `inputs` file), **halt immediately and report the error to the user**—never attempt workarounds.
 2. **Verify via `weave_read`**:
-   Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_deliverable": "<expected_filename_or_null>" }`. Halt immediately if verification fails or the deliverable file is empty.
+   Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_outputs": "<expected_filename_or_array_or_null>" }`. Halt immediately if verification fails or the output file is empty.
 3. **Ingest Deliverable**: Copy/compile verified deliverables to the canonical stage handoff path (e.g. `output/<context_slug>/01_setup.md`).
 4. **User Review Gate (when declared in stage guide)**:
    - Write the stage deliverable to `<appDataDir>/brain/<conversation-id>/<stage_deliverable_name>` (`RequestFeedback: true`, `UserFacing: true`) and pause for approval.

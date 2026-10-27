@@ -49,4 +49,4 @@ Execute every stage (or stageless manifest) by chaining these two microskills in
 * **Advance to Next Stage**:
   Call `weave_update`: `{ "dir": "<workspace_root>/output/<context_slug>", "status": "in_progress/<next_stage>", "progress": "<Stage handoff summary>" }`, output `[WeaveMAS UI](sidecar://weavemas/panel/)`, and repeat the Two-Phase loop.
 * **Final Pipeline Completion**:
-  Call `weave_update`: `{ "dir": "<workspace_root>/output/<context_slug>", "status": "completed", "deliverable": "<final_pipeline_deliverable_path>", "progress": "<Final execution summary>" }`
+  Call `weave_update`: `{ "dir": "<workspace_root>/output/<context_slug>", "status": "completed", "outputs": "<final_pipeline_output_path>", "progress": "<Final execution summary>" }`

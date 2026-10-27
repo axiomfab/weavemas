@@ -84,9 +84,9 @@ export function handleMessage(msg) {
         }
         const status = args.status;
         const progress = args.progress || null;
-        const deliverable = args.deliverable !== undefined ? args.deliverable : null;
+        const outputs = args.outputs !== undefined ? args.outputs : (args.deliverable !== undefined ? args.deliverable : null);
         if (!status) throw new Error("CRITICAL: 'status' argument is required for weave_update.");
-        const res = weaveUpdate(targetDir, status, progress, deliverable);
+        const res = weaveUpdate(targetDir, status, progress, outputs);
         resultText = res.message;
       } else if (name === 'weave_verify' || name === 'status_verify') {
         const targetDir = args.dir;
@@ -107,9 +107,9 @@ export function handleMessage(msg) {
         if (!targetDir || typeof targetDir !== 'string') {
           throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
         }
-        const expectedDeliverable = args.expected_deliverable !== undefined ? args.expected_deliverable : undefined;
+        const expectedOutputs = args.expected_outputs !== undefined ? args.expected_outputs : args.expected_deliverable;
         const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
-        const res = weaveRead(targetDir, expectedDeliverable, expectedStatus);
+        const res = weaveRead(targetDir, expectedOutputs, expectedStatus);
         resultText = JSON.stringify(res, null, 2);
       } else if (name === 'discover_agents') {
         const directory = args.directory;

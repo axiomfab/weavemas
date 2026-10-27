@@ -23,9 +23,9 @@ When mounted by Antigravity under the `weavemas_weave` identifier, the following
 | Tool | Description | Required Arguments |
 | :--- | :--- | :--- |
 | `weave_init` | Initializes `weave.md` in a directory with `not_started` state | `dir` (required absolute path) |
-| `weave_update` | Updates state (`in_progress/*`, `waiting/*`, `completed`) and appends progress notes | `status`, `dir` (required absolute path), `progress` (opt), `deliverable` (opt) |
+| `weave_update` | Updates state (`in_progress/*`, `waiting/*`, `completed`) and appends progress notes | `status`, `dir` (required absolute path), `progress` (opt), `outputs` (opt) |
 | `weave_verify` | Pre-flight verification that the directory's `weave.md` matches assigned role | `dir` (required absolute path), `expected_role` (opt) |
-| `weave_read` | Ingests agent status, verify completed state, and resolves deliverable | `dir` (required absolute path) |
+| `weave_read` | Ingests agent status, verify completed state, and resolves outputs | `dir` (required absolute path) |
 
 ---
 

@@ -43,5 +43,5 @@ export function discoverWeaveNodes(contextDir) {
 ## 🎨 2. UI Component & Polling Conventions
 
 * **Header & Stage Stepper**: Render context title and root orchestrator status at the top, plus a horizontal stepper when `stage<NN>_*/` directories exist.
-* **Agent Cards**: Group by stage or unit cluster with status badges, elapsed runtime, auto-scrolling Markdown body logs, and a 1-click deliverable viewer when `deliverable` is set.
+* **Agent Cards**: Group by stage or unit cluster with status badges, elapsed runtime, auto-scrolling Markdown body logs, and a 1-click output viewer when `outputs` is set.
 * **Polling**: Poll synchronous file reads every `1.5s–2.0s` while any node is `in_progress`. Pre-created stage folders and `initialized` agent states prevent 404 flickers.

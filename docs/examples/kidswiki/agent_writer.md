@@ -68,7 +68,7 @@ Tasks are executed sequentially:
 * **`tools`**: Restricted strictly to `view_file` and `write_to_file`—following the principle of least privilege.
 
 ### 2. `# Role Specifics`
-* Declares **`Deliverable Target: draft.md`**. When the agent finishes, `weave-core-agent` requires it to pass `deliverable: "draft.md"` to `weave_update`, which verifies the file actually exists on disk before allowing the agent to mark itself `completed`.
+* Declares **`Deliverable Target: draft.md`**. When the agent finishes, `weave-core-agent` requires it to pass `outputs: "draft.md"` to `weave_update`, which verifies the file actually exists on disk before allowing the agent to mark itself `completed`.
 
 ### 3. Why the In-Place Image Placeholder Pattern Works
 * Instead of putting an illustration description in an awkward side section that has to be parsed or deleted later, the Writer embeds the image tag directly in its intended final position:
