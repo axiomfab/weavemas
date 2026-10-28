@@ -49,6 +49,10 @@ trigger: always_on
   Stage files declare **what** (agents, inputs, outputs, and sequence); `weave-core-orchestrator` handles **how** (upfront stage folder creation, Phase 1 `provisioner` delegation, Phase 2 `discover_agents`, black-box prompts, and `weave_read`).
   - **NEVER** author a `Step 0: Upfront Scaffolding` section in `orchestrator.md`.
   - **NEVER** author `invoke_subagent` prompt templates, `weave_init` calls, or polling reminders in stage files.
+* **Black-Box Execution Abstraction (No Internal Leaks)**:
+  Keep `## Execution` steps high-level and focused strictly on the domain workflow. Never expose internal subagent implementation details:
+  - **No Internal Task Labels**: Do not reference internal agent task headings or section IDs (e.g. avoid `pause at Task 02_handoff`; write `report unverified track queries and wait for track sourcing`).
+  - **No Status String Leaks**: Do not prescribe low-level status enums in execution steps (e.g. avoid `transition status to waiting/sourcer_calibration`; write `wait for ...`). Subagent instructions define their own internal status transitions; the orchestrator guide defines only the observable domain sequence.
 * **Agent Declarations & `inputs` (`## Agents`)**:
   - Use lowercase `snake_case` slugs (parameterized with zero-padded indices for loops, e.g. `writer_a<AA>_s<SS>`).
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
