@@ -36,10 +36,10 @@ For each Stage (and each sequential step or parallel wave $t$ in `## Execution`)
    - If an agent pauses (`waiting/...`) while peer agents run and then resumes via `send_message` at step $t_{\text{resume}}$, any input consumed on resume (e.g. `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md`) must be declared in `* **Inputs**:` and must exist in $\mathcal{F}_{t_{\text{resume}}-1}$ when the agent wakes up and re-runs `weave_verify`.
 3. **Check 3 — Provisioner Dynamic Placeholder Resolution**:
    - For every `<placeholder>` in `* **Working Directory**:` or `* **Inputs**:` (e.g. `<AA>`, `<SS>`), verify that the value can be extracted from an existing upstream stage output referenced in `## Agents` (such as `01_setup.md`, `02_concept.md`, or `03_script.md`).
-4. **Check 4 — Orchestrator Data Operations & Output Registration ($\mathcal{F}_t$)**:
+4. **Check 4 — Orchestrator Operations & Output Registration ($\mathcal{F}_t$)**:
    - **No Staging into `agents/<id>/`**: Flag (`- [ ] ⚠️`) any orchestrator step that copies, stitches, or writes files *inside* an agent's working directory (`.../agents/<agent_id>/`). Prefer wildcard inputs (e.g. `../act_*/segment_*/writer/draft.md`) or stage-root/context-root promotion.
    - **Advance $\mathcal{F}_t$**: Register `<agentDir>/<output>` and any valid orchestrator promotion target in the run directory into $\mathcal{F}_t$.
-   - **Source Attribution Syntax**: Format orchestrator promotion steps clearly with the source agent directory: `Promotes <output> (<agent_id> agent directory) -> <target_output> (run directory)`.
+   - **Source Attribution Syntax**: Format orchestrator promotion steps clearly with the source agent directory: `Promotes <output> (<agent_id> agent directory) to <target_output> (run directory)`.
 
 ---
 
@@ -53,22 +53,22 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 #### Stage 1: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_1>`** (`.agent/agents/<agent_1>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[prompts/personas/*.md]` (Params: `topic`, `duration`) $\rightarrow$ Writes `[setup.md]`
-    - Orchestrator: Inputs `[prompts/personas/*.md]` (Params: `topic`, `duration`) $\rightarrow$ Outputs `[setup.md]`
+    - Agent: Reads `[prompts/personas/*.md]` (Params: `topic`, `duration`) and writes `[setup.md]`
+    - Orchestrator: Inputs `[prompts/personas/*.md]` (Params: `topic`, `duration`) and expects `[setup.md]`
   - [x] **Input Availability ($t=1$)**: `prompts/personas/*.md` available in workspace directory
-- [x] **Orchestrator Data Operations**:
-  - [x] Promotes `setup.md` (director agent directory) $\rightarrow$ `01_setup.md` (run directory)
+- [x] **Orchestrator Operations**:
+  - [x] Promotes `setup.md` (director agent directory) to `01_setup.md` (run directory)
 
 #### Stage 2: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_2>`** (`.agent/agents/<agent_2>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) $\rightarrow$ Writes `[concept.md]`
-    - Orchestrator: Inputs `[setup.md: 01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` (Params: `duration`, `host_wpm`) $\rightarrow$ Outputs `[concept.md]`
+    - Agent: Reads `[setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) and writes `[concept.md]`
+    - Orchestrator: Inputs `[setup.md: 01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` (Params: `duration`, `host_wpm`) and expects `[concept.md]`
   - [x] **Input Availability**:
     - Turn 1 ($t=1$): `01_setup.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
     - Wakeup ($t=3$): `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md` available in agent directory (produced at $t=2$)
-- [x] **Orchestrator Data Operations**:
-  - [x] Promotes `concept.md` (showrunner agent directory) $\rightarrow$ `02_concept.md` (run directory)
+- [x] **Orchestrator Operations**:
+  - [x] Promotes `concept.md` (showrunner agent directory) to `02_concept.md` (run directory)
 
 #### Pipeline Summary (`orchestrator.md`)
 - [x] All stage outputs and final pipeline outputs are produced, promoted, and gate-aligned.

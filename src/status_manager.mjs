@@ -6,6 +6,7 @@ import {
   parseInputEntry,
   inferLookupRoots,
   expandPathPattern,
+  substitutePathVariables,
   resolveInputEntry,
   normalizeOutputs,
   verifyOutputFiles
@@ -19,6 +20,7 @@ export {
   parseInputEntry,
   inferLookupRoots,
   expandPathPattern,
+  substitutePathVariables,
   resolveInputEntry
 };
 

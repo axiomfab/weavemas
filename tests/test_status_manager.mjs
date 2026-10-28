@@ -480,6 +480,61 @@ test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves runs/<contex
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
+test('Explicit Path Variables - Happy Path: resolves inputs and outputs using ${PROJECT_DIR} and ${RUN_DIR}', () => {
+  const workspaceRoot = createTempDir();
+  const runDir = path.join(workspaceRoot, 'runs', 'show_radio');
+  const stageDir = path.join(runDir, 'stage01_setup');
+  const directorDir = path.join(stageDir, 'agents', 'director');
+  const personasDir = path.join(workspaceRoot, 'prompts', 'personas');
+
+  fs.mkdirSync(directorDir, { recursive: true });
+  fs.mkdirSync(personasDir, { recursive: true });
+
+  const personaFile1 = path.join(personasDir, 'persona_jack.md');
+  const personaFile2 = path.join(personasDir, 'persona_sarah.md');
+  fs.writeFileSync(personaFile1, '# Jack Turner', 'utf-8');
+  fs.writeFileSync(personaFile2, '# Sarah Chen', 'utf-8');
+
+  const setupFile = path.join(runDir, '01_setup.md');
+  fs.writeFileSync(setupFile, '# Show Setup', 'utf-8');
+
+  statusInit(directorDir, 'agent', 'initialized', '.agent/agents/stage1_director.md', [
+    'persona_*.md: ${PROJECT_DIR}/prompts/personas/*.md',
+    'Setup: ${RUN_DIR}/01_setup.md'
+  ]);
+
+  const verifyRes = statusVerify(directorDir, 'director');
+  assert.equal(verifyRes.success, true);
+  assert.deepEqual(verifyRes.resolved_inputs['persona_*.md'], [personaFile1, personaFile2]);
+  assert.equal(verifyRes.resolved_inputs['Setup'], setupFile);
+
+  const deliverable = path.join(directorDir, 'setup.md');
+  fs.writeFileSync(deliverable, '# Final Output', 'utf-8');
+  const updateRes = statusUpdate(directorDir, 'completed', 'Finished setup', '${RUN_DIR}/01_setup.md');
+  assert.equal(updateRes.success, true);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('Explicit Path Variables - Failure Path: non-existent file with ${RUN_DIR} stays in pending_inputs', () => {
+  const workspaceRoot = createTempDir();
+  const runDir = path.join(workspaceRoot, 'runs', 'show_radio');
+  const stageDir = path.join(runDir, 'stage02_concept');
+  const agentDir = path.join(stageDir, 'agents', 'showrunner');
+  fs.mkdirSync(agentDir, { recursive: true });
+
+  statusInit(agentDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
+    '${RUN_DIR}/02_nonexistent.md'
+  ]);
+
+  const res = statusVerify(agentDir, 'showrunner');
+  assert.equal(res.success, true);
+  assert.deepEqual(res.resolved_inputs, {});
+  assert.deepEqual(res.pending_inputs, ['${RUN_DIR}/02_nonexistent.md']);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
 test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'stage01', 'agents', 'checker');

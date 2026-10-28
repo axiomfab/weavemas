@@ -141,6 +141,48 @@ export function expandPathPattern(baseDir, targetPattern) {
 }
 
 /**
+ * Substitutes ${PROJECT_DIR}, ${RUN_DIR}, ${AGENT_DIR} (and $PROJECT_DIR$, $RUN_DIR$, $AGENT_DIR$)
+ * in targetPath using provided lookup roots.
+ * @param {string} targetPath
+ * @param {{ agentDir?: string, contextDir?: string | null, workspaceRoot?: string | null }} roots
+ * @returns {string}
+ */
+export function substitutePathVariables(targetPath, roots) {
+  if (typeof targetPath !== 'string' || !targetPath.trim()) {
+    throw new TypeError('CRITICAL: targetPath must be a non-empty string.');
+  }
+  if (!roots || typeof roots !== 'object') {
+    throw new TypeError('CRITICAL: roots must be a non-null object.');
+  }
+  const { workspaceRoot, contextDir, agentDir } = roots;
+
+  let resolved = targetPath;
+
+  if (resolved.includes('${PROJECT_DIR}') || resolved.includes('$PROJECT_DIR$')) {
+    if (!workspaceRoot) {
+      throw new Error('CRITICAL: Unable to resolve ${PROJECT_DIR}; could not infer workspace root.');
+    }
+    resolved = resolved.replace(/\$\{PROJECT_DIR\}|\$PROJECT_DIR\$/g, workspaceRoot);
+  }
+
+  if (resolved.includes('${RUN_DIR}') || resolved.includes('$RUN_DIR$')) {
+    if (!contextDir) {
+      throw new Error('CRITICAL: Unable to resolve ${RUN_DIR}; could not infer run context directory.');
+    }
+    resolved = resolved.replace(/\$\{RUN_DIR\}|\$RUN_DIR\$/g, contextDir);
+  }
+
+  if (resolved.includes('${AGENT_DIR}') || resolved.includes('$AGENT_DIR$')) {
+    if (!agentDir) {
+      throw new Error('CRITICAL: Unable to resolve ${AGENT_DIR}; could not infer agent directory.');
+    }
+    resolved = resolved.replace(/\$\{AGENT_DIR\}|\$AGENT_DIR\$/g, agentDir);
+  }
+
+  return resolved;
+}
+
+/**
  * Resolves a single input entry across the 3-tier hierarchy:
  * 1. Agent CWD (agentDir)
  * 2. Run Context Directory (runs/<context_slug>/ or output/<context_slug>/)
@@ -152,21 +194,23 @@ export function expandPathPattern(baseDir, targetPattern) {
  */
 export function resolveInputEntry(agentDir, entry) {
   const { name, rawPath } = parseInputEntry(entry);
-  const { contextDir, workspaceRoot } = inferLookupRoots(agentDir);
+  const roots = inferLookupRoots(agentDir);
+  const substitutedPath = substitutePathVariables(rawPath, roots);
+  const hadVariable = rawPath !== substitutedPath;
 
-  const isExplicitRelative = rawPath.startsWith('./') || rawPath.startsWith('../') || rawPath.startsWith('.\\') || rawPath.startsWith('..\\');
-  const candidateRoots = path.isAbsolute(rawPath) || isExplicitRelative
+  const isExplicitRelative = substitutedPath.startsWith('./') || substitutedPath.startsWith('../') || substitutedPath.startsWith('.\\') || substitutedPath.startsWith('..\\');
+  const candidateRoots = hadVariable || path.isAbsolute(substitutedPath) || isExplicitRelative
     ? [agentDir]
-    : [agentDir, contextDir, workspaceRoot].filter(Boolean);
+    : [agentDir, roots.contextDir, roots.workspaceRoot].filter(Boolean);
 
   for (const root of candidateRoots) {
-    const matches = expandPathPattern(root, rawPath);
+    const matches = expandPathPattern(root, substitutedPath);
     if (matches.length > 0) {
-      return { raw: entry, name, pattern: rawPath, matches };
+      return { raw: entry, name, pattern: substitutedPath, matches };
     }
   }
 
-  const tried = candidateRoots.map(r => path.resolve(r, rawPath)).join(', ');
+  const tried = candidateRoots.map(r => path.isAbsolute(substitutedPath) ? substitutedPath : path.resolve(r, substitutedPath)).join(', ');
   throw new Error(`CRITICAL: Input file does not exist on disk: ${tried} (declared as "${entry}")`);
 }
 
@@ -209,11 +253,13 @@ export function verifyOutputFiles(resolvedDir, outputs) {
   if (!normalized || normalized.length === 0) {
     throw new Error('CRITICAL: Outputs path is required when setting status to completed.');
   }
+  const roots = inferLookupRoots(resolvedDir);
   const allMatches = [];
   for (const item of normalized) {
-    const matches = expandPathPattern(resolvedDir, item);
+    const substituted = substitutePathVariables(item, roots);
+    const matches = expandPathPattern(resolvedDir, substituted);
     if (matches.length === 0) {
-      const targetPath = path.isAbsolute(item) ? item : path.join(resolvedDir, item);
+      const targetPath = path.isAbsolute(substituted) ? substituted : path.join(resolvedDir, substituted);
       throw new Error(`CRITICAL: Output file does not exist on disk: ${targetPath}`);
     }
     allMatches.push(...matches);

@@ -63,8 +63,8 @@ trigger: always_on
       `- host.md: output/<context_slug>/01_host.md`
       `- concept.md: output/<context_slug>/02_concept.md`
       At runtime, `weave_verify` maps these aliases in `resolved_inputs`, allowing the subagent instructions to refer purely to `setup.md`, `host.md`, or `concept.md`.
-  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` $\rightarrow$ `runs/<context_slug>/` $\rightarrow$ `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
-* **Orchestrator File Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Output Ingestion / Promotion** copying `stage01_editorial/agents/writer/draft.md` $\rightarrow$ `01_editorial_approved.md` inside `runs/<context_slug>/`).
+  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` to `runs/<context_slug>/` to `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
+* **Orchestrator Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Orchestrator Operations** promoting `stage01_editorial/agents/writer/draft.md` to `${RUN_DIR}/01_editorial_approved.md`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.
 
@@ -114,18 +114,20 @@ Every run is scoped to `runs/<context_slug>/`.
 
 ### <Role 1> Agent: `<agent_1>`
 * **Instructions**: [agent_<role1>.md](.agent/agents/agent_<role1>.md)
-* **Working Directory**: `agents/<agent_1>/`
+* **Working Directory**: `${RUN_DIR}/agents/<agent_1>/`
 
 ### <Role 2> Agent: `<agent_2>`
 * **Instructions**: [agent_<role2>.md](.agent/agents/agent_<role2>.md)
-* **Working Directory**: `agents/<agent_2>/`
+* **Working Directory**: `${RUN_DIR}/agents/<agent_2>/`
 * **Inputs**:
   - `../<agent_1>/<output_1>.md`
+  - `Context Data`: `${RUN_DIR}/<context_file>.md`
+  - `${PROJECT_DIR}/prompts/<shared_prompt>.md`
 
 ## Execution
 1. **`<agent_1>`**: Pass runtime inputs and verify `<output_1>.md`.
 2. **`<agent_2>`**: Audit `<output_1>.md` and produce `<output_2>.md`. If revisions are required (max 2 cycles), route feedback to `<agent_1>` via `send_message`.
-3. **Output Ingestion**: Copy verified output to `runs/<context_slug>/<final_output>.md`.
+3. **Orchestrator Operations**: Promote verified output to `${RUN_DIR}/<final_output>.md`.
 ```
 
 ### Template C: Modular Stage Guide (`orchestrator/stage<N>_<slug>.md`)
@@ -139,13 +141,14 @@ Every run is scoped to `runs/<context_slug>/`.
 
 ### <Role 1> Agent: `<role1>_<item_id>`
 * **Instructions**: [stage<N>_<role1>.md](.agent/agents/stage<N>_<role1>.md)
-* **Working Directory**: `stage<NN>_<slug>/agents/<role1>_<item_id>/`
+* **Working Directory**: `${RUN_DIR}/stage<NN>_<slug>/agents/<role1>_<item_id>/`
 * **Inputs**:
-  - `Prior Output`: `<prior_output>.md`
-  - `prompts/<reference_file>.md`
+  - `Prior Output`: `${RUN_DIR}/<prior_output>.md`
+  - `${PROJECT_DIR}/prompts/<reference_file>.md`
+  - `../<sibling_agent>/<sibling_output>.md`
 
 ## Execution
 1. **`<role1>_<item_id>`**: Execute with stage parameters and verify `<output_name>.md`.
-2. **Output Ingestion**: Save verified output to `runs/<context_slug>/<NN>_<stage_output>.md`.
+2. **Orchestrator Operations**: Promote verified output to `${RUN_DIR}/<NN>_<stage_output>.md`.
 3. **User Review Gate** *(Optional)*: Present `<NN>_<stage_output>.md` for approval; route any revision feedback to `<role1>_<item_id>` via `send_message`.
 ```
