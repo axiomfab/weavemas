@@ -23,14 +23,30 @@ Trace the **Pipeline Data-Flow Graph (DFG)** from start to finish by maintaining
 For each Stage (and each sequential step or parallel wave $t$ in `## Execution`):
 
 1. **Check 1 — Agent/Orchestrator Contract Match (`.agent/agents/<agent>.md` $\leftrightarrow$ `orchestrator/stage<N>.md`)**:
-   - Extract the **Agent Contract**: every **File Input** the agent prompt instructs to read, all scalar **Runtime Parameters** (`Params: ...`) it expects in its prompt, and every **Output** file/pattern it writes.
-   - Extract the **Orchestrator Declaration**: every file in `* **Inputs**:` (under `## Agents`), all scalar **Runtime Parameters** passed under `## Execution`, and the expected output(s).
-     *(When named aliases are used, e.g. `- setup.md: output/<context_slug>/01_setup.md`, the alias `setup.md` satisfies the agent's expectation of `setup.md` without stage prefix coupling).*
-   - Compare both sides symmetrically:
-     - **Inputs**: Agent `Reads [...]` $\leftrightarrow$ Orchestrator `Inputs [...]`
-     - **Parameters**: Agent `(Params: ...)` $\leftrightarrow$ Orchestrator `(Params: ...)`
-     - **Outputs**: Agent `Writes [...]` $\leftrightarrow$ Orchestrator `Outputs [...]`
-   - Flag (`- [ ] ⚠️`) any discrepancy: missing file input, missing/unpassed runtime parameter, or output mismatch.
+   - **Step 1A: Extract Agent Contract**:
+     - **File Inputs**: Every file path the agent instructions read via `view_file` (e.g. `setup.md`, `draft.md`).
+     - **Scalar Runtime Parameters**: Thoroughly inspect `.agent/agents/<agent>.md` (especially `# Role Specifics` and `# Tasks`). Identify any runtime parameter needed:
+       1. Angle-bracket placeholders `<param>` that do not refer to files (e.g. `<segment_id>`, `<act_id>`, `<shard_id>`, `<topic>`, `<target_duration>`).
+       2. Mentions of invocation prompt data (e.g., "from your prompt", "provided query batch", "assigned segment").
+       3. Scoped/Subset processing: If an input file contains multi-segment or whole-show data (like `concept.md`) and the agent is scoped to structure, draft, or audit a specific section, selector parameters (e.g. `segment_id`, `act_id`) are **strictly required**.
+       Record as: `Agent (Params: <param1>, <param2>)` (or `Agent (Params: none)` if no scalar parameters are needed).
+     - **Outputs**: Every output file the agent writes (e.g. `beats.md`).
+   - **Step 1B: Extract Orchestrator Declaration**:
+     - **File Inputs**: Every file listed in `* **Inputs**:` under `## Agents`.
+     - **Scalar Runtime Parameters**: Locate the execution step for the agent under `## Execution`.
+       - **Mandatory Explicit Declaration**: The orchestrator step **must** contain an explicit `Parameters:` line (e.g. `- Parameters: segment_id (Act<AA>_Segment<SS>), act_id (Act <AA>)` or `- Parameters: none`).
+       - **Strict In-Prose Prohibition**: Descriptive prose (e.g. "Structures beats for assigned segment Act<AA>_Segment<SS>") does **NOT** count as a parameter declaration. It must be explicitly listed on a `Parameters:` line.
+       - **Strict Agent ID/Path Parsing Prohibition**: Never assume an agent parses its own name (`architect_a01_s01`) or working directory path to discover parameter values.
+       Record as: `Orchestrator (Params: <param1>, <param2>)` (or `Orchestrator (Params: none)`).
+     - **Outputs**: Expected output(s) declared in the step.
+   - **Step 1C: Symmetrical Verification & Strict Discrepancy Failure**:
+     - Compare both sides symmetrically:
+       - **Inputs**: Agent `Reads [...]` $\leftrightarrow$ Orchestrator `Inputs [...]`
+       - **Parameters**: Agent `(Params: ...)` $\leftrightarrow$ Orchestrator `(Params: ...)`
+       - **Outputs**: Agent `Writes [...]` $\leftrightarrow$ Orchestrator `Outputs [...]`
+     - **Zero Tolerance on Parameter Mismatches**: If `Agent` requires parameters that `Orchestrator` does not explicitly declare on a `Parameters:` line under `## Execution`:
+       - **You are strictly forbidden from outputting `- [x]`**.
+       - You **MUST** flag it with `- [ ] ⚠️` and output an explicit `Discrepancy:` line detailing the missing parameter(s).
 2. **Check 2 — Input Availability at Consumption Step ($t_{\text{used}}$)**:
    - Even if zero declared file inputs exist on disk when an agent starts at $t_{\text{start}}$ (`weave_verify` returns not-yet-created files in `pending_inputs`), every file input required by a specific task of the agent must exist in $\mathcal{F}_{t_{\text{used}}-1}$ (**strictly prior** to the step $t_{\text{used}}$ where that task runs—never produced in the same parallel wave).
    - If an agent pauses (`waiting/...`) while peer agents run and then resumes via `send_message` at step $t_{\text{resume}}$, any input consumed on resume (e.g. `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md`) must be declared in `* **Inputs**:` and must exist in $\mathcal{F}_{t_{\text{resume}}-1}$ when the agent wakes up and re-runs `weave_verify`.
@@ -72,6 +88,16 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 
 #### Pipeline Summary (`orchestrator.md`)
 - [x] All stage outputs and final pipeline outputs are produced, promoted, and gate-aligned.
+```
+
+#### Example Failure Report (Parameter / Contract Discrepancy)
+```markdown
+#### Stage 3: `<stage_slug>` (`orchestrator/<stage_file>.md`)
+- [ ] ⚠️ **`<agent>`** (`.agent/agents/<agent>.md`)
+  - [ ] ⚠️ **Agent/Orchestrator Contract Match**:
+    - Agent: Reads `[concept.md]` (Params: `segment_id`, `act_id`), Writes `[beats.md]`
+    - Orchestrator: Inputs `[concept.md: ${RUN_DIR}/02_concept.md]` (Params: none), Outputs `[beats.md]`
+    - Discrepancy: Agent expects runtime parameters `(Params: segment_id, act_id)` but Orchestrator has `(Params: none)` and does not explicitly declare them under `## Execution`.
 ```
 
 > [!IMPORTANT]

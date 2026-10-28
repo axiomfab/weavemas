@@ -53,6 +53,11 @@ trigger: always_on
   Keep `## Execution` steps high-level and focused strictly on the domain workflow. Never expose internal subagent implementation details:
   - **No Internal Task Labels**: Do not reference internal agent task headings or section IDs (e.g. avoid `pause at Task 02_handoff`; write `report unverified track queries and wait for track sourcing`).
   - **No Status String Leaks**: Do not prescribe low-level status enums in execution steps (e.g. avoid `transition status to waiting/sourcer_calibration`; write `wait for ...`). Subagent instructions define their own internal status transitions; the orchestrator guide defines only the observable domain sequence.
+* **Explicit Runtime Parameters in `## Execution`**:
+  Every agent execution step under `## Execution` must explicitly declare all scalar parameters passed to `invoke_subagent`:
+  - **Dedicated Line**: Always provide an explicit `- Parameters: <param1>, <param2>` line (or `- Parameters: none` if no scalar parameters are passed).
+  - **No In-Prose Parameters**: Never bury parameters inside execution narrative prose (e.g. avoid `Structures beats for assigned segment Act<AA>_Segment<SS>`). Dispatchers and sub-orchestrators require an explicit `Parameters:` specification to populate the subagent's `Runtime Parameters:` block.
+  - **No Agent ID Inference**: Never assume a subagent infers or parses parameters from its own agent ID or folder path.
 * **Agent Declarations & `inputs` (`## Agents`)**:
   - Use lowercase `snake_case` slugs (parameterized with zero-padded indices for loops, e.g. `writer_a<AA>_s<SS>`).
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
@@ -129,9 +134,14 @@ Every run is scoped to `runs/<context_slug>/`.
   - `${PROJECT_DIR}/prompts/<shared_prompt>.md`
 
 ## Execution
-1. **`<agent_1>`**: Pass runtime inputs and verify `<output_1>.md`.
-2. **`<agent_2>`**: Audit `<output_1>.md` and produce `<output_2>.md`. If revisions are required (max 2 cycles), route feedback to `<agent_1>` via `send_message`.
-3. **Orchestrator Operations**: Promote verified output to `${RUN_DIR}/<final_output>.md`.
+1. **`<agent_1>`**:
+   - Parameters: `<param1>`, `<param2>` (or `none`)
+   - Execution: Process input data and verify `<output_1>.md`.
+2. **`<agent_2>`**:
+   - Parameters: `<param1>` (or `none`)
+   - Execution: Audit `<output_1>.md` and produce `<output_2>.md`. If revisions are required (max 2 cycles), route feedback to `<agent_1>` via `send_message`.
+3. **Orchestrator Operations**:
+   - Promote verified output to `${RUN_DIR}/<final_output>.md`.
 ```
 
 ### Template C: Modular Stage Guide (`orchestrator/stage<N>_<slug>.md`)
@@ -152,7 +162,11 @@ Every run is scoped to `runs/<context_slug>/`.
   - `../<sibling_agent>/<sibling_output>.md`
 
 ## Execution
-1. **`<role1>_<item_id>`**: Execute with stage parameters and verify `<output_name>.md`.
-2. **Orchestrator Operations**: Promote verified output to `${RUN_DIR}/<NN>_<stage_output>.md`.
-3. **User Review Gate** *(Optional)*: Present `<NN>_<stage_output>.md` for approval; route any revision feedback to `<role1>_<item_id>` via `send_message`.
+1. **`<role1>_<item_id>`**:
+   - Parameters: `<param1>`, `<param2>` (or `none`)
+   - Execution: Execute with stage parameters and verify `<output_name>.md`.
+2. **Orchestrator Operations**:
+   - Promote verified output to `${RUN_DIR}/<NN>_<stage_output>.md`.
+3. **User Review Gate** *(Optional)*:
+   - Present `<NN>_<stage_output>.md` for approval; route any revision feedback to `<role1>_<item_id>` via `send_message`.
 ```
