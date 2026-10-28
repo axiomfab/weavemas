@@ -53,8 +53,8 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 #### Stage 1: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_1>`** (`.agent/agents/<agent_1>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[prompts/personas/*.md]` (Params: `topic`, `duration`) and writes `[setup.md]`
-    - Orchestrator: Inputs `[prompts/personas/*.md]` (Params: `topic`, `duration`) and expects `[setup.md]`
+    - Agent: Reads `[prompts/personas/*.md]` (Params: `topic`, `duration`), Writes `[setup.md]`
+    - Orchestrator: Inputs `[prompts/personas/*.md]` (Params: `topic`, `duration`), Outputs `[setup.md]`
   - [x] **Input Availability ($t=1$)**: `prompts/personas/*.md` available in workspace directory
 - [x] **Orchestrator Operations**:
   - [x] Promotes `setup.md` (director agent directory) to `01_setup.md` (run directory)
@@ -62,8 +62,8 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 #### Stage 2: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_2>`** (`.agent/agents/<agent_2>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[setup.md, host.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ and writes `[concept.md]`
-    - Orchestrator: Inputs `[setup.md: 01_setup.md, host.md: 01_host.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` and expects `[concept.md]`
+    - Agent: Reads `[setup.md, host.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$, Writes `[concept.md]`
+    - Orchestrator: Inputs `[setup.md: 01_setup.md, host.md: 01_host.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]`, Outputs `[concept.md]`
   - [x] **Input Availability**:
     - Turn 1 ($t=1$): `01_setup.md` and `01_host.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
     - Wakeup ($t=3$): `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md` available in agent directory (produced at $t=2$)
