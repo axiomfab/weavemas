@@ -34,8 +34,8 @@ For each Stage (and each sequential step or parallel wave $t$ in `## Execution`)
    - **Step 1B: Extract Orchestrator Declaration**:
      - **File Inputs**: Every file listed in `* **Inputs**:` under `## Agents`.
      - **Scalar Runtime Parameters**: Locate the execution step for the agent under `## Execution`.
-       - **Mandatory Explicit Declaration**: The orchestrator step **must** contain an explicit `Parameters:` line (e.g. `- Parameters: segment_id (Act<AA>_Segment<SS>), act_id (Act <AA>)` or `- Parameters: none`).
-       - **Strict In-Prose Prohibition**: Descriptive prose (e.g. "Structures beats for assigned segment Act<AA>_Segment<SS>") does **NOT** count as a parameter declaration. It must be explicitly listed on a `Parameters:` line.
+       - **Explicit Declaration When Needed**: When an agent requires scalar runtime parameters, the orchestrator step **must** contain an explicit `Parameters:` line (e.g. `- Parameters: segment_id (Act<AA>_Segment<SS>), act_id (Act <AA>)`). If an agent requires no scalar parameters, the `Parameters:` line is optional and omitting it defaults to `(Params: none)`.
+       - **Strict In-Prose Prohibition**: Descriptive prose (e.g. "Structures beats for assigned segment Act<AA>_Segment<SS>") does **NOT** count as a parameter declaration. Required parameters must be explicitly listed on a `Parameters:` line.
        - **Strict Agent ID/Path Parsing Prohibition**: Never assume an agent parses its own name (`architect_a01_s01`) or working directory path to discover parameter values.
        Record as: `Orchestrator (Params: <param1>, <param2>)` (or `Orchestrator (Params: none)`).
      - **Outputs**: Expected output(s) declared in the step.
@@ -44,9 +44,10 @@ For each Stage (and each sequential step or parallel wave $t$ in `## Execution`)
        - **Inputs**: Agent `Reads [...]` $\leftrightarrow$ Orchestrator `Inputs [...]`
        - **Parameters**: Agent `(Params: ...)` $\leftrightarrow$ Orchestrator `(Params: ...)`
        - **Outputs**: Agent `Writes [...]` $\leftrightarrow$ Orchestrator `Outputs [...]`
-     - **Zero Tolerance on Parameter Mismatches**: If `Agent` requires parameters that `Orchestrator` does not explicitly declare on a `Parameters:` line under `## Execution`:
+     - **Zero Tolerance on Parameter Mismatches**: If `Agent` requires scalar parameters that `Orchestrator` does not explicitly declare on a `Parameters:` line under `## Execution` (or if it attempts to convey them in descriptive prose):
        - **You are strictly forbidden from outputting `- [x]`**.
        - You **MUST** flag it with `- [ ] ⚠️` and output an explicit `Discrepancy:` line detailing the missing parameter(s).
+     - If both Agent and Orchestrator have `(Params: none)`, it is a verified match (`- [x]`).
 2. **Check 2 — Input Availability at Consumption Step ($t_{\text{used}}$)**:
    - Even if zero declared file inputs exist on disk when an agent starts at $t_{\text{start}}$ (`weave_verify` returns not-yet-created files in `pending_inputs`), every file input required by a specific task of the agent must exist in $\mathcal{F}_{t_{\text{used}}-1}$ (**strictly prior** to the step $t_{\text{used}}$ where that task runs—never produced in the same parallel wave).
    - If an agent pauses (`waiting/...`) while peer agents run and then resumes via `send_message` at step $t_{\text{resume}}$, any input consumed on resume (e.g. `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md`) must be declared in `* **Inputs**:` and must exist in $\mathcal{F}_{t_{\text{resume}}-1}$ when the agent wakes up and re-runs `weave_verify`.

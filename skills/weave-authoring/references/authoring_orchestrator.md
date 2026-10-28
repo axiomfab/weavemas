@@ -54,8 +54,8 @@ trigger: always_on
   - **No Internal Task Labels**: Do not reference internal agent task headings or section IDs (e.g. avoid `pause at Task 02_handoff`; write `report unverified track queries and wait for track sourcing`).
   - **No Status String Leaks**: Do not prescribe low-level status enums in execution steps (e.g. avoid `transition status to waiting/sourcer_calibration`; write `wait for ...`). Subagent instructions define their own internal status transitions; the orchestrator guide defines only the observable domain sequence.
 * **Explicit Runtime Parameters in `## Execution`**:
-  Every agent execution step under `## Execution` must explicitly declare all scalar parameters passed to `invoke_subagent`:
-  - **Dedicated Line**: Always provide an explicit `- Parameters: <param1>, <param2>` line (or `- Parameters: none` if no scalar parameters are passed).
+  Every agent execution step under `## Execution` that passes scalar parameters to `invoke_subagent` must explicitly declare them:
+  - **Dedicated Line**: When scalar parameters are required, provide a dedicated `- Parameters: <param1>, <param2>` line. When no scalar parameters are needed, `- Parameters: none` is optional and omitting the line defaults to `none`.
   - **No In-Prose Parameters**: Never bury parameters inside execution narrative prose (e.g. avoid `Structures beats for assigned segment Act<AA>_Segment<SS>`). Dispatchers and sub-orchestrators require an explicit `Parameters:` specification to populate the subagent's `Runtime Parameters:` block.
   - **No Agent ID Inference**: Never assume a subagent infers or parses parameters from its own agent ID or folder path.
 * **Agent Declarations & `inputs` (`## Agents`)**:
