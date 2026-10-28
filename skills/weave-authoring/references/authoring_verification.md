@@ -62,10 +62,10 @@ Always print the verification report to the screen using Markdown checkboxes (`-
 #### Stage 2: `<stage_slug>` (`orchestrator/<stage_file>.md`)
 - [x] **`<agent_2>`** (`.agent/agents/<agent_2>.md`)
   - [x] **Agent/Orchestrator Contract Match**:
-    - Agent: Reads `[setup.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ (Params: `duration`, `host_wpm`) and writes `[concept.md]`
-    - Orchestrator: Inputs `[setup.md: 01_setup.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` (Params: `duration`, `host_wpm`) and expects `[concept.md]`
+    - Agent: Reads `[setup.md, host.md]` at $t=1$, `[sourced_tracks.md]` on wakeup at $t=3$ and writes `[concept.md]`
+    - Orchestrator: Inputs `[setup.md: 01_setup.md, host.md: 01_host.md, ../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md]` and expects `[concept.md]`
   - [x] **Input Availability**:
-    - Turn 1 ($t=1$): `01_setup.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
+    - Turn 1 ($t=1$): `01_setup.md` and `01_host.md` available in run directory; `sourced_tracks.md` in `pending_inputs`
     - Wakeup ($t=3$): `../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md` available in agent directory (produced at $t=2$)
 - [x] **Orchestrator Operations**:
   - [x] Promotes `concept.md` (showrunner agent directory) to `02_concept.md` (run directory)
