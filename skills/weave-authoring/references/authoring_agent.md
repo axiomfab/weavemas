@@ -35,7 +35,7 @@ tools:
 
 1. **`# Role Specifics`**:
    - Always declare `* **Output Target**: Save your finalized <type> to <filename_or_list>.` (supports a single filename, a list of files such as `article.md` and `illustration.png`, or wildcard patterns like `segment_*.md`).
-   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They may refer to inputs naturally by logical name (e.g. "the **Approved Article**", when bound as `- Approved Article: 01_editorial_approved.md` in the orchestrator) or by filename/description (`weave-core-agent`'s `weave_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1).
+   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They refer to inputs directly by filename (e.g. `draft.md`, mapped from `- draft.md: 01_draft.md` in the orchestrator) or relative path (`weave-core-agent`'s `weave_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1). Avoid inventing redundant descriptive titles.
    - Never mention `weave.md`, `weave_verify`, or "staged copies" in `# Role Specifics`.
 2. **Multi-Task Agents (`# Tasks` & `# Lifecycle`)**:
    - Declare each step as `## Task: <NN>_<short_slug>` (lowercase snake_case, zero-padded `01_`, `02_`, 1–2 words max so UI badges do not truncate).
@@ -98,15 +98,15 @@ skills:
   - weave-core-agent
 tools:
   - view_file
-  - write_to_file
+  - generate_image
 ---
 
 # Illustrator Agent
 
-You extract the illustration prompt from the **Approved Article** input, generate `illustration.png`, and save the final article to `article.md`.
+You extract the illustration prompt from `draft.md` (bound via `draft.md: 01_draft.md`) and generate `illustration.png`.
 
 Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
-* **Output Target**: Save `article.md` and `illustration.png` (outputs: `["article.md", "illustration.png"]`).
+* **Output Target**: Save your visual asset to `illustration.png` (outputs: `["illustration.png"]`).
 ```

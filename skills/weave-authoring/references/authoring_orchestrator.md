@@ -63,17 +63,20 @@ trigger: always_on
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
   - **File Inputs (`* **Inputs**:`)**: Never copy or stage input files into agent directories, and never inline prior outputs into prompts. Instead, list all required input files under `* **Inputs**:` using **portable relative paths** (with optional logical names `- <Name>: <path>` and optional `*` wildcards):
     1. **Relative to Agent CWD**: `../writer/draft.md` or `../architect_*/beats.md`
-    2. **Relative to Run Directory (`runs/<context_slug>/`)**: `01_editorial_approved.md`
+    2. **Relative to Run Directory (`runs/<context_slug>/`)**: `01_draft.md`
     3. **Relative to Workspace Root (`<workspace_root>/`)**: `prompts/personas/<host_id>.md` or `prompts/rules/*.md`
-    - *Named Input Aliases (Recommended for Stage Output Decoupling)*:
-      Promoted deliverables in the run directory should use zero-padded numeric prefixes (e.g. `01_setup.md`, `01_host.md`, `02_concept.md`, `03_script.md`) for clean chronological sorting in file explorers.
-      To keep subagents completely decoupled from orchestrator stage numbers, bind a clean semantic alias:
-      `- setup.md: output/<context_slug>/01_setup.md`
-      `- host.md: output/<context_slug>/01_host.md`
-      `- concept.md: output/<context_slug>/02_concept.md`
-      At runtime, `weave_verify` maps these aliases in `resolved_inputs`, allowing the subagent instructions to refer purely to `setup.md`, `host.md`, or `concept.md`.
+    - *No Redundant Aliases for Matching Filenames*:
+      Never attach an alias when the source filename already matches what the subagent consumes (e.g. write `- ../writer/draft.md`, NEVER `- Draft: ../writer/draft.md` or `- draft.md: ../writer/draft.md`).
+    - *Named Input Aliases (Reserved for Stage Output Decoupling)*:
+      Promoted deliverables in the run directory use zero-padded numeric prefixes (e.g. `01_draft.md`, `02_concept.md`, `03_script.md`) for clean chronological sorting.
+      To keep subagents completely decoupled from orchestrator stage numbers, bind a clean filename alias:
+      `- draft.md: runs/<context_slug>/01_draft.md`
+      `- concept.md: runs/<context_slug>/02_concept.md`
+      At runtime, `weave_verify` maps these aliases in `resolved_inputs`, allowing the subagent instructions to refer purely to `draft.md` or `concept.md`.
   - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` to `runs/<context_slug>/` to `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
-* **Orchestrator Operations**: Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Orchestrator Operations** promoting `stage01_editorial/agents/writer/draft.md` to `${RUN_DIR}/01_editorial_approved.md`).
+* **Orchestrator Operations & Artifact Naming**:
+  - Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Orchestrator Operations** promoting `stage01_editorial/agents/writer/draft.md` to `${RUN_DIR}/01_draft.md`).
+  - **No Status Tags in Deliverable Names**: Deliverable filenames must follow clean `<NN>_<artifact_slug>.<ext>` naming (e.g. `01_draft.md`, `02_article.md`). Never bake stage process states or approval adjectives into filenames (e.g. avoid `01_editorial_approved.md` or `01_draft_final.md`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.
 

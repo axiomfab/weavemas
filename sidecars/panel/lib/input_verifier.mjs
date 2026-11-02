@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseInputEntry, inferLookupRoots, expandPathPattern } from '../../../src/path_resolver.mjs';
+import { parseInputEntry, inferLookupRoots, expandPathPattern, substitutePathVariables } from '../../../src/path_resolver.mjs';
 
 /**
  * Checks existence and wildcard match count for an agent's declared inputs.
@@ -31,16 +31,22 @@ export function checkAgentInputs(agentDir, inputs, workspaceRoot, showDir) {
       return { raw: String(rawInput), isWildcard: false, exists: false, count: 0 };
     }
     const { rawPath } = parseInputEntry(rawInput);
-    const isWildcard = rawPath.includes('*');
-    const isExplicitRel = rawPath.startsWith('./') || rawPath.startsWith('../') || rawPath.startsWith('.\\') || rawPath.startsWith('..\\');
+    const substitutedPath = substitutePathVariables(rawPath, {
+      agentDir,
+      contextDir: effectiveContext,
+      workspaceRoot: effectiveWs
+    });
+    const hadVariable = rawPath !== substitutedPath;
+    const isWildcard = substitutedPath.includes('*');
+    const isExplicitRel = substitutedPath.startsWith('./') || substitutedPath.startsWith('../') || substitutedPath.startsWith('.\\') || substitutedPath.startsWith('..\\');
 
-    const candidateRoots = path.isAbsolute(rawPath) || isExplicitRel
+    const candidateRoots = hadVariable || path.isAbsolute(substitutedPath) || isExplicitRel
       ? [agentDir]
       : [agentDir, effectiveContext, effectiveWs].filter(Boolean);
 
     let matchCount = 0;
     for (const root of candidateRoots) {
-      const matches = expandPathPattern(root, rawPath);
+      const matches = expandPathPattern(root, substitutedPath);
       if (matches.length > 0) {
         matchCount = matches.length;
         break;

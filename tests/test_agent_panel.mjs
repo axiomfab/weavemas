@@ -28,7 +28,8 @@ const {
   expandedGroups,
   expandedCards,
   cardViewModes,
-  pendingScrollBottom
+  pendingScrollBottom,
+  collapsedStages
 } = ConceptTracker;
 
 const statusToolPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'lib', 'status_tool.mjs');
@@ -841,4 +842,115 @@ test('Happy Path: Multi-output chip displays "<N> outputs" and stacks all file c
 test('Failure Path: Multi-output chip returns empty string when outputItems is empty array and outputs is empty', () => {
   assert.equal(getAgentValueChip({ outputs: [] }, 'card_1', false, []), '');
   assert.equal(getAgentValueChip(null, 'card_1', false, null), '');
+});
+
+test('Happy Path: Stage panels render collapsible headers and toggle expanded/collapsed states', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockStagesData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Setup',
+        agents: {
+          director: {
+            id: 'director',
+            frontmatter: { status: 'completed' }
+          }
+        }
+      },
+      {
+        num: 2,
+        name: 'Concept',
+        agents: {
+          showrunner: {
+            id: 'showrunner',
+            frontmatter: { status: 'completed' }
+          }
+        }
+      }
+    ]
+  };
+
+  // 1. By default, both stages are expanded
+  render(container, mockStagesData);
+  assert.match(container.innerHTML, /data-stage-toggle="stage_1"/);
+  assert.match(container.innerHTML, /data-stage-toggle="stage_2"/);
+  assert.match(container.innerHTML, /Director/);
+  assert.match(container.innerHTML, /Showrunner/);
+
+  // 2. Collapse Stage 1
+  collapsedStages.add('stage_1');
+  render(container, mockStagesData);
+  assert.match(container.innerHTML, /data-stage-toggle="stage_1"/);
+  assert.match(container.innerHTML, /Stage 1/);
+  assert.doesNotMatch(container.innerHTML, /Director/);
+  assert.match(container.innerHTML, /Showrunner/);
+
+  // 3. Un-collapse Stage 1
+  collapsedStages.delete('stage_1');
+  render(container, mockStagesData);
+  assert.match(container.innerHTML, /Director/);
+  assert.match(container.innerHTML, /Showrunner/);
+
+  collapsedStages.clear();
+});
+
+test('Failure Path: Stage toggle event handler gracefully ignores missing, empty, or null target IDs', () => {
+  const listeners = [];
+  const fakeElement = {
+    getAttribute(attr) {
+      if (attr === 'data-stage-toggle') return '';
+      return null;
+    },
+    addEventListener(event, fn) {
+      listeners.push(fn);
+    }
+  };
+  const container = {
+    innerHTML: '',
+    querySelectorAll(selector) {
+      if (selector === '[data-stage-toggle]') return [fakeElement];
+      return [];
+    }
+  };
+
+  render(container, {
+    stages: [{ num: 1, name: 'Setup', agents: { a1: { id: 'a1', frontmatter: { status: 'completed' } } } }]
+  });
+
+  assert.equal(listeners.length, 1);
+  assert.doesNotThrow(() => listeners[0]());
+  assert.equal(collapsedStages.has(''), false);
+  assert.equal(collapsedStages.size, 0);
+
+  collapsedStages.clear();
+});
+
+test('Failure Path: Stageless stage without number or name falls back to safe identifier and collapses safely', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockStagelessData = {
+    stages: [
+      {
+        num: null,
+        name: '',
+        agents: {
+          helper: {
+            id: 'helper',
+            frontmatter: { status: 'completed' }
+          }
+        }
+      }
+    ]
+  };
+
+  render(container, mockStagelessData);
+  assert.match(container.innerHTML, /data-stage-toggle="stage_unknown"/);
+  assert.match(container.innerHTML, /Helper/);
+
+  collapsedStages.add('stage_unknown');
+  render(container, mockStagelessData);
+  assert.match(container.innerHTML, /data-stage-toggle="stage_unknown"/);
+  assert.doesNotMatch(container.innerHTML, /Helper/);
+
+  collapsedStages.clear();
 });

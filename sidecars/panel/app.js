@@ -155,6 +155,9 @@
         selectedStageNum = null; // Toggle filter off
       } else {
         selectedStageNum = num;
+        if (window.AgentPanel?.collapsedStages) {
+          window.AgentPanel.collapsedStages.delete(`stage_${num}`);
+        }
       }
       renderUI();
     },

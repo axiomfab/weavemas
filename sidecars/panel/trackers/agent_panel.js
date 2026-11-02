@@ -2,6 +2,7 @@
 (function() {
   const expandedCards = new Set();
   const expandedGroups = new Set();
+  const collapsedStages = new Set();
   const cardViewModes = new Map();
   const pendingScrollBottom = new Set();
 
@@ -111,15 +112,12 @@
             lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] ${cls}">"${escapeHtml(itemStr)}"${badge}</span>`);
           }
         }
-      } else if (k === 'outputs') {
+      } else if (k === 'outputs' || Array.isArray(v)) {
         const outArr = Array.isArray(v) ? v : (v && v !== 'null' ? [v] : []);
-        if (outArr.length === 0) lines.push(`<span class="text-indigo-300 font-mono">outputs</span>: <span class="text-slate-400 font-mono">[]</span>`);
-        else { lines.push(`<span class="text-indigo-300 font-mono">outputs</span>:`); for (const it of outArr) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
+        if (outArr.length === 0) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
+        else { lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`); for (const it of outArr) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
       } else if (v === null) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-500 font-mono">null</span>`);
-      else if (Array.isArray(v)) {
-        if (v.length === 0) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
-        else { lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`); for (const it of v) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
-      } else if (typeof v === 'string') lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
+      else if (typeof v === 'string') lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
       else lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-cyan-300 font-mono">${escapeHtml(String(v))}</span>`);
     }
     lines.push('<span class="text-slate-500 font-mono">---</span>');
@@ -253,10 +251,12 @@
         const timerHtml = (stageRt && stageRt.seconds > 0)
           ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}"><span class="text-[10px]">⏱️</span> ${escapeHtml(stageRt.formatted)}</span>`
           : '';
+        const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
+        const isExpanded = !collapsedStages.has(stageId);
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-xs font-bold text-white tracking-wide">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
-        return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div><div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div></div>`;
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
+        return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
 
@@ -269,51 +269,47 @@
 
     container.innerHTML = `<div class="space-y-4">${contentHtml}</div>`;
 
-    container.querySelectorAll('[data-group-toggle]').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-group-toggle');
-        if (expandedGroups.has(id)) expandedGroups.delete(id); else expandedGroups.add(id);
-        render(container, data, filterStageNum);
-      });
-    });
+    container.querySelectorAll('[data-stage-toggle]').forEach(el => el.addEventListener('click', () => {
+      const id = el.getAttribute('data-stage-toggle');
+      if (!id) return;
+      if (collapsedStages.has(id)) collapsedStages.delete(id); else collapsedStages.add(id);
+      render(container, data, filterStageNum);
+    }));
 
-    container.querySelectorAll('[data-concept-toggle]').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-concept-toggle');
-        if (expandedCards.has(id)) expandedCards.delete(id);
-        else { expandedCards.add(id); pendingScrollBottom.add(id); }
-        render(container, data, filterStageNum);
-      });
-    });
+    container.querySelectorAll('[data-group-toggle]').forEach(el => el.addEventListener('click', () => {
+      const id = el.getAttribute('data-group-toggle');
+      if (expandedGroups.has(id)) expandedGroups.delete(id); else expandedGroups.add(id);
+      render(container, data, filterStageNum);
+    }));
 
-    container.querySelectorAll('[data-deliverable-toggle]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-deliverable-toggle');
-        expandedCards.add(id);
-        cardViewModes.set(id, 'deliverable');
-        render(container, data, filterStageNum);
-      });
-    });
+    container.querySelectorAll('[data-concept-toggle]').forEach(el => el.addEventListener('click', () => {
+      const id = el.getAttribute('data-concept-toggle');
+      if (expandedCards.has(id)) expandedCards.delete(id); else { expandedCards.add(id); pendingScrollBottom.add(id); }
+      render(container, data, filterStageNum);
+    }));
 
-    container.querySelectorAll('[data-status-toggle]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-status-toggle');
-        expandedCards.add(id);
-        cardViewModes.set(id, 'updates');
-        pendingScrollBottom.add(id);
-        render(container, data, filterStageNum);
-      });
-    });
+    container.querySelectorAll('[data-deliverable-toggle]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-deliverable-toggle');
+      expandedCards.add(id);
+      cardViewModes.set(id, 'deliverable');
+      render(container, data, filterStageNum);
+    }));
 
-    container.querySelectorAll('[data-conv-id]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const convId = btn.getAttribute('data-conv-id');
-        if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(convId);
-      });
-    });
+    container.querySelectorAll('[data-status-toggle]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-status-toggle');
+      expandedCards.add(id);
+      cardViewModes.set(id, 'updates');
+      pendingScrollBottom.add(id);
+      render(container, data, filterStageNum);
+    }));
+
+    container.querySelectorAll('[data-conv-id]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const convId = btn.getAttribute('data-conv-id');
+      if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(convId);
+    }));
 
     container.querySelectorAll('[data-agent-body]').forEach(el => {
       const cid = el.getAttribute('data-agent-body');
@@ -338,7 +334,7 @@
   const trackerApi = {
     render, renderAllAgents: render, formatAgentTitle, formatFrontmatterOnly, formatHumanLogBody,
     getAgentIcon, getStatusBadge, getAgentValueChip, getShowrunnerChip, getSourcerChip,
-    getGroupSummary, getGroupSummaryChip, expandedCards, expandedGroups, cardViewModes, pendingScrollBottom
+    getGroupSummary, getGroupSummaryChip, expandedCards, expandedGroups, collapsedStages, cardViewModes, pendingScrollBottom
   };
 
   if (typeof window !== 'undefined') {
