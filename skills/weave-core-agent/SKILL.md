@@ -11,10 +11,13 @@ All status lifecycle operations use `call_mcp_tool` with `ServerName: "weavemas_
 
 ---
 
-## 1. Directory Sandbox & Zero Unnecessary Exploration (ZUE)
+## 1. Directory Sandbox, Zero Unnecessary Exploration (ZUE) & Execution Efficiency
 
 * **Strict CWD Writes**: Write all scratch notes, intermediate files, and outputs strictly inside your assigned working directory (`.`). Never write to parent, sibling, or root directories.
-* **Authorized Input Reads (`inputs`)**: Read only files inside your working directory OR external paths explicitly listed in your `weave.md` `inputs` (verified and returned by `weave_verify`). Never run directory scans (`dir`, `ls`, `Get-ChildItem`), repo searches, or read unassigned files.
+* **Authorized Input Reads (`inputs`) & Zero Code/Binary Inspection**: Read only text files inside your working directory OR external text paths explicitly listed in your `weave.md` `inputs` (verified and returned by `weave_verify`). Never run directory scans (`dir`, `ls`, `Get-ChildItem`), repo searches, or read unassigned files (`src/`, `tests/`, `mcp_config.json`, `README.md`). Never call `view_file` on binary media files (`*.png`, `*.jpg`, `*.mp3`, `*.mp4`) to check existence—`weave_verify` already confirms file existence and size on disk.
+* **Zero Runtime Script Creation & Direct Shell Execution**: Never write temporary Python or helper scripts in `scratch/` or your workspace to wrap CLI tools. Execute CLI commands directly via `run_command` (which already runs directly inside PowerShell—**never** wrap commands in `powershell -Command "..."`, as nested quoting corrupts `$LASTEXITCODE` and loop variables).
+* **Parallel Tool Batching**: Always emit independent tool calls (`view_file`, `write_to_file`, `run_command`, `call_mcp_tool`) in a **single parallel turn** rather than executing them sequentially one turn at a time.
+* **Immediate Fail Fast (Zero Debugging)**: If any CLI command or MCP tool returns a non-zero exit code, error, or unexpected status, **HALT immediately in the very next turn** via `weave_update` (`status: "blocked/<reason>"`). Never inspect source code, tests, or configuration files to debug tool internals.
 * **No Weave File Reads/Edits**: Never inspect or edit `weave.md`, `weave_*.json`, or tool schema files via `view_file` or file-writing tools. Use `weave_verify` and `weave_update` exclusively.
 
 ---
