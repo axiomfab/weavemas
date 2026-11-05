@@ -168,6 +168,11 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     refreshData();
-    pollInterval = setInterval(refreshData, 4000);
+    pollInterval = setInterval(() => {
+      if (typeof window.getSelection === 'function' && window.getSelection().toString().trim().length > 0) {
+        return;
+      }
+      refreshData();
+    }, 4000);
   });
 })();

@@ -1,7 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Response, SidecarApp } from 'sidecar_sdk';
+import { getMediaMimeType } from './lib/input_verifier.mjs';
 import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs } from './lib/pipeline.mjs';
 import { executeStatusUpdate, readStageAgents, readAllStagesAgents } from './lib/status_tool.mjs';
 
@@ -134,5 +135,70 @@ app.api('/api/status_update', (data) => {
   const ws = resolveWorkspace(data);
   return executeStatusUpdate(data, ws);
 }, 'POST');
+
+// API: Serve media files (images, audio, video) for deliverable previews
+app.api('/api/media', (data) => {
+  if (!data || typeof data.path !== 'string' || !data.path.trim()) {
+    return new Response(JSON.stringify({ error: 'CRITICAL: path parameter is required' }), {
+      status: 400,
+      contentType: 'application/json'
+    });
+  }
+  const ws = resolveWorkspace(data);
+  const rawPath = data.path.trim();
+  const mimeType = getMediaMimeType(rawPath);
+  if (!mimeType) {
+    return new Response(JSON.stringify({ error: `CRITICAL: Unsupported media type for '${rawPath}'` }), {
+      status: 415,
+      contentType: 'application/json'
+    });
+  }
+
+  let resolvedPath = null;
+  if (isAbsolute(rawPath) && existsSync(rawPath)) {
+    resolvedPath = rawPath;
+  } else {
+    const contextDir = resolveContextDir(ws, data);
+    const candidates = [contextDir ? join(contextDir, rawPath) : null, join(ws, rawPath)].filter(Boolean);
+    for (const cand of candidates) {
+      if (existsSync(cand) && statSync(cand).isFile()) {
+        resolvedPath = cand;
+        break;
+      }
+    }
+    if (!resolvedPath && contextDir && existsSync(contextDir)) {
+      const findInDir = (dir, depth = 0) => {
+        if (depth > 5) return null;
+        const direct = join(dir, rawPath);
+        if (existsSync(direct) && statSync(direct).isFile()) return direct;
+        for (const ent of readdirSync(dir, { withFileTypes: true })) {
+          if (ent.isDirectory()) {
+            const found = findInDir(join(dir, ent.name), depth + 1);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      resolvedPath = findInDir(contextDir);
+    }
+  }
+
+  if (!resolvedPath || !statSync(resolvedPath).isFile()) {
+    return new Response(JSON.stringify({ error: `CRITICAL: Media file not found: '${rawPath}'` }), {
+      status: 404,
+      contentType: 'application/json'
+    });
+  }
+
+  const buffer = readFileSync(resolvedPath);
+  return new Response(buffer, {
+    status: 200,
+    contentType: mimeType,
+    headers: {
+      'Content-Length': String(buffer.length),
+      'Cache-Control': 'no-cache'
+    }
+  });
+}, 'GET');
 
 app.run();

@@ -10,8 +10,11 @@ const __dirname = path.dirname(__filename);
 
 const agentPanelPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'agent_panel.js');
 const code = fs.readFileSync(agentPanelPath, 'utf-8');
+const rtTrackerPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'runtime_tracker.js');
+const rtCode = fs.readFileSync(rtTrackerPath, 'utf-8');
 const context = { window: {}, console };
 vm.createContext(context);
+vm.runInContext(rtCode, context);
 vm.runInContext(code, context);
 const AgentPanel = context.window.AgentPanel || context.window.ConceptTracker;
 assert.ok(context.window.AgentPanel, 'AgentPanel should be exported on window');
@@ -953,4 +956,211 @@ test('Failure Path: Stageless stage without number or name falls back to safe id
   assert.doesNotMatch(container.innerHTML, /Helper/);
 
   collapsedStages.clear();
+});
+
+test('Happy Path: Stage header renders data-running-timer attributes for live ticking when stage is active', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockRunningData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Drafting',
+        nodes: [
+          {
+            type: 'agent',
+            id: 'writer',
+            frontmatter: { status: 'in_progress/outline' },
+            body: '- 2026-10-15T10:00:00.000Z: `in_progress/outline` - Drafting'
+          }
+        ]
+      }
+    ]
+  };
+
+  render(container, mockRunningData);
+  assert.match(container.innerHTML, /data-running-timer/);
+  assert.match(container.innerHTML, /data-start-ms=/);
+  assert.match(container.innerHTML, /data-prior-ms=/);
+  assert.match(container.innerHTML, /⏱️/);
+  assert.match(container.innerHTML, /Stage 1/);
+});
+
+test('Failure Path 1: Stage header renders static timing label without data-running-timer when stage is completed', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockCompletedData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Drafting',
+        nodes: [
+          {
+            type: 'agent',
+            id: 'writer',
+            frontmatter: { status: 'completed' },
+            body: '- 2026-10-15T10:00:00.000Z: `in_progress/outline` - Drafting\n- 2026-10-15T10:02:00.000Z: `completed` - Done'
+          }
+        ]
+      }
+    ]
+  };
+
+  render(container, mockCompletedData);
+  assert.match(container.innerHTML, /⏱️/);
+  assert.match(container.innerHTML, /2m 0s/);
+  assert.doesNotMatch(container.innerHTML, /data-running-timer/);
+});
+
+test('Failure Path 2: Stage header omits timer when stage has 0 runtime and is not running', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockIdleData = {
+    stages: [
+      {
+        num: 1,
+        name: 'Drafting',
+        nodes: [
+          {
+            type: 'agent',
+            id: 'writer',
+            frontmatter: { status: 'not_started' },
+            body: '- 2026-10-15T10:00:00.000Z: `not_started` - Ready'
+          }
+        ]
+      }
+    ]
+  };
+
+  render(container, mockIdleData);
+  assert.doesNotMatch(container.innerHTML, /⏱️/);
+});
+
+test('Happy Path: Output view enables text selection (select-text) and renders Copy button for copy/paste', () => {
+  const copyListeners = [];
+  const fakeCopyBtn = {
+    textContent: '📋 Copy',
+    getAttribute(attr) { return attr === 'data-copy-deliverable' ? 'card_s1_writer' : null; },
+    addEventListener(ev, fn) { if (ev === 'click') copyListeners.push(fn); }
+  };
+  const fakeBodyEl = {
+    textContent: '# Output Text to Copy',
+    scrollTop: 0, scrollHeight: 100, clientHeight: 100,
+    getAttribute(attr) { return attr === 'data-agent-body' ? 'card_s1_writer' : null; }
+  };
+  const container = {
+    innerHTML: '',
+    querySelectorAll(sel) {
+      if (sel === '[data-copy-deliverable]') return [fakeCopyBtn];
+      if (sel === '[data-agent-body]') return [fakeBodyEl];
+      return [];
+    }
+  };
+  const mockData = {
+    stages: [{
+      num: 1, name: 'Writing',
+      agents: {
+        writer: {
+          id: 'writer',
+          frontmatter: { status: 'completed', outputs: ['draft.md'] },
+          deliverableContent: '# Output Text to Copy'
+        }
+      }
+    }]
+  };
+
+  expandedCards.add('card_s1_writer');
+  cardViewModes.set('card_s1_writer', 'deliverable');
+  render(container, mockData);
+
+  assert.match(container.innerHTML, /select-text/);
+  assert.match(container.innerHTML, /data-copy-deliverable="card_s1_writer"/);
+  assert.equal(copyListeners.length, 1);
+  copyListeners[0]({ stopPropagation() {} });
+  assert.equal(fakeCopyBtn.textContent, '✓ Copied');
+
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Happy Path: Renders image preview and embedded audio/video players for single and multi-file outputs', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockMediaData = {
+    stages: [{
+      num: 1, name: 'Media Production',
+      agents: {
+        illustrator: {
+          id: 'illustrator',
+          frontmatter: { status: 'completed', outputs: ['cover.png'] },
+          deliverableContent: '[Media/Binary file: cover.png • 24.0 KB]',
+          outputItems: [{ name: 'cover.png', content: '[Media/Binary file: cover.png • 24.0 KB]', exists: true, mediaType: 'image', filePath: 'C:/runs/show/cover.png' }]
+        },
+        composer: {
+          id: 'composer',
+          frontmatter: { status: 'completed', outputs: ['theme.mp3', 'promo.mp4'] },
+          deliverableContent: '── 📄 theme.mp3 ──\n[Media/Binary file: theme.mp3 • 1.2 MB]\n\n── 📄 promo.mp4 ──\n[Media/Binary file: promo.mp4 • 4.5 MB]',
+          outputItems: [
+            { name: 'theme.mp3', content: '[Media/Binary file: theme.mp3 • 1.2 MB]', exists: true, mediaType: 'audio', filePath: 'C:/runs/show/theme.mp3' },
+            { name: 'promo.mp4', content: '[Media/Binary file: promo.mp4 • 4.5 MB]', exists: true, mediaType: 'video', filePath: 'C:/runs/show/promo.mp4' }
+          ]
+        }
+      }
+    }]
+  };
+
+  expandedCards.add('card_s1_illustrator');
+  cardViewModes.set('card_s1_illustrator', 'deliverable');
+  expandedCards.add('card_s1_composer');
+  cardViewModes.set('card_s1_composer', 'deliverable');
+
+  render(container, mockMediaData);
+
+  assert.match(container.innerHTML, /data-media-preview="image"/);
+  assert.match(container.innerHTML, /<img src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Fcover\.png"/);
+  assert.match(container.innerHTML, /data-media-preview="audio"/);
+  assert.match(container.innerHTML, /<audio controls preload="metadata" src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Ftheme\.mp3"/);
+  assert.match(container.innerHTML, /data-media-preview="video"/);
+  assert.match(container.innerHTML, /<video controls preload="metadata" src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Fpromo\.mp4"/);
+
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Failure Path 1: renderMediaPreviewHtml throws TypeError when name or mediaType is invalid', () => {
+  assert.throws(() => AgentPanel.renderMediaPreviewHtml('', 'image'), /CRITICAL: name must be a non-empty string/);
+  assert.throws(() => AgentPanel.renderMediaPreviewHtml('file.txt', 'invalid_type'), /CRITICAL: mediaType must be 'image', 'audio', or 'video'/);
+});
+
+test('Failure Path 2: Does not render media player when media deliverable file does not exist yet', () => {
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockPendingMedia = {
+    stages: [{
+      num: 1, name: 'Media Production',
+      agents: {
+        composer: {
+          id: 'composer',
+          frontmatter: { status: 'in_progress', outputs: ['unrendered.mp3'] },
+          deliverableContent: null,
+          outputItems: [{ name: 'unrendered.mp3', content: null, exists: false, mediaType: 'audio', filePath: null }]
+        }
+      }
+    }]
+  };
+
+  expandedCards.add('card_s1_composer');
+  cardViewModes.set('card_s1_composer', 'deliverable');
+  render(container, mockPendingMedia);
+
+  assert.match(container.innerHTML, /Deliverable \(unrendered\.mp3\) has not been generated yet\./);
+  assert.doesNotMatch(container.innerHTML, /<audio/);
+
+  expandedCards.clear();
+  cardViewModes.clear();
+});
+
+test('Happy Path: renderMediaPreviewHtml appends sidecar token query parameter when present in window.location.search', () => {
+  context.window.location = { search: '?token=sec_tok_123&conversationId=abc' };
+  try {
+    const html = AgentPanel.renderMediaPreviewHtml('audio/segment_01_spoken.mp3', 'audio', 'C:/runs/show/audio/segment_01_spoken.mp3');
+    assert.match(html, /\/api\/media\?path=C%3A%2Fruns%2Fshow%2Faudio%2Fsegment_01_spoken\.mp3&amp;token=sec_tok_123/);
+  } finally {
+    delete context.window.location;
+  }
 });

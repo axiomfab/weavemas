@@ -62,11 +62,65 @@ export function checkAgentInputs(agentDir, inputs, workspaceRoot, showDir) {
   });
 }
 
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg']);
+const AUDIO_EXTS = new Set(['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac']);
+const VIDEO_EXTS = new Set(['.mp4', '.mov', '.webm', '.avi', '.mkv']);
 const BINARY_EXTS = new Set([
   '.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac',
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico',
   '.mp4', '.mov', '.webm', '.avi', '.mkv', '.zip', '.tar', '.gz', '.pdf'
 ]);
+
+const MIME_BY_EXT = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.flac': 'audio/flac',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.avi': 'video/x-msvideo',
+  '.mkv': 'video/x-matroska'
+};
+
+/**
+ * Classifies a file path into 'image', 'audio', 'video', or null.
+ * @param {string} filePath
+ * @returns {'image' | 'audio' | 'video' | null}
+ */
+export function getMediaType(filePath) {
+  if (!filePath || typeof filePath !== 'string') {
+    throw new TypeError('CRITICAL: filePath must be a non-empty string');
+  }
+  const ext = path.extname(filePath.trim()).toLowerCase();
+  if (IMAGE_EXTS.has(ext)) return 'image';
+  if (AUDIO_EXTS.has(ext)) return 'audio';
+  if (VIDEO_EXTS.has(ext)) return 'video';
+  return null;
+}
+
+/**
+ * Returns the MIME type for a supported media file path, or null if unsupported.
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+export function getMediaMimeType(filePath) {
+  if (!filePath || typeof filePath !== 'string') {
+    throw new TypeError('CRITICAL: filePath must be a non-empty string');
+  }
+  const ext = path.extname(filePath.trim()).toLowerCase();
+  return MIME_BY_EXT[ext] || null;
+}
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -95,7 +149,7 @@ function readSingleOutputFile(filePath, displayName) {
  * @param {string} workspaceRoot
  * @param {string} showDir
  * @param {string | null} stageName
- * @returns {{ deliverableContent: string | null, outputItems: Array<{ name: string, content: string | null, exists: boolean }> }}
+ * @returns {{ deliverableContent: string | null, outputItems: Array<{ name: string, content: string | null, exists: boolean, mediaType: 'image' | 'audio' | 'video' | null, filePath: string | null }> }}
  */
 export function resolveAgentOutputs(dir, rawOutputs, workspaceRoot, showDir, stageName) {
   if (!dir || typeof dir !== 'string') {
@@ -142,21 +196,38 @@ export function resolveAgentOutputs(dir, rawOutputs, workspaceRoot, showDir, sta
         for (const fPath of matchedFiles) {
           const relName = path.relative(matchedRoot, fPath).replace(/\\/g, '/');
           const content = readSingleOutputFile(fPath, relName);
-          outputItems.push({ name: relName, content, exists: content !== null });
+          const exists = content !== null;
+          outputItems.push({
+            name: relName,
+            content,
+            exists,
+            mediaType: getMediaType(relName),
+            filePath: exists ? fPath.replace(/\\/g, '/') : null
+          });
         }
       } else {
-        outputItems.push({ name: pat, content: null, exists: false });
+        outputItems.push({ name: pat, content: null, exists: false, mediaType: getMediaType(pat), filePath: null });
       }
     } else {
       let foundContent = null;
+      let foundPath = null;
       for (const root of candidateRoots) {
         const cand = path.isAbsolute(pat) ? pat : path.join(root, pat);
         if (fs.existsSync(cand)) {
           foundContent = readSingleOutputFile(cand, pat);
-          if (foundContent !== null) break;
+          if (foundContent !== null) {
+            foundPath = cand.replace(/\\/g, '/');
+            break;
+          }
         }
       }
-      outputItems.push({ name: pat, content: foundContent, exists: foundContent !== null });
+      outputItems.push({
+        name: pat,
+        content: foundContent,
+        exists: foundContent !== null,
+        mediaType: getMediaType(pat),
+        filePath: foundPath
+      });
     }
   }
 

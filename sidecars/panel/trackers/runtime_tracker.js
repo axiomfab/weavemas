@@ -132,7 +132,7 @@
 
   function calculateStageRuntime(nodes, nowMs = Date.now()) {
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
-      return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs };
+      return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs, priorActiveMs: 0, lastStartMs: 0 };
     }
 
     function getLeaves(list) {
@@ -146,7 +146,7 @@
     }
 
     const agents = getLeaves(nodes);
-    if (agents.length === 0) return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs };
+    if (agents.length === 0) return { seconds: 0, isRunning: false, formatted: '0s', minStartMs: nowMs, priorActiveMs: 0, lastStartMs: 0 };
 
     function isActiveSlug(slug) {
       if (!slug || typeof slug !== 'string') return false;
@@ -207,7 +207,7 @@
     }
 
     if (rawIntervals.length === 0) {
-      return { seconds: 0, isRunning, formatted: '0s', minStartMs: minStartMs !== Infinity ? minStartMs : nowMs };
+      return { seconds: 0, isRunning, formatted: '0s', minStartMs: minStartMs !== Infinity ? minStartMs : nowMs, priorActiveMs: 0, lastStartMs: 0 };
     }
 
     rawIntervals.sort((a, b) => a.start - b.start);
@@ -228,11 +228,16 @@
     }
 
     const stageSeconds = Math.max(0, Math.floor(totalActiveMs / 1000));
+    const lastStartMs = isRunning && merged.length > 0 ? merged[merged.length - 1].start : 0;
+    const priorActiveMs = isRunning ? merged.slice(0, -1).reduce((acc, intv) => acc + Math.max(0, intv.end - intv.start), 0) : totalActiveMs;
+
     return {
       seconds: stageSeconds,
       isRunning,
       formatted: formatRuntime(stageSeconds),
-      minStartMs: minStartMs !== Infinity ? minStartMs : nowMs
+      minStartMs: minStartMs !== Infinity ? minStartMs : nowMs,
+      priorActiveMs,
+      lastStartMs
     };
   }
 

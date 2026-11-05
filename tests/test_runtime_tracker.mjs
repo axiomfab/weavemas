@@ -309,6 +309,54 @@ test('calculateStageRuntime - Failure Path 2: excludes internal waiting interval
   assert.equal(res.isRunning, false);
 });
 
+test('calculateStageRuntime - Happy Path: outputs lastStartMs and priorActiveMs for live timer ticking during active execution', () => {
+  const startMs = Date.parse('2026-10-15T10:00:00.000Z');
+  const nowMs = Date.parse('2026-10-15T10:01:15.000Z');
+  const nodes = [
+    {
+      type: 'agent',
+      frontmatter: { status: 'in_progress/drafting' },
+      body: `- 2026-10-15T10:00:00.000Z: \`in_progress/drafting\` - Working`
+    }
+  ];
+  const res = RuntimeTracker.calculateStageRuntime(nodes, nowMs);
+  assert.equal(res.isRunning, true);
+  assert.equal(res.lastStartMs, startMs);
+  assert.equal(res.priorActiveMs, 0);
+  assert.equal(res.seconds, 75);
+  assert.equal(res.formatted, '1m 15s');
+});
+
+test('calculateStageRuntime - Failure Path 1: handles empty or non-array inputs with zero timing metadata', () => {
+  const emptyRes = RuntimeTracker.calculateStageRuntime([]);
+  assert.equal(emptyRes.isRunning, false);
+  assert.equal(emptyRes.lastStartMs, 0);
+  assert.equal(emptyRes.priorActiveMs, 0);
+  assert.equal(emptyRes.seconds, 0);
+
+  const nullRes = RuntimeTracker.calculateStageRuntime(null);
+  assert.equal(nullRes.isRunning, false);
+  assert.equal(nullRes.lastStartMs, 0);
+  assert.equal(nullRes.priorActiveMs, 0);
+  assert.equal(nullRes.seconds, 0);
+});
+
+test('calculateStageRuntime - Failure Path 2: completed stage has isRunning=false and lastStartMs=0 with static priorActiveMs', () => {
+  const nodes = [
+    {
+      type: 'agent',
+      frontmatter: { status: 'completed' },
+      body: `- 2026-10-15T10:00:00.000Z: \`in_progress/work\` - Done\n- 2026-10-15T10:00:30.000Z: \`completed\` - All done`
+    }
+  ];
+  const res = RuntimeTracker.calculateStageRuntime(nodes, Date.parse('2026-10-15T10:05:00.000Z'));
+  assert.equal(res.isRunning, false);
+  assert.equal(res.lastStartMs, 0);
+  assert.equal(res.priorActiveMs, 30000);
+  assert.equal(res.seconds, 30);
+  assert.equal(res.formatted, '30s');
+});
+
 test('formatHumanLogBody - Happy Path: formats in_progress intervals with exact duration and no duration on other states', () => {
   const body = `
 # Status Log

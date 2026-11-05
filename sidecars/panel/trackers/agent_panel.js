@@ -1,63 +1,45 @@
 // Pipeline Agents Panel Frontend Module - Dynamic WeaveMAS Discovery Across All Stages
 (function() {
-  const expandedCards = new Set();
-  const expandedGroups = new Set();
-  const collapsedStages = new Set();
-  const cardViewModes = new Map();
-  const pendingScrollBottom = new Set();
-
+  const expandedCards = new Set(), expandedGroups = new Set(), collapsedStages = new Set();
+  const cardViewModes = new Map(), pendingScrollBottom = new Set();
   function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    return str ? String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
   }
-
   function formatAgentTitle(id) {
     if (!id || typeof id !== 'string') return 'Agent';
     const clean = id.replace(/youtube/i, 'YouTube_').replace(/factchecker/i, 'Fact_Checker');
     return clean.split(/[_-]/).filter(Boolean).map(p => (p.toLowerCase() === 'youtube' ? 'YouTube' : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())).join(' ');
   }
-
   function getAgentIcon() { return ''; }
-
   function getStatusBadge(status, cardId = '') {
-    const raw = (status || 'pending').toLowerCase();
-    const [base, sub] = raw.split('/');
+    const raw = (status || 'pending').toLowerCase(), [base, sub] = raw.split('/');
     const label = sub ? `${base.replace(/_/g, ' ')}: ${sub.replace(/_/g, ' ')}` : base.replace(/_/g, ' ');
     let cls = 'bg-slate-800 text-slate-400 border border-slate-700/50';
     if (base === 'in_progress' || base === 'revising' || base === 'running') cls = 'vivid-pulse text-[10px] font-bold border font-mono';
     else if (base === 'waiting') cls = 'bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono';
     else if (base === 'completed' || base === 'approved') cls = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono';
     else if (base === 'blocked' || base === 'error' || base === 'failed') cls = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono';
-    const cursor = cardId ? 'cursor-pointer hover:opacity-85' : '';
-    const attr = cardId ? `data-status-toggle="${escapeHtml(cardId)}"` : '';
-    return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cursor} transition-all" ${attr}>${escapeHtml(label)}</span>`;
+    return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cardId ? 'cursor-pointer hover:opacity-85' : ''} transition-all" ${cardId ? `data-status-toggle="${escapeHtml(cardId)}"` : ''}>${escapeHtml(label)}</span>`;
   }
-
   function getOutputsList(fm, outputItems = null) {
     if (Array.isArray(outputItems) && outputItems.length > 0) return outputItems.map(it => String(it.name));
     if (!fm) return [];
     const raw = fm.outputs !== undefined ? fm.outputs : fm.deliverable;
     if (!raw || raw === 'null' || raw === 'None') return [];
-    if (Array.isArray(raw)) return raw.map(s => String(s).trim()).filter(s => s && s !== 'null' && s !== 'None');
-    return [String(raw).trim()];
+    return Array.isArray(raw) ? raw.map(s => String(s).trim()).filter(s => s && s !== 'null' && s !== 'None') : [String(raw).trim()];
   }
-
   function getAgentValueChip(fm, cardId = '', isDeliverableActive = false, outputItems = null) {
     if (!fm && (!Array.isArray(outputItems) || outputItems.length === 0)) return '';
     const outs = getOutputsList(fm, outputItems);
     if (outs.length > 0) {
       const chipLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
-      const activeCls = isDeliverableActive
-        ? 'bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400'
-        : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
+      const activeCls = isDeliverableActive ? 'bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400' : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
       return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(chipLabel)}</button>`;
     }
     if (fm?.progress) return `${escapeHtml(fm.progress)} Verified`;
     if (fm?.total_acts != null && fm?.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
-    if (fm?.words != null) return `${fm.words} words`;
-    return '';
+    return fm?.words != null ? `${fm.words} words` : '';
   }
-
   function formatFrontmatterOnly(fm, statusContent, inputStatuses = []) {
     let effectiveFm = fm;
     if ((!effectiveFm || typeof effectiveFm !== 'object' || Object.keys(effectiveFm).length === 0) && statusContent && typeof statusContent === 'string') {
@@ -72,15 +54,11 @@
         for (const line of match[1].split(/\r?\n/)) {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith('#')) continue;
-          if (curList && trimmed.startsWith('-')) {
-            parsed[curList].push(trimmed.slice(1).trim().replace(/^["']|["']$/g, ''));
-            continue;
-          }
+          if (curList && trimmed.startsWith('-')) { parsed[curList].push(trimmed.slice(1).trim().replace(/^["']|["']$/g, '')); continue; }
           curList = null;
           const cIdx = trimmed.indexOf(':');
           if (cIdx === -1) continue;
-          const key = trimmed.slice(0, cIdx).trim();
-          const val = trimmed.slice(cIdx + 1).trim();
+          const key = trimmed.slice(0, cIdx).trim(), val = trimmed.slice(cIdx + 1).trim();
           if (val === '' || val === '[]') { parsed[key] = []; curList = (val === '') ? key : null; }
           else parsed[key] = val.replace(/^["']|["']$/g, '');
         }
@@ -88,14 +66,8 @@
       }
     }
     if (!effectiveFm || typeof effectiveFm !== 'object' || Object.keys(effectiveFm).length === 0) return 'No frontmatter available.';
-
     const inputStatusMap = new Map();
-    if (Array.isArray(inputStatuses)) {
-      for (const st of inputStatuses) {
-        if (st && st.raw) inputStatusMap.set(st.raw.trim(), st);
-      }
-    }
-
+    if (Array.isArray(inputStatuses)) { for (const st of inputStatuses) { if (st && st.raw) inputStatusMap.set(st.raw.trim(), st); } }
     const lines = ['<span class="text-slate-500 font-mono">---</span>'];
     for (const [k, v] of Object.entries(effectiveFm)) {
       if (v === undefined) continue;
@@ -154,34 +126,73 @@
     return `<span class="bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] font-mono">${escapeHtml(label)}</span>`;
   }
 
+  function detectMediaType(filename, explicitMediaType = null) {
+    if (explicitMediaType === 'image' || explicitMediaType === 'audio' || explicitMediaType === 'video') return explicitMediaType;
+    if (!filename || typeof filename !== 'string') return null;
+    const clean = filename.trim().toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|bmp|ico|svg)$/.test(clean)) return 'image';
+    if (/\.(mp3|wav|ogg|flac|m4a|aac)$/.test(clean)) return 'audio';
+    if (/\.(mp4|mov|webm|avi|mkv)$/.test(clean)) return 'video';
+    return null;
+  }
+
+  function renderMediaPreviewHtml(name, mediaType, filePath = null) {
+    if (!name || typeof name !== 'string') throw new TypeError('CRITICAL: name must be a non-empty string');
+    if (mediaType !== 'image' && mediaType !== 'audio' && mediaType !== 'video') {
+      throw new TypeError(`CRITICAL: mediaType must be 'image', 'audio', or 'video', got '${mediaType}'`);
+    }
+    const target = (typeof filePath === 'string' && filePath.trim()) ? filePath.trim() : name.trim();
+    const tokMatch = (typeof window !== 'undefined' && typeof window.location?.search === 'string') ? window.location.search.match(/[?&]token=([^&]+)/) : null;
+    const src = `/api/media?path=${encodeURIComponent(target)}${tokMatch ? `&token=${encodeURIComponent(decodeURIComponent(tokMatch[1]))}` : ''}`;
+    if (mediaType === 'image') return `<div class="my-2 p-2 rounded-lg bg-slate-900/70 border border-slate-800 flex flex-col items-center gap-1.5" data-media-preview="image"><img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" data-media-src="${escapeHtml(src)}" class="max-w-full max-h-80 rounded object-contain" loading="lazy" /></div>`;
+    if (mediaType === 'audio') return `<div class="my-2 p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1.5" data-media-preview="audio"><div class="text-[11px] text-indigo-300 font-semibold">🔊 ${escapeHtml(name)}</div><audio controls preload="metadata" src="${escapeHtml(src)}" data-media-src="${escapeHtml(src)}" class="w-full h-9"></audio></div>`;
+    return `<div class="my-2 p-2 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1.5" data-media-preview="video"><div class="text-[11px] text-indigo-300 font-semibold">🎬 ${escapeHtml(name)}</div><video controls preload="metadata" src="${escapeHtml(src)}" data-media-src="${escapeHtml(src)}" class="w-full max-h-80 rounded bg-black"></video></div>`;
+  }
+
+  function formatDeliverableHtml(agentData, delivLabel, outs) {
+    const rawDeliv = agentData?.deliverableContent;
+    const outputItems = Array.isArray(agentData?.outputItems) ? agentData.outputItems : [];
+    const itemMap = new Map();
+    for (const it of outputItems) { if (it && it.name) itemMap.set(String(it.name), it); }
+    const hasText = rawDeliv != null && rawDeliv.trim() !== '';
+    const hasExistingItem = outputItems.some(it => it && it.exists);
+    if (!hasText && !hasExistingItem) return rawDeliv === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(delivLabel)}) has not been generated yet.`;
+    if (outs.length === 1) {
+      const singleName = outs[0], item = itemMap.get(singleName) || outputItems[0] || null;
+      const mType = (item && item.exists === false) ? null : detectMediaType(singleName, item?.mediaType);
+      const preview = mType ? renderMediaPreviewHtml(singleName, mType, item?.filePath || singleName) : '';
+      const escapedText = hasText ? escapeHtml(rawDeliv) : '';
+      return preview ? (escapedText ? `${preview}\n${escapedText}` : preview) : escapedText;
+    }
+    const baseText = hasText ? rawDeliv : outputItems.map(it => `── 📄 ${it.name} ──\n${it.exists ? (it.content || '') : `Output (${it.name}) has not been generated yet.`}`).join('\n\n');
+    return escapeHtml(baseText).replace(/^── 📄 (.+?) ──$/gm, (_, escapedName) => {
+      const item = itemMap.get(escapedName);
+      const mType = (item && item.exists === false) ? null : detectMediaType(escapedName, item?.mediaType);
+      const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName)}` : '';
+      return `<span class="text-indigo-300 font-bold">── 📄 ${escapedName} ──</span>${preview}`;
+    });
+  }
+
   function renderAgentCard(cardId, title, ...args) {
     const [agentData, customChip] = (args.length >= 2 && typeof args[0] === 'string') ? [args[1], args[2]] : [args[0], args[1]];
-    const isOpen = expandedCards.has(cardId);
-    const viewMode = cardViewModes.get(cardId) || 'updates';
-    const fm = agentData?.frontmatter || {};
-    const body = agentData?.body || '';
-    const status = fm.status || 'pending';
-    const convId = fm.conversation_id;
+    const isOpen = expandedCards.has(cardId), viewMode = cardViewModes.get(cardId) || 'updates';
+    const fm = agentData?.frontmatter || {}, body = agentData?.body || '', status = fm.status || 'pending', convId = fm.conversation_id;
     const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || (typeof RuntimeTracker !== 'undefined' ? RuntimeTracker : null);
     const runtimeBadge = rtTracker ? rtTracker.getRuntimeBadgeHtml(body, status) : '';
     let updatedLabelHtml = '';
     if (fm.updated_at) {
       const rel = rtTracker?.formatRelativeTime ? rtTracker.formatRelativeTime(fm.updated_at) : new Date(fm.updated_at).toLocaleTimeString();
-      const exactTime = new Date(fm.updated_at).toLocaleTimeString();
-      updatedLabelHtml = `<span title="${escapeHtml(exactTime)}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
+      updatedLabelHtml = `<span title="${escapeHtml(new Date(fm.updated_at).toLocaleTimeString())}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
     }
     const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
-
     const outs = getOutputsList(fm, agentData?.outputItems);
     const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
     const delivLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
-
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
-      const delivContent = (agentData?.deliverableContent != null && agentData.deliverableContent.trim() !== '') ? agentData.deliverableContent : (agentData?.deliverableContent === '' ? 'Deliverable is empty.' : `Deliverable (${escapeHtml(delivLabel)}) has not been generated yet.`);
-      const formattedDeliv = escapeHtml(delivContent).replace(/^── 📄 (.+?) ──$/gm, '<span class="text-indigo-300 font-bold">── 📄 $1 ──</span>');
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${formattedDeliv}</div>`;
+      const copyBtn = `<button type="button" class="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">📋 Copy</button>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
@@ -189,13 +200,11 @@
       const formattedLog = formatHumanLogBody(body);
       if (hasFm || formattedLog) {
         const logSection = formattedLog || `<span class="text-slate-500 italic">No logs recorded yet. Agent is pending or starting up...</span>`;
-        const combined = hasFm ? `${fmContent}\n\n${logSection}` : formattedLog;
-        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed selection:bg-indigo-500/30">${combined}</div>`;
+        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${hasFm ? `${fmContent}\n\n${logSection}` : formattedLog}</div>`;
       } else {
-        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
+        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono select-text">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
       }
     }
-
     return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
@@ -209,8 +218,7 @@
   function renderNode(node, stageNum) {
     if (node.type === 'group') {
       const groupId = (stageNum != null) ? `grp_s${stageNum}_${node.id}` : `grp_${node.id}`;
-      const isExpanded = expandedGroups.has(groupId);
-      const title = formatAgentTitle(node.name || node.id);
+      const isExpanded = expandedGroups.has(groupId), title = formatAgentTitle(node.name || node.id);
       const sortedChildren = (node.children || []).slice().sort((a, b) => {
         const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
         return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
@@ -218,20 +226,16 @@
       return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
-    const title = formatAgentTitle(node.name || node.id);
-    const isDelivActive = cardViewModes.get(cardId) === 'deliverable';
-    const chip = getAgentValueChip(node.frontmatter, cardId, isDelivActive, node.outputItems);
-    return renderAgentCard(cardId, title, node, chip);
+    const chip = getAgentValueChip(node.frontmatter, cardId, cardViewModes.get(cardId) === 'deliverable', node.outputItems);
+    return renderAgentCard(cardId, formatAgentTitle(node.name || node.id), node, chip);
   }
 
   function render(container, data, filterStageNum = null) {
     if (!container) return;
     let stageList = Array.isArray(data?.stages) ? data.stages : (data?.agents ? [{ num: 2, name: 'Concept & Outline', agents: data.agents }] : []);
     if (filterStageNum !== null && filterStageNum !== undefined) stageList = stageList.filter(s => s.num === filterStageNum);
-
     let totalAgents = 0;
     stageList.forEach(st => { (st.nodes || Object.values(st.agents || {})).forEach(n => { totalAgents += countLeaves(n); }); });
-
     let contentHtml = '';
     if (stageList.length === 0 || totalAgents === 0) {
       contentHtml = `<div class="p-6 rounded-xl border border-slate-800 bg-slate-900/30 text-center text-xs text-slate-500 font-mono">No subagents discovered across pipeline stages yet.</div>`;
@@ -239,17 +243,15 @@
       contentHtml = stageList.map(st => {
         const nodeList = (st.nodes || Object.values(st.agents || {})).filter(n => n.type === 'group' || !n.frontmatter?.type || n.frontmatter.type === 'agent');
         nodeList.sort((a, b) => {
-          const ta = getNodeCreationTime(a);
-          const tb = getNodeCreationTime(b);
-          if (ta && tb && ta !== tb) return ta - tb;
-          return (a.name || a.id).localeCompare(b.name || b.id);
+          const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
+          return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
         });
         const activeCount = nodeList.reduce((acc, n) => acc + countLeaves(n), 0);
         if (nodeList.length === 0 || activeCount === 0) return '';
         const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || null;
         const stageRt = rtTracker?.calculateStageRuntime ? rtTracker.calculateStageRuntime(nodeList) : null;
-        const timerHtml = (stageRt && stageRt.seconds > 0)
-          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}"><span class="text-[10px]">⏱️</span> ${escapeHtml(stageRt.formatted)}</span>`
+        const timerHtml = (stageRt && (stageRt.seconds > 0 || stageRt.isRunning))
+          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}"><span class="text-[10px]">⏱️</span> ${stageRt.isRunning ? `<span data-running-timer data-start-ms="${stageRt.lastStartMs || 0}" data-prior-ms="${stageRt.priorActiveMs || 0}" data-base-seconds="${stageRt.seconds || 0}" data-calc-time="${Date.now()}">${escapeHtml(stageRt.formatted)}</span>` : escapeHtml(stageRt.formatted)}</span>`
           : '';
         const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
         const isExpanded = !collapsedStages.has(stageId);
@@ -259,73 +261,77 @@
         return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
-
-    const prevScrolls = new Map();
+    const prevScrolls = new Map(), activeMediaEls = new Map();
     container.querySelectorAll('[data-agent-body]').forEach(el => {
       const cid = el.getAttribute('data-agent-body');
-      const wasAtBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 30;
-      prevScrolls.set(cid, { scrollTop: el.scrollTop, wasAtBottom, text: el.textContent });
+      prevScrolls.set(cid, { scrollTop: el.scrollTop, wasAtBottom: (el.scrollHeight - el.scrollTop - el.clientHeight) < 30, text: el.textContent });
     });
-
+    container.querySelectorAll('[data-media-src]').forEach(el => {
+      const src = el.getAttribute('data-media-src');
+      if (src && (el.currentTime > 0 || (typeof el.paused === 'boolean' && !el.paused))) activeMediaEls.set(src, el);
+    });
     container.innerHTML = `<div class="space-y-4">${contentHtml}</div>`;
-
+    if (activeMediaEls.size > 0) {
+      container.querySelectorAll('[data-media-src]').forEach(newEl => {
+        const oldEl = activeMediaEls.get(newEl.getAttribute('data-media-src'));
+        if (oldEl && typeof newEl.replaceWith === 'function') newEl.replaceWith(oldEl);
+      });
+    }
+    container.querySelectorAll('[data-media-src]').forEach(el => {
+      if (typeof el.addEventListener !== 'function') return;
+      el.addEventListener('error', async () => {
+        const rawSrc = el.getAttribute('data-media-src');
+        if (!rawSrc || el.getAttribute('data-blob-loaded') === '1' || typeof window === 'undefined' || !window.sidecar?.fetch) return;
+        el.setAttribute('data-blob-loaded', '1');
+        try {
+          const res = await window.sidecar.fetch(rawSrc);
+          if (res.ok && typeof URL !== 'undefined' && URL.createObjectURL) el.src = URL.createObjectURL(await res.blob());
+        } catch {}
+      }, { once: true });
+    });
     container.querySelectorAll('[data-stage-toggle]').forEach(el => el.addEventListener('click', () => {
       const id = el.getAttribute('data-stage-toggle');
       if (!id) return;
       if (collapsedStages.has(id)) collapsedStages.delete(id); else collapsedStages.add(id);
       render(container, data, filterStageNum);
     }));
-
     container.querySelectorAll('[data-group-toggle]').forEach(el => el.addEventListener('click', () => {
       const id = el.getAttribute('data-group-toggle');
       if (expandedGroups.has(id)) expandedGroups.delete(id); else expandedGroups.add(id);
       render(container, data, filterStageNum);
     }));
-
     container.querySelectorAll('[data-concept-toggle]').forEach(el => el.addEventListener('click', () => {
       const id = el.getAttribute('data-concept-toggle');
       if (expandedCards.has(id)) expandedCards.delete(id); else { expandedCards.add(id); pendingScrollBottom.add(id); }
       render(container, data, filterStageNum);
     }));
-
     container.querySelectorAll('[data-deliverable-toggle]').forEach(btn => btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.getAttribute('data-deliverable-toggle');
-      expandedCards.add(id);
-      cardViewModes.set(id, 'deliverable');
-      render(container, data, filterStageNum);
+      e.stopPropagation(); const id = btn.getAttribute('data-deliverable-toggle');
+      expandedCards.add(id); cardViewModes.set(id, 'deliverable'); render(container, data, filterStageNum);
     }));
-
+    container.querySelectorAll('[data-copy-deliverable]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation(); const id = btn.getAttribute('data-copy-deliverable');
+      if (!id) return;
+      let textToCopy = '';
+      container.querySelectorAll('[data-agent-body]').forEach(el => { if (el.getAttribute('data-agent-body') === id) textToCopy = el.textContent || ''; });
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) navigator.clipboard.writeText(textToCopy);
+      btn.textContent = '✓ Copied';
+    }));
     container.querySelectorAll('[data-status-toggle]').forEach(btn => btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.getAttribute('data-status-toggle');
-      expandedCards.add(id);
-      cardViewModes.set(id, 'updates');
-      pendingScrollBottom.add(id);
-      render(container, data, filterStageNum);
+      e.stopPropagation(); const id = btn.getAttribute('data-status-toggle');
+      expandedCards.add(id); cardViewModes.set(id, 'updates'); pendingScrollBottom.add(id); render(container, data, filterStageNum);
     }));
-
     container.querySelectorAll('[data-conv-id]').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const convId = btn.getAttribute('data-conv-id');
-      if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(convId);
+      if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(btn.getAttribute('data-conv-id'));
     }));
-
     container.querySelectorAll('[data-agent-body]').forEach(el => {
-      const cid = el.getAttribute('data-agent-body');
-      const isUpdates = (cardViewModes.get(cid) || 'updates') === 'updates';
-      const prev = prevScrolls.get(cid);
-      if (isUpdates) {
-        const hasNewText = Boolean(prev && prev.text !== el.textContent);
-        const wasAtBottom = prev ? prev.wasAtBottom : true;
-        if (pendingScrollBottom.has(cid) || hasNewText || wasAtBottom) {
-          el.scrollTop = el.scrollHeight;
-        } else if (prev) {
-          el.scrollTop = prev.scrollTop;
-        }
+      const cid = el.getAttribute('data-agent-body'), prev = prevScrolls.get(cid);
+      if ((cardViewModes.get(cid) || 'updates') === 'updates') {
+        if (pendingScrollBottom.has(cid) || Boolean(prev && prev.text !== el.textContent) || (prev ? prev.wasAtBottom : true)) el.scrollTop = el.scrollHeight;
+        else if (prev) el.scrollTop = prev.scrollTop;
       } else {
-        if (prev && prev.text === el.textContent) el.scrollTop = prev.scrollTop;
-        else el.scrollTop = 0;
+        el.scrollTop = (prev && prev.text === el.textContent) ? prev.scrollTop : 0;
       }
     });
     pendingScrollBottom.clear();
@@ -334,11 +340,9 @@
   const trackerApi = {
     render, renderAllAgents: render, formatAgentTitle, formatFrontmatterOnly, formatHumanLogBody,
     getAgentIcon, getStatusBadge, getAgentValueChip, getShowrunnerChip, getSourcerChip,
-    getGroupSummary, getGroupSummaryChip, expandedCards, expandedGroups, collapsedStages, cardViewModes, pendingScrollBottom
+    getGroupSummary, getGroupSummaryChip, detectMediaType, renderMediaPreviewHtml, formatDeliverableHtml,
+    expandedCards, expandedGroups, collapsedStages, cardViewModes, pendingScrollBottom
   };
-
-  if (typeof window !== 'undefined') {
-    window.AgentPanel = window.ConceptTracker = window.AgentsTracker = trackerApi;
-  }
+  if (typeof window !== 'undefined') window.AgentPanel = window.ConceptTracker = window.AgentsTracker = trackerApi;
   if (typeof module !== 'undefined' && module.exports) module.exports = trackerApi;
 })();
