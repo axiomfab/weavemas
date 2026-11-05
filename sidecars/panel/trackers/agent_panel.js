@@ -144,9 +144,9 @@
     const target = (typeof filePath === 'string' && filePath.trim()) ? filePath.trim() : name.trim();
     const tokMatch = (typeof window !== 'undefined' && typeof window.location?.search === 'string') ? window.location.search.match(/[?&]token=([^&]+)/) : null;
     const src = `/api/media?path=${encodeURIComponent(target)}${tokMatch ? `&token=${encodeURIComponent(decodeURIComponent(tokMatch[1]))}` : ''}`;
-    if (mediaType === 'image') return `<div class="my-2 p-2 rounded-lg bg-slate-900/70 border border-slate-800 flex flex-col items-center gap-1.5" data-media-preview="image"><img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" data-media-src="${escapeHtml(src)}" class="max-w-full max-h-80 rounded object-contain" loading="lazy" /></div>`;
-    if (mediaType === 'audio') return `<div class="my-2 p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1.5" data-media-preview="audio"><div class="text-[11px] text-indigo-300 font-semibold">🔊 ${escapeHtml(name)}</div><audio controls preload="metadata" src="${escapeHtml(src)}" data-media-src="${escapeHtml(src)}" class="w-full h-9"></audio></div>`;
-    return `<div class="my-2 p-2 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1.5" data-media-preview="video"><div class="text-[11px] text-indigo-300 font-semibold">🎬 ${escapeHtml(name)}</div><video controls preload="metadata" src="${escapeHtml(src)}" data-media-src="${escapeHtml(src)}" class="w-full max-h-80 rounded bg-black"></video></div>`;
+    if (mediaType === 'image') return `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" data-media-preview="image" data-media-src="${escapeHtml(src)}" class="my-1.5 max-w-full max-h-80 rounded object-contain block" loading="lazy" />`;
+    if (mediaType === 'audio') return `<audio controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="audio" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full h-9 block"></audio>`;
+    return `<video controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="video" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full max-h-80 rounded bg-black block"></video>`;
   }
 
   function formatDeliverableHtml(agentData, delivLabel, outs) {

@@ -1116,8 +1116,10 @@ test('Happy Path: Renders image preview and embedded audio/video players for sin
   assert.match(container.innerHTML, /<img src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Fcover\.png"/);
   assert.match(container.innerHTML, /data-media-preview="audio"/);
   assert.match(container.innerHTML, /<audio controls preload="metadata" src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Ftheme\.mp3"/);
+  assert.doesNotMatch(container.innerHTML, /🔊/);
   assert.match(container.innerHTML, /data-media-preview="video"/);
   assert.match(container.innerHTML, /<video controls preload="metadata" src="\/api\/media\?path=C%3A%2Fruns%2Fshow%2Fpromo\.mp4"/);
+  assert.doesNotMatch(container.innerHTML, /🎬/);
 
   expandedCards.clear();
   cardViewModes.clear();
