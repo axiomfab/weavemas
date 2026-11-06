@@ -119,6 +119,7 @@ export function discoverAgents(directory, filterStatus = 'initialized', limit = 
       dir: item.dir,
       instructions_file: typeof frontmatter.instructions_file === 'string' ? frontmatter.instructions_file : null,
       inputs: Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [],
+      outputs: Array.isArray(frontmatter.outputs) ? frontmatter.outputs.map(String) : [],
       status
     });
   }

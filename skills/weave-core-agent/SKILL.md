@@ -49,13 +49,13 @@ As you start each task in your instructions, update `weave.md`:
   ```
 
 ### Completion & Outputs Verification
-Once your required output(s) are written to disk inside your working directory, mark your status `completed` (the tool automatically verifies every file or wildcard pattern exists on disk; `outputs` may be a single filename/pattern string or an array of strings):
+Once your required output(s) (if any) are written to disk inside your working directory (`.`), mark your status `completed`. Always pass only your **local** output filename(s) or wildcard pattern(s) in `outputs` (omit `outputs` if your role produces no file outputs); `weave_update` automatically verifies every local file exists on disk and promotes any orchestrator-bound `<local>: <target>` outputs to the run directory:
 * `ToolName`: `"weave_update"`, `Arguments`:
   ```json
   {
     "dir": "<absolute_working_directory>",
     "status": "completed",
-    "outputs": "<relative_output_filename_or_array>",
+    "outputs": "<local_output_filename_or_array>",
     "progress": "<Final executive summary of output>"
   }
   ```

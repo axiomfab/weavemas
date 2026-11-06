@@ -178,7 +178,9 @@ export function resolveAgentOutputs(dir, rawOutputs, workspaceRoot, showDir, sta
   ].filter(Boolean);
 
   const outputItems = [];
-  for (const pat of patterns) {
+  for (const rawPat of patterns) {
+    const parsedOut = parseInputEntry(rawPat);
+    const pat = parsedOut.name || parsedOut.rawPath;
     if (pat.includes('*')) {
       let matchedFiles = [];
       let matchedRoot = dir;

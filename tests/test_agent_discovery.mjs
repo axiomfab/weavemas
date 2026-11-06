@@ -19,8 +19,8 @@ test('discoverAgents - Happy Path: discovers initialized agents sorted determini
   const agentADir = path.join(stageDir, 'agents', 'a_architect');
   const agentCDir = path.join(stageDir, 'agents', 'c_critic');
 
-  weaveInit(agentBDir, 'agent', 'initialized', '.agent/agents/writer.md', ['../a_architect/beats.md']);
-  weaveInit(agentADir, 'agent', 'initialized', '.agent/agents/architect.md', ['../../02_concept.md']);
+  weaveInit(agentBDir, 'agent', 'initialized', '.agent/agents/writer.md', ['../a_architect/beats.md'], ['draft.md: ${RUN_DIR}/02_draft.md']);
+  weaveInit(agentADir, 'agent', 'initialized', '.agent/agents/architect.md', ['../../02_concept.md'], ['beats.md']);
   weaveInit(agentCDir, 'agent', 'completed', '.agent/agents/critic.md');
 
   // Discover with default filter_status = "initialized"
@@ -35,12 +35,14 @@ test('discoverAgents - Happy Path: discovers initialized agents sorted determini
   assert.equal(res.agents[0].dir, agentADir);
   assert.equal(res.agents[0].instructions_file, '.agent/agents/architect.md');
   assert.deepEqual(res.agents[0].inputs, ['../../02_concept.md']);
+  assert.deepEqual(res.agents[0].outputs, ['beats.md']);
   assert.equal(res.agents[0].status, 'initialized');
 
   assert.equal(res.agents[1].agent_id, 'b_writer');
   assert.equal(res.agents[1].dir, agentBDir);
   assert.equal(res.agents[1].instructions_file, '.agent/agents/writer.md');
   assert.deepEqual(res.agents[1].inputs, ['../a_architect/beats.md']);
+  assert.deepEqual(res.agents[1].outputs, ['draft.md: ${RUN_DIR}/02_draft.md']);
   assert.equal(res.agents[1].status, 'initialized');
 
   fs.rmSync(root, { recursive: true, force: true });

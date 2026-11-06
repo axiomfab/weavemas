@@ -75,7 +75,8 @@ export function handleMessage(msg) {
         const status = args.status || 'not_started';
         const instructionsFile = args.instructions_file || null;
         const inputs = args.inputs !== undefined ? args.inputs : null;
-        const res = weaveInit(targetDir, type, status, instructionsFile, inputs);
+        const outputs = args.outputs !== undefined ? args.outputs : null;
+        const res = weaveInit(targetDir, type, status, instructionsFile, inputs, outputs);
         resultText = res.message;
       } else if (name === 'weave_update' || name === 'status_update') {
         const targetDir = args.dir;

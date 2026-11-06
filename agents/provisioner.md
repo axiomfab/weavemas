@@ -1,6 +1,6 @@
 ---
 name: provisioner
-description: Ephemeral workspace provisioner that scaffolds agent directories and initializes weave.md (including instructions_file and inputs) via MCP weave_init.
+description: Ephemeral workspace provisioner that scaffolds agent directories and initializes weave.md (including instructions_file, inputs, and outputs) via MCP weave_init.
 model: flash
 subagent: true
 inheritMcp: true
@@ -22,6 +22,7 @@ You are the WeaveMAS Stage Provisioner Subagent. Your sole responsibility is to 
    - `dir` (required string): Full **absolute path** (`<workspace_root>/runs/<context_slug>/<stage_slug>/agents/<agent_path>`). If the guide declares `* **Working Directory**: ${RUN_DIR}/...` or `stage<NN>_...`, resolve `${RUN_DIR}` or relative stage path against `<workspace_root>/runs/<context_slug>`.
    - `instructions_file` (required string): Pass the **exact relative path string verbatim** as written in `* **Instructions**: [label](<relative_path>)` (e.g. `".agent/agents/<agent_name>.md"`). Do NOT resolve `instructions_file` to an absolute path and do NOT check if it exists on disk.
    - `inputs` (optional string array): Pass each declared input entry preserving path variables (`${PROJECT_DIR}`, `${RUN_DIR}`, `${AGENT_DIR}`) or intra-agent relative paths (e.g. `"${PROJECT_DIR}/prompts/personas/*.md"`, `"${RUN_DIR}/01_host.md"`, `"../writer/draft.md"`, `"Draft: ../writer/draft.md"`), substituting only dynamic loop/parameter placeholders if any. Do NOT convert `inputs` to machine-specific absolute paths (`weave_verify` resolves them at runtime via `${PROJECT_DIR}`, `${RUN_DIR}`, or agent CWD), and do NOT check if upstream agent output files exist on disk yet.
+   - `outputs` (optional string array): Pass each declared output entry from `* **Outputs**:` preserving path variables (`${PROJECT_DIR}`, `${RUN_DIR}`, `${AGENT_DIR}`) and `<local_file>: <target_path>` port bindings (e.g. `"beats.md"`, `"setup.md: ${RUN_DIR}/01_setup.md"`, `"audio/segment_*_spoken.mp3: ${RUN_DIR}/05_audio/"`), substituting only dynamic loop/parameter placeholders (such as `<SS>` or `<AA>`). Omit `outputs` if the agent declares no `* **Outputs**:`.
    - `status` (required string): Always `"initialized"`.
 4. **Zero File Copying / Staging**: Do NOT copy input files into agent directories.
 5. **Strict Negative Reading Constraints**:
@@ -39,6 +40,7 @@ In a **single batched turn**, emit all `call_mcp_tool` (`ServerName: "weavemas_w
   "dir": "<workspace_root>/runs/<context_slug>/<stage_slug>/agents/<agent_identifier>",
   "instructions_file": "<verbatim_relative_instructions_path>",
   "inputs": ["<relative_or_named_input_1>", "<relative_or_named_input_2>"],
+  "outputs": ["<local_output_or_target_binding_1>"],
   "status": "initialized"
 }
 ```

@@ -93,8 +93,9 @@ test('resolveAgentOutputs - Happy Path: populates mediaType and filePath for ima
   fs.writeFileSync(path.join(dummyAgentDir, 'jingle.mp3'), 'MP3_DATA', 'utf-8');
   fs.writeFileSync(path.join(dummyAgentDir, 'intro.mp4'), 'MP4_DATA', 'utf-8');
 
-  const res = resolveAgentOutputs(dummyAgentDir, ['banner.png', 'jingle.mp3', 'intro.mp4'], testDir, 'show_test', 'stage01');
+  const res = resolveAgentOutputs(dummyAgentDir, ['banner.png: ${RUN_DIR}/01_banner.png', 'jingle.mp3', 'intro.mp4'], testDir, 'show_test', 'stage01');
   assert.equal(res.outputItems.length, 3);
+  assert.equal(res.outputItems[0].name, 'banner.png');
   assert.equal(res.outputItems[0].mediaType, 'image');
   assert.ok(res.outputItems[0].filePath.endsWith('/banner.png'));
   assert.equal(res.outputItems[1].mediaType, 'audio');

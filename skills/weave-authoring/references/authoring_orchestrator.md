@@ -58,25 +58,31 @@ trigger: always_on
   - **Dedicated Line**: When scalar parameters are required, provide a dedicated `- Parameters: <param1>, <param2>` line. When no scalar parameters are needed, `- Parameters: none` is optional and omitting the line defaults to `none`.
   - **No In-Prose Parameters**: Never bury parameters inside execution narrative prose (e.g. avoid `Structures beats for assigned segment Act<AA>_Segment<SS>`). Dispatchers and sub-orchestrators require an explicit `Parameters:` specification to populate the subagent's `Runtime Parameters:` block.
   - **No Agent ID Inference**: Never assume a subagent infers or parses parameters from its own agent ID or folder path.
-* **Agent Declarations & `inputs` (`## Agents`)**:
+* **Agent Declarations, `inputs`, & `outputs` (`## Agents`)**:
   - Use lowercase `snake_case` slugs (parameterized with zero-padded indices for loops, e.g. `writer_a<AA>_s<SS>`).
   - List **only** concrete stateful leaf agents with physical directories (`stage<NN>_<slug>/agents/<agent_id>/` or `agents/<agent_id>/`). **Never** list ephemeral sub-orchestrators under `## Agents`.
-  - **File Inputs (`* **Inputs**:`)**: Never copy or stage input files into agent directories, and never inline prior outputs into prompts. Instead, list all required input files under `* **Inputs**:` using **portable relative paths** (with optional logical names `- <Name>: <path>` and optional `*` wildcards):
+  - **File Inputs (`* **Inputs**:` — Optional)**: Never copy or stage input files into agent directories, and never inline prior outputs into prompts. Instead, list all required input files under `* **Inputs**:` (omit if the agent reads no file inputs) using **portable relative paths** (with optional logical names `- <Name>: <path>` and optional `*` wildcards):
     1. **Relative to Agent CWD**: `../writer/draft.md` or `../architect_*/beats.md`
-    2. **Relative to Run Directory (`runs/<context_slug>/`)**: `01_draft.md`
-    3. **Relative to Workspace Root (`<workspace_root>/`)**: `prompts/personas/<host_id>.md` or `prompts/rules/*.md`
+    2. **Relative to Run Directory (`runs/<context_slug>/`)**: `${RUN_DIR}/01_draft.md`
+    3. **Relative to Workspace Root (`<workspace_root>/`)**: `${PROJECT_DIR}/prompts/personas/<host_id>.md` or `${PROJECT_DIR}/prompts/rules/*.md`
     - *No Redundant Aliases for Matching Filenames*:
       Never attach an alias when the source filename already matches what the subagent consumes (e.g. write `- ../writer/draft.md`, NEVER `- Draft: ../writer/draft.md` or `- draft.md: ../writer/draft.md`).
     - *Named Input Aliases (Reserved for Stage Output Decoupling)*:
       Promoted deliverables in the run directory use zero-padded numeric prefixes (e.g. `01_draft.md`, `02_concept.md`, `03_script.md`) for clean chronological sorting.
       To keep subagents completely decoupled from orchestrator stage numbers, bind a clean filename alias:
-      `- draft.md: runs/<context_slug>/01_draft.md`
-      `- concept.md: runs/<context_slug>/02_concept.md`
+      `- draft.md: ${RUN_DIR}/01_draft.md`
+      `- concept.md: ${RUN_DIR}/02_concept.md`
       At runtime, `weave_verify` maps these aliases in `resolved_inputs`, allowing the subagent instructions to refer purely to `draft.md` or `concept.md`.
-  - During Phase 1, the `provisioner` records these relative/named entries directly in `weave.md` `inputs`. When the agent starts and calls `weave_verify` on Turn 1, `weave_verify` resolves each entry across the 3-tier hierarchy (`agentDir` to `runs/<context_slug>/` to `<workspace_root>/`), fails fast if any is missing, and returns the resolved absolute path(s).
-* **Orchestrator Operations & Artifact Naming**:
-  - Keep orchestrator file transformations minimal and at the end of sub-orchestrator units, stages, or the pipeline (e.g., **Orchestrator Operations** promoting `stage01_editorial/agents/writer/draft.md` to `${RUN_DIR}/01_draft.md`).
-  - **No Status Tags in Deliverable Names**: Deliverable filenames must follow clean `<NN>_<artifact_slug>.<ext>` naming (e.g. `01_draft.md`, `02_article.md`). Never bake stage process states or approval adjectives into filenames (e.g. avoid `01_editorial_approved.md` or `01_draft_final.md`).
+  - **File Outputs (`* **Outputs**:` — Optional)**: Declare each agent's file outputs under `* **Outputs**:` in `## Agents` (omit `* **Outputs**:` for agents that only invoke external APIs and produce no local files):
+    - **Agent-Local Outputs (Intermediate Peer Artifacts)**: When an output is only consumed by a sibling agent in the same stage (e.g. `../architect/beats.md`), list the bare local filename or wildcard pattern:
+      `- beats.md`
+    - **Promoted Stage Outputs (`<local>: <target>` Port Binding)**: When an agent produces a stage deliverable for `${RUN_DIR}/`, bind the agent's local filename/pattern to the target run directory path:
+      `- setup.md: ${RUN_DIR}/01_setup.md`
+      `- audio/segment_*_spoken.mp3: ${RUN_DIR}/05_audio/`
+      `- segment_<SS>.srt: ${RUN_DIR}/07_subtitles/segment_<SS>.srt`
+      The subagent remains 100% blind to `<target>` and writes strictly to its local `<local>` path inside its CWD; when the subagent calls `weave_update(status: "completed")`, the MCP server verifies the local output exists on disk and automatically copies/promotes it to `<target>`.
+  - **Zero `Orchestrator Operations` File Copying**: Because `weave_update` automatically promotes `<local>: <target>` outputs to `${RUN_DIR}/`, **never** author `Orchestrator Operations` steps to copy or promote files between agent directories and `${RUN_DIR}/`.
+  - **No Status Tags in Deliverable Names**: Deliverable filenames in `${RUN_DIR}/` must follow clean `<NN>_<artifact_slug>.<ext>` naming (e.g. `01_draft.md`, `02_article.md`). Never bake stage process states or approval adjectives into filenames (e.g. avoid `01_editorial_approved.md` or `01_draft_final.md`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.
 
@@ -127,24 +133,26 @@ Every run is scoped to `runs/<context_slug>/`.
 ### <Role 1> Agent: `<agent_1>`
 * **Instructions**: [agent_<role1>.md](.agent/agents/agent_<role1>.md)
 * **Working Directory**: `${RUN_DIR}/agents/<agent_1>/`
+* **Outputs**:
+  - `<output_1>.md`
 
 ### <Role 2> Agent: `<agent_2>`
 * **Instructions**: [agent_<role2>.md](.agent/agents/agent_<role2>.md)
 * **Working Directory**: `${RUN_DIR}/agents/<agent_2>/`
 * **Inputs**:
   - `../<agent_1>/<output_1>.md`
-  - `Context Data`: `${RUN_DIR}/<context_file>.md`
+  - `<context_file>.md: ${RUN_DIR}/01_<context_file>.md`
   - `${PROJECT_DIR}/prompts/<shared_prompt>.md`
+* **Outputs**:
+  - `<output_2>.md: ${RUN_DIR}/<final_output>.md`
 
 ## Execution
 1. **`<agent_1>`**:
    - Parameters: `<param1>`, `<param2>` (or `none`)
-   - Execution: Process input data and verify `<output_1>.md`.
+   - Execution: Process input data and generate `<output_1>.md`.
 2. **`<agent_2>`**:
    - Parameters: `<param1>` (or `none`)
    - Execution: Audit `<output_1>.md` and produce `<output_2>.md`. If revisions are required (max 2 cycles), route feedback to `<agent_1>` via `send_message`.
-3. **Orchestrator Operations**:
-   - Promote verified output to `${RUN_DIR}/<final_output>.md`.
 ```
 
 ### Template C: Modular Stage Guide (`orchestrator/stage<N>_<slug>.md`)
@@ -160,16 +168,16 @@ Every run is scoped to `runs/<context_slug>/`.
 * **Instructions**: [stage<N>_<role1>.md](.agent/agents/stage<N>_<role1>.md)
 * **Working Directory**: `${RUN_DIR}/stage<NN>_<slug>/agents/<role1>_<item_id>/`
 * **Inputs**:
-  - `Prior Output`: `${RUN_DIR}/<prior_output>.md`
+  - `<prior_output>.md: ${RUN_DIR}/<NN_prev>_<prior_output>.md`
   - `${PROJECT_DIR}/prompts/<reference_file>.md`
   - `../<sibling_agent>/<sibling_output>.md`
+* **Outputs**:
+  - `<output_name>.md: ${RUN_DIR}/<NN>_<stage_output>.md`
 
 ## Execution
 1. **`<role1>_<item_id>`**:
    - Parameters: `<param1>`, `<param2>` (or `none`)
-   - Execution: Execute with stage parameters and verify `<output_name>.md`.
-2. **Orchestrator Operations**:
-   - Promote verified output to `${RUN_DIR}/<NN>_<stage_output>.md`.
-3. **User Review Gate** *(Optional)*:
+   - Execution: Execute with stage parameters and generate `<output_name>.md`.
+2. **User Review Gate** *(Optional)*:
    - Present `<NN>_<stage_output>.md` for approval; route any revision feedback to `<role1>_<item_id>` via `send_message`.
 ```

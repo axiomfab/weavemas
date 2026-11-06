@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { substitutePathVariables } from '../src/path_resolver.mjs';
+import { substitutePathVariables, mergeOutputDeclarations, verifyOutputFiles } from '../src/path_resolver.mjs';
 
 test('substitutePathVariables - Happy Path: substitutes ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR}', () => {
   const roots = {
@@ -71,4 +73,54 @@ test('substitutePathVariables - Failure Path 4: missing contextDir when ${RUN_DI
     name: 'Error',
     message: /CRITICAL: Unable to resolve \${RUN_DIR}; could not infer run context directory\./
   });
+});
+
+test('mergeOutputDeclarations & verifyOutputFiles - Happy Path: preserves <local>: <target> bindings and promotes 1-to-1, wildcard-to-dir, and wildcard-to-wildcard outputs', () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-path-test-'));
+  const runDir = path.join(workspaceRoot, 'runs', 'show_01');
+  const agentDir = path.join(runDir, 'stage05_audio', 'agents', 'audio');
+  const audioSubDir = path.join(agentDir, 'audio');
+  fs.mkdirSync(audioSubDir, { recursive: true });
+
+  fs.writeFileSync(path.join(agentDir, 'audio_manifest.md'), '# Manifest', 'utf-8');
+  fs.writeFileSync(path.join(audioSubDir, 'segment_01_spoken.mp3'), 'MP3_1', 'utf-8');
+  fs.writeFileSync(path.join(audioSubDir, 'segment_02_spoken.mp3'), 'MP3_2', 'utf-8');
+  fs.writeFileSync(path.join(agentDir, 'segment_01.srt'), 'SRT_1', 'utf-8');
+
+  const existing = [
+    'audio_manifest.md: ${RUN_DIR}/05_audio_manifest.md',
+    'audio/segment_*_spoken.mp3: ${RUN_DIR}/05_audio/',
+    'segment_*.srt: ${RUN_DIR}/07_subtitles/sub_*.srt'
+  ];
+  const merged = mergeOutputDeclarations(existing, ['audio_manifest.md', 'audio/segment_*_spoken.mp3', 'segment_*.srt']);
+  assert.deepEqual(merged, existing);
+
+  const promoted = verifyOutputFiles(agentDir, merged);
+  assert.equal(promoted.length, 4);
+  assert.equal(fs.readFileSync(path.join(runDir, '05_audio_manifest.md'), 'utf-8'), '# Manifest');
+  assert.equal(fs.readFileSync(path.join(runDir, '05_audio', 'segment_01_spoken.mp3'), 'utf-8'), 'MP3_1');
+  assert.equal(fs.readFileSync(path.join(runDir, '05_audio', 'segment_02_spoken.mp3'), 'utf-8'), 'MP3_2');
+  assert.equal(fs.readFileSync(path.join(runDir, '07_subtitles', 'sub_01.srt'), 'utf-8'), 'SRT_1');
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('verifyOutputFiles - Failure Paths: throws on missing local file or invalid wildcard-to-single-file target', () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-path-fail-'));
+  const runDir = path.join(workspaceRoot, 'runs', 'show_01');
+  const agentDir = path.join(runDir, 'stage01', 'agents', 'writer');
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.writeFileSync(path.join(agentDir, 'seg_01.md'), '# Seg 1', 'utf-8');
+
+  assert.throws(() => verifyOutputFiles(agentDir, ['missing.md: ${RUN_DIR}/01_missing.md']), {
+    name: 'Error',
+    message: /CRITICAL: Output file does not exist on disk/
+  });
+
+  assert.throws(() => verifyOutputFiles(agentDir, ['seg_*.md: ${RUN_DIR}/01_single_target.md']), {
+    name: 'Error',
+    message: /CRITICAL: Wildcard output 'seg_\*\.md' cannot map to a single file target/
+  });
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });

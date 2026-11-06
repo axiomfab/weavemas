@@ -9,6 +9,7 @@ import {
   substitutePathVariables,
   resolveInputEntry,
   normalizeOutputs,
+  mergeOutputDeclarations,
   verifyOutputFiles
 } from './path_resolver.mjs';
 
@@ -21,7 +22,8 @@ export {
   inferLookupRoots,
   expandPathPattern,
   substitutePathVariables,
-  resolveInputEntry
+  resolveInputEntry,
+  mergeOutputDeclarations
 };
 
 /**
@@ -47,7 +49,7 @@ function validateInputsArray(inputs) {
 /**
  * Initializes a new weave.md in target directory.
  */
-export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null) {
+export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null, outputs = null) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -59,12 +61,14 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
   let resolvedStatus = initialStatus;
   let resolvedInstructions = instructionsFile;
   let resolvedInputs = inputs;
+  let resolvedOutputs = outputs;
 
   if (typeof type === 'object' && type !== null) {
     resolvedType = type.type || 'agent';
     resolvedStatus = type.status || 'not_started';
     resolvedInstructions = type.instructions_file || type.instructionsFile || null;
     resolvedInputs = type.inputs !== undefined ? type.inputs : null;
+    resolvedOutputs = type.outputs !== undefined ? type.outputs : null;
   }
 
   const validTypes = ['agent', 'orchestrator'];
@@ -80,6 +84,7 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
     }
   }
   const validatedInputs = validateInputsArray(resolvedInputs);
+  const validatedOutputs = normalizeOutputs(resolvedOutputs);
 
   const resolvedDir = path.resolve(targetDir);
   if (!fs.existsSync(resolvedDir)) {
@@ -94,7 +99,7 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
     status: resolvedStatus,
     ...(resolvedInstructions ? { instructions_file: resolvedInstructions } : {}),
     ...(validatedInputs !== null ? { inputs: validatedInputs } : {}),
-    outputs: [],
+    outputs: validatedOutputs !== null ? validatedOutputs : [],
     updated_at: now
   };
 
@@ -148,17 +153,15 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
     ? rawExisting.map(String)
     : (rawExisting ? [String(rawExisting)] : []);
 
+  const mergedOutputs = mergeOutputDeclarations(existingOutputs, normalizedOutputs);
+
   if (status.startsWith('completed')) {
-    const finalOutputs = normalizedOutputs !== null ? normalizedOutputs : existingOutputs;
-    if (!finalOutputs || finalOutputs.length === 0) {
-      throw new Error('CRITICAL: Outputs path is required when setting status to completed.');
+    if (mergedOutputs.length > 0) {
+      verifyOutputFiles(resolvedDir, mergedOutputs);
     }
-    verifyOutputFiles(resolvedDir, finalOutputs);
-    frontmatter.outputs = finalOutputs;
-  } else if (normalizedOutputs !== null) {
-    frontmatter.outputs = normalizedOutputs;
+    frontmatter.outputs = mergedOutputs;
   } else {
-    frontmatter.outputs = existingOutputs;
+    frontmatter.outputs = mergedOutputs;
   }
 
   const now = new Date().toISOString();
@@ -288,7 +291,14 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
       }
     } else {
       const expectedList = normalizeOutputs(expectedOutputs);
-      const matches = expectedList.length === outputs.length && expectedList.every((val, idx) => val === outputs[idx]);
+      const matches = expectedList.length === outputs.length && expectedList.every((val, idx) => {
+        if (val === outputs[idx]) return true;
+        const parsedOut = parseInputEntry(outputs[idx]);
+        const parsedExp = parseInputEntry(val);
+        const outLocal = parsedOut.name || parsedOut.rawPath;
+        const expLocal = parsedExp.name || parsedExp.rawPath;
+        return val === outLocal || val === parsedOut.rawPath || expLocal === outLocal;
+      });
       if (!matches) {
         throw new Error(`CRITICAL: Outputs mismatch. Expected '${JSON.stringify(expectedList)}', but weave.md defines '${JSON.stringify(outputs)}'.`);
       }

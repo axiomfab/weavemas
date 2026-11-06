@@ -20,7 +20,7 @@ All status and discovery operations use `call_mcp_tool` with `ServerName: "weave
   - `weave_init`: Used by the root orchestrator **ONLY** for the root master status (`runs/<context_slug>/weave.md`).
   - `weave_update`: Advance or complete master pipeline status.
   - `weave_read`: Verify subagent completion and output existence.
-  - `discover_agents`: Discover provisioned stage subagents (including their `instructions_file` and `inputs`).
+  - `discover_agents`: Discover provisioned stage subagents (including their `instructions_file`, `inputs`, and `outputs`).
 * **Strict Worker Scaffolding Prohibition**: The root orchestrator is **strictly forbidden** from creating worker agent directories or calling `weave_init` for stage agents directly. Always delegate stage setup to Phase 1 (`orchestrator-agent-instantiation`).
 * **Fail-Fast on Subagent Verification Failure (No Workarounds)**: If any subagent halts because `weave_verify` failed (e.g. a declared `inputs` file does not exist on disk), the orchestrator **MUST halt immediately and surface the error to the user**. Never attempt workarounds such as manually copying files or editing `weave.md`.
 

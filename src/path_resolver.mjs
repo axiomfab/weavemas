@@ -15,7 +15,7 @@ export function parseInputEntry(entry) {
   const trimmed = entry.trim();
   // Match "<Label>: <path>" where Label is at least 2 chars (or 1 char if followed by ": " with space)
   // so Windows drive letters like "C:/foo" or "C:\foo" are not mistaken for labels.
-  const match = trimmed.match(/^([^:/\\]+):\s+(.+)$/);
+  const match = trimmed.match(/^([^:]+):\s+(.+)$/);
   if (match) {
     const name = match[1].trim();
     const rawPath = match[2].trim();
@@ -229,9 +229,6 @@ export function normalizeOutputs(outputs) {
     return [trimmed];
   }
   if (Array.isArray(outputs)) {
-    if (outputs.length === 0) {
-      throw new TypeError('CRITICAL: Outputs array must contain at least one path.');
-    }
     return outputs.map(item => {
       if (typeof item !== 'string' || !item.trim()) {
         throw new TypeError('CRITICAL: Each entry in outputs array must be a non-empty string.');
@@ -243,26 +240,120 @@ export function normalizeOutputs(outputs) {
 }
 
 /**
- * Verifies that every output entry (supporting wildcards) exists on disk relative to resolvedDir.
+ * Merges pre-initialized outputs bindings from weave.md (e.g. ["script.md: ${RUN_DIR}/02_script.md"])
+ * with outputs passed to weave_update (e.g. ["script.md"]) so target mappings are preserved.
+ * @param {string[]} existingOutputs
+ * @param {string[] | null} updatedOutputs
+ * @returns {string[]}
+ */
+export function mergeOutputDeclarations(existingOutputs, updatedOutputs) {
+  const existing = Array.isArray(existingOutputs) ? existingOutputs : [];
+  if (updatedOutputs === null || updatedOutputs === undefined) return existing;
+  if (updatedOutputs.length === 0) return existing.length > 0 ? existing : [];
+  if (existing.length === 0) return updatedOutputs;
+
+  const result = [...existing];
+  const localIndexMap = new Map();
+  existing.forEach((entry, idx) => {
+    const { name, rawPath } = parseInputEntry(entry);
+    localIndexMap.set(name || rawPath, idx);
+  });
+
+  for (const upd of updatedOutputs) {
+    const { name, rawPath } = parseInputEntry(upd);
+    const localKey = name || rawPath;
+    if (localIndexMap.has(localKey)) {
+      if (name !== null) {
+        result[localIndexMap.get(localKey)] = upd;
+      }
+    } else {
+      localIndexMap.set(localKey, result.length);
+      result.push(upd);
+    }
+  }
+  return result;
+}
+
+/**
+ * Verifies that every output entry exists on disk relative to resolvedDir, and promotes
+ * any "<local>: <target>" bindings to their resolved destination.
  * @param {string} resolvedDir
- * @param {string | string[]} outputs
+ * @param {string | string[] | null} outputs
  * @returns {string[]}
  */
 export function verifyOutputFiles(resolvedDir, outputs) {
   const normalized = normalizeOutputs(outputs);
   if (!normalized || normalized.length === 0) {
-    throw new Error('CRITICAL: Outputs path is required when setting status to completed.');
+    return [];
   }
   const roots = inferLookupRoots(resolvedDir);
   const allMatches = [];
+
   for (const item of normalized) {
-    const substituted = substitutePathVariables(item, roots);
-    const matches = expandPathPattern(resolvedDir, substituted);
-    if (matches.length === 0) {
-      const targetPath = path.isAbsolute(substituted) ? substituted : path.join(resolvedDir, substituted);
-      throw new Error(`CRITICAL: Output file does not exist on disk: ${targetPath}`);
+    const { name: localPart, rawPath: targetPart } = parseInputEntry(item);
+    if (localPart !== null) {
+      const subLocal = substitutePathVariables(localPart, roots);
+      const subTarget = substitutePathVariables(targetPart, roots);
+      const isTargetDir = subTarget.endsWith('/') || subTarget.endsWith('\\');
+      const absTarget = path.isAbsolute(subTarget) ? path.resolve(subTarget) : path.resolve(resolvedDir, subTarget);
+      const localMatches = expandPathPattern(resolvedDir, subLocal);
+
+      if (localMatches.length === 0) {
+        const directMatches = expandPathPattern(resolvedDir, subTarget);
+        if (directMatches.length > 0) {
+          allMatches.push(...directMatches);
+          continue;
+        }
+        throw new Error(`CRITICAL: Output file does not exist on disk: ${path.join(resolvedDir, subLocal)}`);
+      }
+
+      if (subLocal.includes('*')) {
+        if (isTargetDir) {
+          fs.mkdirSync(absTarget, { recursive: true });
+          for (const src of localMatches) {
+            const dest = path.join(absTarget, path.basename(src));
+            if (path.resolve(src) !== path.resolve(dest)) {
+              fs.cpSync(src, dest, { recursive: true, force: true });
+            }
+            allMatches.push(dest);
+          }
+        } else if (path.basename(subTarget).includes('*') && path.basename(subLocal).includes('*')) {
+          const escapedBase = path.basename(subLocal).replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/, '(.*)');
+          const captureRegex = new RegExp(`^${escapedBase}$`, 'i');
+          const targetDir = path.dirname(absTarget);
+          const targetBasePattern = path.basename(subTarget);
+          fs.mkdirSync(targetDir, { recursive: true });
+          for (const src of localMatches) {
+            const m = path.basename(src).match(captureRegex);
+            const captured = m ? m[1] : '';
+            const dest = path.join(targetDir, targetBasePattern.replace('*', captured));
+            if (path.resolve(src) !== path.resolve(dest)) {
+              fs.cpSync(src, dest, { recursive: true, force: true });
+            }
+            allMatches.push(dest);
+          }
+        } else {
+          throw new Error(`CRITICAL: Wildcard output '${localPart}' cannot map to a single file target '${targetPart}'; target must be a directory ending in '/' or contain a matching '*' pattern.`);
+        }
+      } else {
+        const src = localMatches[0];
+        const srcStat = fs.statSync(src);
+        const dest = (isTargetDir && srcStat.isFile()) ? path.join(absTarget, path.basename(src)) : absTarget;
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        if (path.resolve(src) !== path.resolve(dest)) {
+          fs.cpSync(src, dest, { recursive: true, force: true });
+        }
+        allMatches.push(dest);
+      }
+    } else {
+      const substituted = substitutePathVariables(targetPart, roots);
+      const matches = expandPathPattern(resolvedDir, substituted);
+      if (matches.length === 0) {
+        const targetPath = path.isAbsolute(substituted) ? substituted : path.join(resolvedDir, substituted);
+        throw new Error(`CRITICAL: Output file does not exist on disk: ${targetPath}`);
+      }
+      allMatches.push(...matches);
     }
-    allMatches.push(...matches);
   }
   return allMatches;
 }

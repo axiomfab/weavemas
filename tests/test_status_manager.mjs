@@ -232,10 +232,8 @@ test('statusUpdate - Failure Path 1: invalid status state throws Error', () => {
 test('statusUpdate - Failure Path 2: completed status without outputs throws Error', () => {
   const tmp = createTempDir();
   statusInit(tmp);
-  assert.throws(() => statusUpdate(tmp, 'completed', 'done', null), {
-    name: 'Error',
-    message: /CRITICAL: Outputs path is required when setting status to completed/
-  });
+  const res = statusUpdate(tmp, 'completed', 'done', null);
+  assert.equal(res.success, true);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -535,6 +533,30 @@ test('Explicit Path Variables - Failure Path: non-existent file with ${RUN_DIR} 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
+test('statusInit & statusUpdate - Happy Path: initializes mapped outputs in weave.md and promotes local output on completion', () => {
+  const workspaceRoot = createTempDir();
+  const runDir = path.join(workspaceRoot, 'runs', 'show_test');
+  const agentDir = path.join(runDir, 'stage01_setup', 'agents', 'director');
+
+  statusInit(agentDir, 'agent', 'initialized', '.agent/agents/stage1_director.md', null, [
+    'setup.md: ${RUN_DIR}/01_setup.md',
+    'host.md: ${RUN_DIR}/01_host.md'
+  ]);
+
+  fs.writeFileSync(path.join(agentDir, 'setup.md'), '# Setup Content', 'utf-8');
+  fs.writeFileSync(path.join(agentDir, 'host.md'), '# Host Persona', 'utf-8');
+
+  const updateRes = statusUpdate(agentDir, 'completed', 'Setup completed', ['setup.md', 'host.md']);
+  assert.equal(updateRes.success, true);
+  assert.equal(fs.readFileSync(path.join(runDir, '01_setup.md'), 'utf-8'), '# Setup Content');
+  assert.equal(fs.readFileSync(path.join(runDir, '01_host.md'), 'utf-8'), '# Host Persona');
+
+  const readRes = statusRead(agentDir, ['setup.md', 'host.md'], 'completed');
+  assert.deepEqual(readRes.outputs, ['setup.md: ${RUN_DIR}/01_setup.md', 'host.md: ${RUN_DIR}/01_host.md']);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
 test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'stage01', 'agents', 'checker');
@@ -585,9 +607,9 @@ test('Outputs List & Wildcards - Failure Paths: missing file in outputs array or
   statusInit(tmp, 'agent', 'in_progress');
   fs.writeFileSync(path.join(tmp, 'article.md'), '# Article', 'utf-8');
 
-  assert.throws(() => statusUpdate(tmp, 'completed', 'Done', []), {
+  assert.throws(() => statusUpdate(tmp, 'completed', 'Done', ['   ']), {
     name: 'TypeError',
-    message: /CRITICAL: Outputs array must contain at least one path/
+    message: /CRITICAL: Each entry in outputs array must be a non-empty string/
   });
 
   assert.throws(() => statusUpdate(tmp, 'completed', 'Done', ['article.md', 'missing_*.png']), {

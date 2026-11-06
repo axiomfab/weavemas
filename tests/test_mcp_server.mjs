@@ -425,7 +425,8 @@ test('MCP Tool Call - Happy Path: weave_init with inputs and weave_verify checks
         dir: checkerDir,
         status: 'initialized',
         instructions_file: '.agent/agents/checker.md',
-        inputs: ['../writer/draft.md']
+        inputs: ['../writer/draft.md'],
+        outputs: ['audit.md: ${RUN_DIR}/01_audit.md']
       }
     }
   });

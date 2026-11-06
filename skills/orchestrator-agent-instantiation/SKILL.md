@@ -2,7 +2,7 @@
 name: orchestrator-agent-instantiation
 description: >-
   Phase 1 WeaveMAS microskill. Delegates pre-spawn subagent workspace creation and
-  weave.md initialization (with instructions_file and inputs) to the isolated Provisioner subagent.
+  weave.md initialization (with instructions_file, inputs, and outputs) to the isolated Provisioner subagent.
 ---
 
 # 🛠️ Phase 1: Orchestrator Agent Instantiation

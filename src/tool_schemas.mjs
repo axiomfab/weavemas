@@ -29,6 +29,13 @@ export const TOOLS = [
           type: 'array',
           items: { type: 'string' },
           description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved via 3-tier lookup (agent CWD -> runs/<context_slug> -> workspace root).'
+        },
+        outputs: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'array', items: { type: 'string' } }
+          ],
+          description: 'Optional expected output filename(s)/pattern(s) or promoted output binding(s) ("<local_file>: <target_path>"). Omit if agent produces no file outputs.'
         }
       },
       required: ['dir']
@@ -57,7 +64,7 @@ export const TOOLS = [
             { type: 'string' },
             { type: 'array', items: { type: 'string' } }
           ],
-          description: 'Relative path(s) or wildcard pattern(s) to output file(s) (required if status is completed).'
+          description: 'Optional relative path(s) or wildcard pattern(s) to local output file(s) in the agent working directory. Verified (and promoted if bound in weave.md) when status is completed.'
         }
       },
       required: ['dir', 'status']
