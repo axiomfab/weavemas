@@ -51,6 +51,7 @@ trigger: always_on
   - **NEVER** author `invoke_subagent` prompt templates, `weave_init` calls, or polling reminders in stage files.
 * **Black-Box Execution Abstraction (No Internal Leaks)**:
   Keep `## Execution` steps high-level and focused strictly on the domain workflow. Never expose internal subagent implementation details:
+  - **No Low-Level Implementation Leaks**: Never copy CLI commands, tool flags, audio/video filter formulas, internal script names, or code syntax into `## Execution`. The orchestrator declares WHAT the domain step achieves, not HOW the subagent executes it internally. All implementation details belong strictly inside the subagent's instructions (`.agent/agents/<agent>.md`).
   - **No Internal Task Labels**: Do not reference internal agent task headings or section IDs (e.g. avoid `pause at Task 02_handoff`; write `report unverified track queries and wait for track sourcing`).
   - **No Status String Leaks**: Do not prescribe low-level status enums in execution steps (e.g. avoid `transition status to waiting/sourcer_calibration`; write `wait for ...`). Subagent instructions define their own internal status transitions; the orchestrator guide defines only the observable domain sequence.
 * **Explicit Runtime Parameters in `## Execution`**:
