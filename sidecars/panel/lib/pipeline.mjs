@@ -1,7 +1,36 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 
 export const STAGE_DIR_REGEX = /^stage(\d{2})_(.+)$/i;
+
+function isDirOrLinkedDir(parentDir, dirent) {
+  if (dirent.isDirectory()) return true;
+  if (dirent.isSymbolicLink()) {
+    try {
+      return statSync(join(parentDir, dirent.name)).isDirectory();
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+export function resolveEffectiveWorkspace(workspaceDir, showDir) {
+  if (!workspaceDir || typeof workspaceDir !== 'string') {
+    throw new Error('CRITICAL: Workspace directory is required and must be a string');
+  }
+  if (!showDir || typeof showDir !== 'string') {
+    return workspaceDir;
+  }
+  if (isAbsolute(showDir) && existsSync(showDir)) {
+    const parentDir = dirname(showDir);
+    const parentBase = basename(parentDir).toLowerCase();
+    if (parentBase === 'runs' || parentBase === 'output') {
+      return dirname(parentDir);
+    }
+  }
+  return workspaceDir;
+}
 
 export function formatStageName(rawName) {
   if (!rawName || typeof rawName !== 'string') {
@@ -14,23 +43,16 @@ export function formatStageName(rawName) {
     .join(' ');
 }
 
-export function getAllContextDirs(workspaceDir) {
-  if (!workspaceDir || typeof workspaceDir !== 'string') {
-    throw new Error('CRITICAL: Workspace directory is required and must be a string');
-  }
-  const runsDir = join(workspaceDir, 'runs');
-  const outputDir = join(workspaceDir, 'output');
-  const targetDir = existsSync(runsDir) ? runsDir : (existsSync(outputDir) ? outputDir : null);
-  if (!targetDir) return [];
-
+function scanContextParentDir(targetDir) {
+  if (!targetDir || !existsSync(targetDir)) return [];
   const baseName = basename(targetDir);
-  const entries = readdirSync(targetDir, { withFileTypes: true })
+  return readdirSync(targetDir, { withFileTypes: true })
     .filter(d => {
-      if (!d.isDirectory()) return false;
+      if (!isDirOrLinkedDir(targetDir, d)) return false;
       const fullPath = join(targetDir, d.name);
       try {
         const subEntries = readdirSync(fullPath, { withFileTypes: true });
-        return subEntries.some(sub => (sub.isDirectory() && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'weave.md' || sub.name === 'status.md' || (sub.isDirectory() && sub.name === 'agents'));
+        return subEntries.some(sub => (isDirOrLinkedDir(fullPath, sub) && STAGE_DIR_REGEX.test(sub.name)) || sub.name === 'weave.md' || sub.name === 'status.md' || (isDirOrLinkedDir(fullPath, sub) && sub.name === 'agents'));
       } catch {
         return false;
       }
@@ -47,6 +69,40 @@ export function getAllContextDirs(workspaceDir) {
         mtime: statSync(fullPath).mtimeMs
       };
     });
+}
+
+export function getAllContextDirs(workspaceDir) {
+  if (!workspaceDir || typeof workspaceDir !== 'string') {
+    throw new Error('CRITICAL: Workspace directory is required and must be a string');
+  }
+  const candidateRoots = [workspaceDir];
+  const worktreesRoot = join(workspaceDir, '.solony', 'worktrees');
+  if (existsSync(worktreesRoot)) {
+    try {
+      for (const wt of readdirSync(worktreesRoot, { withFileTypes: true })) {
+        if (isDirOrLinkedDir(worktreesRoot, wt)) {
+          candidateRoots.push(join(worktreesRoot, wt.name));
+        }
+      }
+    } catch {
+      // ignore unreadable worktrees container
+    }
+  }
+
+  const seenIds = new Set();
+  const entries = [];
+  for (const root of candidateRoots) {
+    const runsDir = join(root, 'runs');
+    const outputDir = join(root, 'output');
+    const targetDir = existsSync(runsDir) ? runsDir : (existsSync(outputDir) ? outputDir : null);
+    if (!targetDir) continue;
+    for (const item of scanContextParentDir(targetDir)) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        entries.push(item);
+      }
+    }
+  }
 
   entries.sort((a, b) => b.mtime - a.mtime);
   return entries;
@@ -157,7 +213,7 @@ export function evaluatePipelineStages(showDir) {
   }
 
   const subDirs = readdirSync(showDir, { withFileTypes: true })
-    .filter(d => d.isDirectory() && STAGE_DIR_REGEX.test(d.name))
+    .filter(d => isDirOrLinkedDir(showDir, d) && STAGE_DIR_REGEX.test(d.name))
     .map(d => {
       const match = d.name.match(STAGE_DIR_REGEX);
       const num = parseInt(match[1], 10);

@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState } from '../sidecars/panel/lib/pipeline.mjs';
+import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState, resolveEffectiveWorkspace } from '../sidecars/panel/lib/pipeline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -281,5 +281,48 @@ describe('Pipeline Panel Stage Evaluation', () => {
     // Failure Path 2: Pipeline stepper loop must not contain bullet or timer strings
     assert.doesNotMatch(stepperSectionMatch[1], /⏱/);
     assert.doesNotMatch(stepperSectionMatch[1], /formatted/);
+  });
+
+  it('Solony Worktrees & Symlinks: getAllShowDirs discovers runs in .solony/worktrees and junctions, and resolveEffectiveWorkspace resolves worktree roots', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'tm-wt-'));
+    const mainShow = join(tmp, 'runs', 'show_main');
+    const wtRoot = join(tmp, '.solony', 'worktrees', 'feat-jazz');
+    const wtShow = join(wtRoot, 'runs', 'show_worktree');
+    const emptyWt = join(tmp, '.solony', 'worktrees', 'empty-wt');
+
+    mkdirSync(join(mainShow, 'stage01_setup'), { recursive: true });
+    mkdirSync(join(wtShow, 'stage01_setup'), { recursive: true });
+    mkdirSync(emptyWt, { recursive: true });
+
+    // Create a junction/symlink in main runs pointing to an external show
+    const extTarget = join(tmp, 'ext_show_target');
+    mkdirSync(join(extTarget, 'stage01_setup'), { recursive: true });
+    const linkedShow = join(tmp, 'runs', 'show_linked');
+    symlinkSync(extTarget, linkedShow, 'junction');
+
+    try {
+      // Happy Path 1: Discovers main show, worktree show, and junctioned show without duplicates
+      const shows = getAllShowDirs(tmp);
+      const ids = shows.map(s => s.id);
+      assert.ok(ids.includes('show_main'));
+      assert.ok(ids.includes('show_worktree'));
+      assert.ok(ids.includes('show_linked'));
+      assert.equal(shows.length, 3);
+
+      // Happy Path 2: resolveEffectiveWorkspace resolves worktree root from worktree showDir
+      assert.equal(resolveEffectiveWorkspace(tmp, wtShow), wtRoot);
+      assert.equal(resolveEffectiveWorkspace(tmp, mainShow), tmp);
+
+      // Failure Path 1: resolveEffectiveWorkspace throws when workspaceDir is missing or not a string
+      assert.throws(() => resolveEffectiveWorkspace(null, wtShow), /Workspace directory is required/);
+      assert.throws(() => resolveEffectiveWorkspace('', wtShow), /Workspace directory is required/);
+
+      // Failure Path 2: resolveEffectiveWorkspace falls back to workspaceDir when showDir is null, relative, or non-existent
+      assert.equal(resolveEffectiveWorkspace(tmp, null), tmp);
+      assert.equal(resolveEffectiveWorkspace(tmp, 'relative/path'), tmp);
+      assert.equal(resolveEffectiveWorkspace(tmp, join(tmp, 'non_existent', 'show')), tmp);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

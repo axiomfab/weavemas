@@ -3,7 +3,7 @@ import { basename, dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Response, SidecarApp } from 'sidecar_sdk';
 import { getMediaMimeType } from './lib/input_verifier.mjs';
-import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs } from './lib/pipeline.mjs';
+import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, resolveEffectiveWorkspace } from './lib/pipeline.mjs';
 import { executeStatusUpdate, readStageAgents, readAllStagesAgents } from './lib/status_tool.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +44,8 @@ function resolveContextDir(ws, data) {
     if (existsSync(runsCandidate)) return runsCandidate;
     const outputCandidate = join(ws, 'output', id);
     if (existsSync(outputCandidate)) return outputCandidate;
+    const found = getAllShowDirs(ws).find(s => s.id === id);
+    if (found) return found.path;
   }
   return getActiveShowDir(ws);
 }
@@ -68,9 +70,9 @@ app.api('/api/pipeline', (data) => {
       stageAgents: []
     };
   }
+  const effectiveWs = resolveEffectiveWorkspace(ws, showDir);
   const result = evaluatePipelineStages(showDir);
-  const showBase = basename(showDir);
-  const stageAgents = readAllStagesAgents(showDir, ws);
+  const stageAgents = readAllStagesAgents(showDir, effectiveWs);
   return {
     ...result,
     stageAgents,
@@ -84,10 +86,11 @@ app.api('/api/agents', (data) => {
   const ws = resolveWorkspace(data);
   const showDir = resolveShowDir(ws, data);
   if (!showDir) return { stages: [] };
+  const effectiveWs = resolveEffectiveWorkspace(ws, showDir);
   const showBase = basename(showDir);
   return {
     showId: showBase,
-    stages: readAllStagesAgents(showDir, ws)
+    stages: readAllStagesAgents(showDir, effectiveWs)
   };
 }, 'GET');
 
@@ -102,8 +105,9 @@ app.api('/api/tracker/concept', (data) => {
       conceptFileContent: null
     };
   }
+  const effectiveWs = resolveEffectiveWorkspace(ws, showDir);
   const showBase = basename(showDir);
-  const agents = readStageAgents(showBase, 'stage02_concept', ws);
+  const agents = readStageAgents(showDir, 'stage02_concept', effectiveWs);
 
   let conceptFileContent = null;
   const conceptCandidates = [
@@ -159,7 +163,8 @@ app.api('/api/media', (data) => {
     resolvedPath = rawPath;
   } else {
     const contextDir = resolveContextDir(ws, data);
-    const candidates = [contextDir ? join(contextDir, rawPath) : null, join(ws, rawPath)].filter(Boolean);
+    const effectiveWs = resolveEffectiveWorkspace(ws, contextDir);
+    const candidates = [contextDir ? join(contextDir, rawPath) : null, join(effectiveWs, rawPath), join(ws, rawPath)].filter(Boolean);
     for (const cand of candidates) {
       if (existsSync(cand) && statSync(cand).isFile()) {
         resolvedPath = cand;
