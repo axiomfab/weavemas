@@ -27,6 +27,9 @@ function createMockContainer() {
       if (selector === '#sync-btn') {
         return elements['#sync-btn'];
       }
+      if (selector === '#worktree-badge-root') {
+        return elements['#worktree-badge-root'];
+      }
       return null;
     }
   };
@@ -56,11 +59,16 @@ function createMockContainer() {
     }
   };
 
+  const badgeRoot = {
+    innerHTML: ''
+  };
+
   elements['header'] = { tagName: 'HEADER' };
   elements['#show-select'] = showSelect;
   elements['#sync-btn'] = syncBtn;
+  elements['#worktree-badge-root'] = badgeRoot;
 
-  return { container, showSelect, syncBtn };
+  return { container, showSelect, syncBtn, badgeRoot };
 }
 
 function loadHeaderBar() {
@@ -139,8 +147,40 @@ test('HeaderBar Component Unit Tests', async (t) => {
   });
 
   await t.test('Failure Path 3: handles empty shows array with fallback option without throwing', () => {
-    const { container, showSelect } = createMockContainer();
+    const { container, showSelect, badgeRoot } = createMockContainer();
     HeaderBar.render(container, { shows: [] });
     assert.match(showSelect.innerHTML, /No shows in output\//);
+    assert.equal(badgeRoot.innerHTML, '');
+  });
+
+  await t.test('Happy Path 3: renders <optgroup> sections and worktree badge when worktree runs exist and a worktree run is active', () => {
+    const { container, showSelect, badgeRoot } = createMockContainer();
+    const shows = [
+      { path: 'c:/ws/runs/show_main', displayPath: 'runs\\show_main', isWorktree: false, worktree: null },
+      { path: 'c:/ws/.solony/worktrees/feat-jazz/runs/show_wt', displayPath: 'runs\\show_wt', isWorktree: true, worktree: 'feat-jazz' }
+    ];
+
+    HeaderBar.render(container, {
+      shows,
+      activePath: 'c:/ws/.solony/worktrees/feat-jazz/runs/show_wt'
+    });
+
+    assert.match(showSelect.innerHTML, /<optgroup label="Main Workspace">/);
+    assert.match(showSelect.innerHTML, /<optgroup label="Worktree: feat-jazz">/);
+    assert.match(badgeRoot.innerHTML, /id="worktree-badge"/);
+    assert.match(badgeRoot.innerHTML, /🌿 feat-jazz/);
+
+    // Switching activePath back to main workspace clears the badge
+    HeaderBar.render(container, {
+      shows,
+      activePath: 'c:/ws/runs/show_main'
+    });
+    assert.equal(badgeRoot.innerHTML, '');
+  });
+
+  await t.test('Failure Path 4: buildWorktreeBadgeHtml returns empty string for null, undefined, or non-worktree items', () => {
+    assert.equal(HeaderBar.buildWorktreeBadgeHtml(null), '');
+    assert.equal(HeaderBar.buildWorktreeBadgeHtml(undefined), '');
+    assert.equal(HeaderBar.buildWorktreeBadgeHtml({ path: 'c:/runs/a', isWorktree: false, worktree: null }), '');
   });
 });

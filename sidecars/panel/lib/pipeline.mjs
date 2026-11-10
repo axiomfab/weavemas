@@ -43,9 +43,50 @@ export function formatStageName(rawName) {
     .join(' ');
 }
 
-function scanContextParentDir(targetDir) {
+/**
+ * Detects whether a given root directory is executing inside a git worktree.
+ * @param {string} rootDir
+ * @param {string|null} [explicitWorktreeName=null]
+ * @returns {{ isWorktree: boolean, worktreeName: string|null }}
+ */
+export function detectWorktreeInfo(rootDir, explicitWorktreeName = null) {
+  if (!rootDir || typeof rootDir !== 'string' || !rootDir.trim()) {
+    throw new TypeError('CRITICAL: rootDir is required and must be a non-empty string');
+  }
+  if (explicitWorktreeName !== null && explicitWorktreeName !== undefined && typeof explicitWorktreeName !== 'string') {
+    throw new TypeError('CRITICAL: explicitWorktreeName must be a string or null');
+  }
+
+  if (explicitWorktreeName && explicitWorktreeName.trim()) {
+    return { isWorktree: true, worktreeName: explicitWorktreeName.trim() };
+  }
+
+  const dotGitPath = join(rootDir, '.git');
+  try {
+    if (existsSync(dotGitPath) && statSync(dotGitPath).isFile()) {
+      const content = readFileSync(dotGitPath, 'utf8').trim();
+      const match = content.match(/^gitdir:\s*(.+)$/im);
+      if (match) {
+        const gitDirRaw = match[1].trim().replace(/\\/g, '/').replace(/\/+$/, '');
+        const wtMatch = gitDirRaw.match(/\/worktrees\/([^/]+)$/);
+        if (wtMatch && wtMatch[1]) {
+          return { isWorktree: true, worktreeName: wtMatch[1] };
+        }
+      }
+      return { isWorktree: true, worktreeName: basename(rootDir) || 'worktree' };
+    }
+  } catch {
+    // ignore unreadable .git metadata
+  }
+
+  return { isWorktree: false, worktreeName: null };
+}
+
+function scanContextParentDir(targetDir, worktreeInfo = { isWorktree: false, worktreeName: null }) {
   if (!targetDir || !existsSync(targetDir)) return [];
   const baseName = basename(targetDir);
+  const isWorktree = Boolean(worktreeInfo && worktreeInfo.isWorktree);
+  const worktree = (isWorktree && worktreeInfo.worktreeName) ? String(worktreeInfo.worktreeName) : null;
   return readdirSync(targetDir, { withFileTypes: true })
     .filter(d => {
       if (!isDirOrLinkedDir(targetDir, d)) return false;
@@ -66,7 +107,9 @@ function scanContextParentDir(targetDir) {
         path: fullPath,
         title: dirLabel,
         displayPath: dirLabel,
-        mtime: statSync(fullPath).mtimeMs
+        mtime: statSync(fullPath).mtimeMs,
+        isWorktree,
+        worktree
       };
     });
 }
@@ -75,13 +118,18 @@ export function getAllContextDirs(workspaceDir) {
   if (!workspaceDir || typeof workspaceDir !== 'string') {
     throw new Error('CRITICAL: Workspace directory is required and must be a string');
   }
-  const candidateRoots = [workspaceDir];
+  const mainWtInfo = detectWorktreeInfo(workspaceDir, null);
+  const candidateRoots = [{ root: workspaceDir, worktreeInfo: mainWtInfo }];
   const worktreesRoot = join(workspaceDir, '.solony', 'worktrees');
   if (existsSync(worktreesRoot)) {
     try {
       for (const wt of readdirSync(worktreesRoot, { withFileTypes: true })) {
         if (isDirOrLinkedDir(worktreesRoot, wt)) {
-          candidateRoots.push(join(worktreesRoot, wt.name));
+          const wtPath = join(worktreesRoot, wt.name);
+          candidateRoots.push({
+            root: wtPath,
+            worktreeInfo: detectWorktreeInfo(wtPath, wt.name)
+          });
         }
       }
     } catch {
@@ -89,16 +137,17 @@ export function getAllContextDirs(workspaceDir) {
     }
   }
 
-  const seenIds = new Set();
+  const seenKeys = new Set();
   const entries = [];
-  for (const root of candidateRoots) {
+  for (const { root, worktreeInfo } of candidateRoots) {
     const runsDir = join(root, 'runs');
     const outputDir = join(root, 'output');
     const targetDir = existsSync(runsDir) ? runsDir : (existsSync(outputDir) ? outputDir : null);
     if (!targetDir) continue;
-    for (const item of scanContextParentDir(targetDir)) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
+    for (const item of scanContextParentDir(targetDir, worktreeInfo)) {
+      const dedupeKey = `${item.isWorktree ? `wt:${item.worktree}` : 'main'}:${item.id}`;
+      if (!seenKeys.has(dedupeKey)) {
+        seenKeys.add(dedupeKey);
         entries.push(item);
       }
     }

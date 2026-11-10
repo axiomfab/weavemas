@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSyn
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState, resolveEffectiveWorkspace } from '../sidecars/panel/lib/pipeline.mjs';
+import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState, resolveEffectiveWorkspace, detectWorktreeInfo } from '../sidecars/panel/lib/pipeline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -309,9 +309,29 @@ describe('Pipeline Panel Stage Evaluation', () => {
       assert.ok(ids.includes('show_linked'));
       assert.equal(shows.length, 3);
 
+      const mainEntry = shows.find(s => s.id === 'show_main');
+      const wtEntry = shows.find(s => s.id === 'show_worktree');
+      assert.equal(mainEntry.isWorktree, false);
+      assert.equal(mainEntry.worktree, null);
+      assert.equal(wtEntry.isWorktree, true);
+      assert.equal(wtEntry.worktree, 'feat-jazz');
+
       // Happy Path 2: resolveEffectiveWorkspace resolves worktree root from worktree showDir
       assert.equal(resolveEffectiveWorkspace(tmp, wtShow), wtRoot);
       assert.equal(resolveEffectiveWorkspace(tmp, mainShow), tmp);
+
+      // Happy Path 3: detectWorktreeInfo detects .git file pointing to gitdir worktrees/<name>
+      const directWt = join(tmp, 'direct_wt_workspace');
+      mkdirSync(directWt, { recursive: true });
+      writeFileSync(join(directWt, '.git'), 'gitdir: C:/repo/.git/worktrees/feature-branch-wt\n');
+      assert.deepEqual(detectWorktreeInfo(directWt), {
+        isWorktree: true,
+        worktreeName: 'feature-branch-wt'
+      });
+      assert.deepEqual(detectWorktreeInfo(tmp), {
+        isWorktree: false,
+        worktreeName: null
+      });
 
       // Failure Path 1: resolveEffectiveWorkspace throws when workspaceDir is missing or not a string
       assert.throws(() => resolveEffectiveWorkspace(null, wtShow), /Workspace directory is required/);
@@ -321,6 +341,11 @@ describe('Pipeline Panel Stage Evaluation', () => {
       assert.equal(resolveEffectiveWorkspace(tmp, null), tmp);
       assert.equal(resolveEffectiveWorkspace(tmp, 'relative/path'), tmp);
       assert.equal(resolveEffectiveWorkspace(tmp, join(tmp, 'non_existent', 'show')), tmp);
+
+      // Failure Path 3: detectWorktreeInfo throws on invalid rootDir or invalid explicitWorktreeName
+      assert.throws(() => detectWorktreeInfo(''), /CRITICAL: rootDir is required/);
+      assert.throws(() => detectWorktreeInfo(null), /CRITICAL: rootDir is required/);
+      assert.throws(() => detectWorktreeInfo(tmp, 123), /CRITICAL: explicitWorktreeName must be a string or null/);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
