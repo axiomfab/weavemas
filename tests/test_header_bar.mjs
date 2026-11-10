@@ -168,7 +168,9 @@ test('HeaderBar Component Unit Tests', async (t) => {
     assert.match(showSelect.innerHTML, /<optgroup label="Main Workspace">/);
     assert.match(showSelect.innerHTML, /<optgroup label="Worktree: feat-jazz">/);
     assert.match(badgeRoot.innerHTML, /id="worktree-badge"/);
-    assert.match(badgeRoot.innerHTML, /🌿 feat-jazz/);
+    assert.match(badgeRoot.innerHTML, /viewBox="0 0 16 16"/);
+    assert.match(badgeRoot.innerHTML, /feat-jazz/);
+    assert.doesNotMatch(badgeRoot.innerHTML, /🌿/);
 
     // Switching activePath back to main workspace clears the badge
     HeaderBar.render(container, {
