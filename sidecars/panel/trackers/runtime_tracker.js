@@ -199,7 +199,7 @@
           isRunning = true;
           rawIntervals.push({ start: startMs, end: nowMs });
           if (startMs < minStartMs) minStartMs = startMs;
-        } else if ((st === 'completed' || st.startsWith('completed/')) && startMs > 0 && !isNaN(updatedMs) && updatedMs > startMs) {
+        } else if ((st === 'completed' || st.startsWith('completed/') || st === 'awaiting_review' || st.startsWith('awaiting_review/')) && startMs > 0 && !isNaN(updatedMs) && updatedMs > startMs) {
           rawIntervals.push({ start: startMs, end: updatedMs });
           if (startMs < minStartMs) minStartMs = startMs;
         }
@@ -246,6 +246,9 @@
     const [base] = slug.toLowerCase().split('/');
     if (base === 'in_progress' || base === 'running' || base === 'revising') {
       return 'text-amber-400 font-bold';
+    }
+    if (base === 'awaiting_review' || base === 'awaiting_user_review') {
+      return 'text-lime-400 font-semibold';
     }
     if (base === 'waiting') {
       return 'text-amber-300 font-medium';

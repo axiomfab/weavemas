@@ -1166,3 +1166,24 @@ test('Happy Path: renderMediaPreviewHtml appends sidecar token query parameter w
     delete context.window.location;
   }
 });
+
+test('Happy Path: getStatusBadge renders awaiting_review in yellow-green lime styling', () => {
+  const compound = getStatusBadge('awaiting_review/stage01_editorial');
+  assert.match(compound, /awaiting review: stage01 editorial/);
+  assert.match(compound, /bg-lime-500\/20/);
+  assert.match(compound, /text-lime-300/);
+  assert.doesNotMatch(compound, /vivid-pulse/);
+
+  const baseOnly = getStatusBadge('awaiting_review');
+  assert.match(baseOnly, /awaiting review/);
+  assert.match(baseOnly, /bg-lime-500\/20/);
+});
+
+test('Failure Paths: getStatusBadge does not apply lime styling to unmapped, null, or waiting statuses', () => {
+  for (const invalidOrOther of [null, '', 'waiting/sourcer', 'completed', 'blocked/missing_input']) {
+    const badge = getStatusBadge(invalidOrOther);
+    assert.doesNotMatch(badge, /bg-lime-500/);
+  }
+  const waitingBadge = getStatusBadge('waiting/sourcer');
+  assert.match(waitingBadge, /bg-amber-500\/10/);
+});

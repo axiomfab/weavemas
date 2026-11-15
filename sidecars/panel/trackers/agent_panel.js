@@ -16,6 +16,7 @@
     const label = sub ? `${base.replace(/_/g, ' ')}: ${sub.replace(/_/g, ' ')}` : base.replace(/_/g, ' ');
     let cls = 'bg-slate-800 text-slate-400 border border-slate-700/50';
     if (base === 'in_progress' || base === 'revising' || base === 'running') cls = 'vivid-pulse text-[10px] font-bold border font-mono';
+    else if (base === 'awaiting_review' || base === 'awaiting_user_review') cls = 'bg-lime-500/20 text-lime-300 border border-lime-500/40 font-semibold font-mono';
     else if (base === 'waiting') cls = 'bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono';
     else if (base === 'completed' || base === 'approved') cls = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono';
     else if (base === 'blocked' || base === 'error' || base === 'failed') cls = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono';

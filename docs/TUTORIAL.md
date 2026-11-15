@@ -443,7 +443,7 @@ All `dir` arguments **must be absolute paths**.
 | `weave_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`, `inputs`)* | Creates target directory recursively and writes initial `weave.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
 | `discover_agents` | Orchestrator (Phase 2) | `directory` *(opt: `filter_status`, `limit`)* | Discovers provisioned subagents under a stage directory, returning agent ids, directories, and instruction paths. |
 | `weave_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `weave.md` exists and is ready for execution. Fails fast on missing status. |
-| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `outputs`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `outputs` exists on disk when `status == "completed"`. |
+| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `outputs`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `awaiting_review/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `outputs` exists on disk when `status == "completed"`. |
 | `weave_read` | Orchestrator | `dir` *(opt: `expected_outputs`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
 
 ### Two Pipeline Structural Modes

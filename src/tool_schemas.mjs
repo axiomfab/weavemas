@@ -53,7 +53,7 @@ export const TOOLS = [
         },
         status: {
           type: 'string',
-          description: 'Target lifecycle status (e.g. in_progress/step_name, waiting/reason, completed, blocked/reason).'
+          description: 'Target lifecycle status (e.g. in_progress/step_name, waiting/reason, awaiting_review/stage_slug, completed, blocked/reason).'
         },
         progress: {
           type: 'string',

@@ -22,7 +22,7 @@ All status and discovery operations use `call_mcp_tool` with `ServerName: "weave
   - `weave_read`: Verify subagent completion and output existence.
   - `discover_agents`: Discover provisioned stage subagents (including their `instructions_file`, `inputs`, and `outputs`).
 * **Strict Worker Scaffolding Prohibition**: The root orchestrator is **strictly forbidden** from creating worker agent directories or calling `weave_init` for stage agents directly. Always delegate stage setup to Phase 1 (`orchestrator-agent-instantiation`).
-* **Fail-Fast on Subagent Verification Failure (No Workarounds)**: If any subagent halts because `weave_verify` failed (e.g. a declared `inputs` file does not exist on disk), the orchestrator **MUST halt immediately and surface the error to the user**. Never attempt workarounds such as manually copying files or editing `weave.md`.
+* **Fail-Fast on Subagent Verification Failure (No Workarounds)**: If any subagent halts because `weave_verify` failed (e.g. a declared `inputs` file does not exist on disk), the orchestrator **MUST call `weave_update` (`status: "blocked/<stage_slug>"` or `"blocked/<reason>"`, `progress: "<error summary>"`) if master `runs/<context_slug>/weave.md` is initialized, halt immediately, and surface the error to the user**. Never attempt workarounds such as manually copying files or editing `weave.md`.
 
 ---
 
@@ -46,6 +46,10 @@ Execute every stage (or stageless manifest) by chaining these two microskills in
 
 ## 4. Stage Transitions & Pipeline Completion
 
+* **Pause at User Review Gate**:
+  When a stage completes subagent verification (`weave_read`) and declares a User Review Gate, call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "status": "awaiting_review/<stage_slug>", "progress": "<Stage summary — awaiting user review>" }` (or `"status": "awaiting_review"` for stageless pipelines) **before** pausing for user feedback.
+* **Revision Requested at Review Gate**:
+  If the user requests adjustments at a review gate, call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "status": "in_progress/<stage_slug>", "progress": "<Applying user review feedback>" }` (or `"status": "in_progress"` for stageless pipelines) before routing feedback via `send_message`, then transition back to `"awaiting_review/<stage_slug>"` once revised outputs pass `weave_read`.
 * **Advance to Next Stage**:
   Call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "status": "in_progress/<next_stage>", "progress": "<Stage handoff summary>" }`, output `[WeaveMAS UI](sidecar://weavemas/panel/)`, and repeat the Two-Phase loop.
 * **Final Pipeline Completion**:

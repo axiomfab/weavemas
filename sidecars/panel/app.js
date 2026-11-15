@@ -126,12 +126,14 @@
         let dotClass = 'stage-dot-pending';
         if (hasAgentActive) dotClass = 'stage-dot-flashing';
         else if (st.isCompleted) dotClass = 'stage-dot-completed';
+        else if (st.isAwaitingReview || st.status === 'awaiting_review') dotClass = 'stage-dot-awaiting-review';
         else if (st.status === 'in_progress') dotClass = 'stage-dot-in-progress';
+        else if (st.status === 'blocked') dotClass = 'stage-dot-blocked';
         if (isSelected) dotClass += ' stage-dot-selected';
 
         stepperHtml += `
           <div class="flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
-            <div class="stage-dot ${dotClass}"></div>
+            <div class="stage-dot ${dotClass}" title="${st.tag || st.name}"></div>
             <span class="mt-2 text-[11px] font-bold ${isSelected ? 'text-white' : 'text-slate-300'} text-center">Stage ${st.num}</span>
             <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${st.name}">${st.name}</span>
           </div>

@@ -673,6 +673,55 @@ test('Deferred Mid-Stage Inputs - Zero Initial Inputs Path: statusVerify succeed
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
+test('statusUpdate - Happy Path: transitions orchestrator lifecycle through awaiting_review/stage01_setup and verifies optional outputs', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
+
+  // 1. Transition to awaiting_review without passing outputs
+  const reviewRes = statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Stage 1 ready for user review');
+  assert.equal(reviewRes.success, true);
+  assert.equal(reviewRes.status, 'awaiting_review/stage01_setup');
+
+  const midRead = statusRead(tmp, null, 'awaiting_review');
+  assert.equal(midRead.status, 'awaiting_review/stage01_setup');
+
+  // 2. Return to in_progress on revision, then back to awaiting_review with verified stage output file
+  const reviseRes = statusUpdate(tmp, 'in_progress/stage01_setup', 'Applying requested changes');
+  assert.equal(reviseRes.status, 'in_progress/stage01_setup');
+
+  fs.writeFileSync(path.join(tmp, '01_setup.md'), '# Approved Setup', 'utf-8');
+  const reviewWithOut = statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Revised stage output ready', '01_setup.md');
+  assert.equal(reviewWithOut.success, true);
+
+  // 3. Advance to stage 2 and complete pipeline
+  statusUpdate(tmp, 'in_progress/stage02_concept', 'Unlocked Stage 2');
+  const doneRes = statusUpdate(tmp, 'completed', 'Pipeline complete', '01_setup.md');
+  assert.equal(doneRes.status, 'completed');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusUpdate - Failure Path 4: awaiting_review with non-existent output file throws Error', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
+  assert.throws(() => statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Ready', 'missing_stage.md'), {
+    name: 'Error',
+    message: /CRITICAL: Output file does not exist on disk/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusUpdate - Failure Path 5: unapproved review prefix throws Invalid status state Error', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
+  assert.throws(() => statusUpdate(tmp, 'review_needed/stage01_setup', 'Invalid state'), {
+    name: 'Error',
+    message: /CRITICAL: Invalid status state 'review_needed\/stage01_setup'/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+
 
 
 

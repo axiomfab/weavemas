@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
@@ -349,5 +350,161 @@ describe('Pipeline Panel Stage Evaluation', () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
+  });
+
+  it('Awaiting Review Lifecycle: parseOrchestratorState & evaluatePipelineStages track awaiting_review, revisions, stage-scoped completed, and blocked', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'tm-await-review-'));
+    const showDir = join(tmp, 'runs', 'show_review_test').replace(/\\/g, '/');
+    mkdirSync(join(showDir, 'stage01_editorial', 'agents', 'writer'), { recursive: true });
+    mkdirSync(join(showDir, 'stage02_publishing'), { recursive: true });
+
+    try {
+      // 1. Happy Path: awaiting_review/stage01_editorial sets stage 1 awaiting_review and stage 2 pending
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "awaiting_review/stage01_editorial"\noutputs: []\n---\n');
+      let parsed = parseOrchestratorState(showDir);
+      assert.equal(parsed.stageNum, 1);
+      assert.equal(parsed.isAwaitingReview, true);
+      assert.equal(parsed.isInProgress, false);
+      assert.equal(parsed.isCompleted, false);
+
+      let res = evaluatePipelineStages(showDir);
+      assert.equal(res.activeStageNum, 1);
+      assert.equal(res.stages[1].status, 'awaiting_review');
+      assert.equal(res.stages[1].isAwaitingReview, true);
+      assert.equal(res.stages[1].isCompleted, false);
+      assert.equal(res.stages[1].tag, 'STAGE 1: AWAITING REVIEW');
+      assert.equal(res.stages[2].status, 'pending');
+      assert.equal(res.stages[2].isCompleted, false);
+
+      // 2. Happy Path: revision returns to in_progress/stage01_editorial
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "in_progress/stage01_editorial"\noutputs: []\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'in_progress');
+      assert.equal(res.stages[1].isAwaitingReview, false);
+      assert.equal(res.stages[2].status, 'pending');
+
+      // 3. Happy Path: completed/stage01_editorial completes ONLY stage 1 and leaves stage 2 pending
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "completed/stage01_editorial"\noutputs: []\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'completed');
+      assert.equal(res.stages[1].isCompleted, true);
+      assert.equal(res.stages[2].status, 'pending');
+      assert.equal(res.stages[2].isCompleted, false);
+
+      // 4. Happy Path: in_progress/stage02_publishing marks stage 1 completed and stage 2 in_progress
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "in_progress/stage02_publishing"\noutputs: []\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.activeStageNum, 2);
+      assert.equal(res.stages[1].status, 'completed');
+      assert.equal(res.stages[2].status, 'in_progress');
+
+      // 5. Happy Path: blocked/stage02_publishing marks stage 1 completed and stage 2 blocked
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "blocked/stage02_publishing"\noutputs: []\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.activeStageNum, 2);
+      assert.equal(res.stages[1].status, 'completed');
+      assert.equal(res.stages[2].status, 'blocked');
+      assert.equal(res.stages[2].tag, 'STAGE 2: BLOCKED');
+
+      // 6. Failure Path 1: Body text mentioning "status: completed" does not override frontmatter status
+      writeFileSync(
+        join(showDir, 'weave.md'),
+        '---\ntype: "orchestrator"\nstatus: "awaiting_review/stage01_editorial"\n---\n# Pipeline Status\n\nNote: agent had status: completed\n'
+      );
+      parsed = parseOrchestratorState(showDir);
+      assert.equal(parsed.rawStatus, 'awaiting_review/stage01_editorial');
+      assert.equal(parsed.isAwaitingReview, true);
+      assert.equal(parsed.isCompleted, false);
+
+      // Non-review states must keep isAwaitingReview=false
+      for (const nonReview of ['in_progress/stage01_editorial', 'completed/stage01_editorial', 'blocked/stage01_editorial', 'waiting/sourcer', 'not_started']) {
+        writeFileSync(join(showDir, 'weave.md'), `---\nstatus: "${nonReview}"\n---\n`);
+        assert.equal(parseOrchestratorState(showDir).isAwaitingReview, false, `${nonReview} should not set isAwaitingReview`);
+      }
+
+      // 7. Failure Path 2: Bare awaiting_review or not_started does not mark downstream stages completed despite md files on disk
+      writeFileSync(join(showDir, 'stage01_editorial', '01_draft.md'), '# Draft');
+      writeFileSync(join(showDir, 'stage02_publishing', '02_final.md'), '# Final');
+      writeFileSync(join(showDir, 'weave.md'), '---\nstatus: "not_started"\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'pending');
+      assert.equal(res.stages[2].status, 'pending');
+
+      writeFileSync(join(showDir, 'weave.md'), '---\nstatus: "awaiting_review"\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'completed');
+      assert.equal(res.stages[2].status, 'awaiting_review');
+
+      // When stage 2 has no activity on disk, bare awaiting_review infers stage 1 even if stage 1 has 01_draft.md
+      rmSync(join(showDir, 'stage02_publishing', '02_final.md'));
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'awaiting_review');
+      assert.equal(res.stages[2].status, 'pending');
+
+      // Heuristic fallback when root weave.md is absent respects stage-level awaiting_review despite 01_draft.md
+      rmSync(join(showDir, 'weave.md'));
+      writeFileSync(join(showDir, 'stage01_editorial', 'weave.md'), '---\nstatus: "awaiting_review"\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.equal(res.stages[1].status, 'awaiting_review');
+      assert.equal(res.stages[2].status, 'pending');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('Yellow-Green UI Indicator: styles.css, app.js, and StagePanel render awaiting_review in lime (#84cc16)', () => {
+    const cssPath = resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css');
+    const css = readFileSync(cssPath, 'utf8');
+    const appPath = resolve(__dirname, '..', 'sidecars', 'panel', 'app.js');
+    const appJs = readFileSync(appPath, 'utf8');
+    const stagePanelPath = resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'stage_panel.js');
+    const stagePanelJs = readFileSync(stagePanelPath, 'utf8');
+
+    // Happy Path 1: CSS defines yellow-green lime (#84cc16) indicator and blocked rose (#f43f5e) indicator
+    assert.match(css, /--lime:\s*#84cc16;/);
+    assert.match(css, /\.stage-dot-awaiting-review\s*\{[^}]*#84cc16/);
+    assert.match(css, /\.stage-dot-blocked\s*\{[^}]*#f43f5e/);
+
+    // Happy Path 2: app.js applies stage-dot-awaiting-review for awaiting_review stages
+    assert.match(appJs, /dotClass = 'stage-dot-awaiting-review'/);
+    assert.match(appJs, /dotClass = 'stage-dot-blocked'/);
+
+    // Happy Path 3: StagePanel renders lime badge and state label for awaiting_review
+    const ctx = { window: {}, console };
+    vm.createContext(ctx);
+    vm.runInContext(stagePanelJs, ctx);
+    const StagePanel = ctx.window.StagePanel;
+    const container = { innerHTML: '' };
+
+    StagePanel.render(container, {
+      title: 'Stage 1: Editorial',
+      desc: 'Waiting for user review',
+      outputFile: '01_editorial_approved.md',
+      status: 'awaiting_review',
+      isCompleted: false,
+      isAwaitingReview: true,
+      tag: 'STAGE 1: AWAITING REVIEW'
+    });
+    assert.match(container.innerHTML, /bg-lime-500\/15/);
+    assert.match(container.innerHTML, /text-lime-400/);
+    assert.match(container.innerHTML, /STAGE 1: AWAITING REVIEW/);
+    assert.match(container.innerHTML, /awaiting_review/);
+
+    // Failure Path 1: StagePanel handles null container or null stageInfo without throwing
+    assert.doesNotThrow(() => StagePanel.render(null, { status: 'awaiting_review' }));
+    assert.doesNotThrow(() => StagePanel.render(container, null));
+
+    // Failure Path 2: StagePanel does not render lime styling for blocked or completed stages
+    StagePanel.render(container, {
+      title: 'Stage 2: Publishing',
+      desc: 'Blocked by missing input',
+      outputFile: '02_final.md',
+      status: 'blocked',
+      isCompleted: false,
+      tag: 'STAGE 2: BLOCKED'
+    });
+    assert.match(container.innerHTML, /bg-rose-500\/15/);
+    assert.match(container.innerHTML, /text-rose-400/);
+    assert.doesNotMatch(container.innerHTML, /text-lime-400/);
   });
 });
