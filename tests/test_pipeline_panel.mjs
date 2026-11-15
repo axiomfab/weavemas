@@ -168,23 +168,34 @@ describe('Pipeline Panel Stage Evaluation', () => {
     }
   });
 
-  it('UI Structure: index.html has semantic roots, loads header_bar.js, and no legacy summary drawer', () => {
+  it('UI Structure: index.html has full-bleed header and semantic roots, loads header_bar.js, and uses flat native agy styling', () => {
     const htmlPath = resolve(__dirname, '..', 'sidecars', 'panel', 'index.html');
     const html = readFileSync(htmlPath, 'utf8');
     const headerPath = resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'header_bar.js');
     const headerJs = readFileSync(headerPath, 'utf8');
+    const cssPath = resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css');
+    const css = readFileSync(cssPath, 'utf8');
 
-    // Happy Path: Semantic container roots & scripts
+    // Happy Path: Semantic container roots & scripts, with full-bleed header before max-w-4xl content
     assert.match(html, /<header id="header-root"><\/header>/);
     assert.match(html, /<section id="stepper-root"/);
     assert.match(html, /<main id="agents-root">/);
     assert.match(html, /<script src="trackers\/header_bar\.js"><\/script>/);
+    assert.ok(html.indexOf('<header id="header-root"></header>') < html.indexOf('<div class="max-w-4xl'));
+    assert.doesNotMatch(html, /<body[^>]*bg-\[#090d16\]/);
+    assert.doesNotMatch(html, /<body[^>]*\bp-3\b/);
 
-    // Happy Path: HeaderBar defines title and SVG logo
-    assert.match(headerJs, /<h1[^>]*>WeaveMAS UI<\/h1>/);
-    assert.match(headerJs, /<svg class="w-4\.5 h-4\.5 text-white"/);
+    // Happy Path: HeaderBar renders flat native agy header controls
+    assert.match(headerJs, /class="agy-header"/);
+    assert.match(headerJs, /id="show-select"/);
+    assert.match(headerJs, /id="sync-btn"/);
+    assert.match(headerJs, /class="pulsing-dot"/);
+    assert.match(css, /\.agy-header\s*\{[^}]*border-bottom:/);
+    assert.match(css, /\.agy-header\s*\{[^}]*var\(--agy-bg\)/);
 
-    // Failure Path 1: Radio logo strictly removed
+    // Failure Path 1: Rounded card chrome & radio logo strictly removed
+    assert.doesNotMatch(headerJs, /rounded-xl/);
+    assert.doesNotMatch(headerJs, /bg-\[#0f172a\]/);
     assert.doesNotMatch(html, /📻/);
     assert.doesNotMatch(headerJs, /📻/);
 
