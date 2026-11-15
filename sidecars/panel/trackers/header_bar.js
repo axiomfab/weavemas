@@ -1,7 +1,12 @@
 // Header Bar Component - WeaveMAS Panel
 (function() {
+  /**
+   * Escapes special HTML characters in a string or primitive value.
+   * @param {string|number|boolean|null|undefined} str - Value to escape for safe HTML interpolation.
+   * @returns {string} Escaped HTML string, or empty string when null, undefined, or empty.
+   */
   function escapeHtml(str) {
-    if (!str) return '';
+    if (str === null || str === undefined || str === '') return '';
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -10,68 +15,102 @@
       .replace(/'/g, '&#039;');
   }
 
+  /**
+   * Renders a single <option> element for a pipeline run entry.
+   * @param {{path: string, displayPath?: string, title?: string, name?: string}} s - Run metadata item.
+   * @param {string} currentVal - Normalized currently active path.
+   * @param {(path: string) => string} norm - Path normalization helper.
+   * @returns {string} HTML string for the option element.
+   */
   function renderOptionHtml(s, currentVal, norm) {
     const isSel = norm(s.path) === currentVal;
     const label = s.displayPath || s.title || (s.name ? `runs\\${s.name}` : s.path);
     return `<option value="${escapeHtml(s.path)}" ${isSel ? 'selected' : ''}>${escapeHtml(label)}</option>`;
   }
 
+  /**
+   * Builds the git worktree badge HTML for an active run item when running inside a worktree.
+   * @param {{isWorktree?: boolean, worktree?: string|null}|null|undefined} activeItem - Active run item metadata.
+   * @returns {string} Worktree badge HTML string, or empty string when not in a worktree.
+   */
   function buildWorktreeBadgeHtml(activeItem) {
-    if (!activeItem || (!activeItem.isWorktree && !activeItem.worktree)) {
+    if (!activeItem || typeof activeItem !== 'object' || (!activeItem.isWorktree && !activeItem.worktree)) {
       return '';
     }
     const wtName = String(activeItem.worktree || 'worktree').trim();
-    const branchSvg = `<svg class="w-3 h-3 text-amber-300 fill-current inline-block shrink-0" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path></svg>`;
-    return `<span id="worktree-badge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0" title="Executing in Git Worktree: ${escapeHtml(wtName)}">${branchSvg}<span>${escapeHtml(wtName)}</span></span>`;
+    const branchSvg = `<svg class="w-3 h-3 fill-current shrink-0" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path></svg>`;
+    return `<span id="worktree-badge" class="agy-worktree-badge" title="Executing in Git Worktree: ${escapeHtml(wtName)}">${branchSvg}<span>${escapeHtml(wtName)}</span></span>`;
   }
 
+  /**
+   * Renders or updates the flat native agy header section inside the given container.
+   * @param {object} container - Host DOM container element supporting innerHTML/querySelector.
+   * @param {{
+   *   shows?: Array<object>,
+   *   contexts?: Array<object>,
+   *   activePath?: string|null,
+   *   onSelectShow?: (path: string) => void,
+   *   onSelectContext?: (path: string) => void,
+   *   onSync?: () => void
+   * }} options - Header rendering options and callbacks.
+   * @returns {void}
+   */
   function render(container, options) {
     if (!container || typeof container !== 'object') {
       throw new TypeError('CRITICAL: container element is required and must be an object');
     }
-    if (!options || typeof options !== 'object') {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
       throw new TypeError('CRITICAL: options object is required and must be an object');
     }
-
     if (options.shows !== undefined && !Array.isArray(options.shows)) {
       throw new TypeError('CRITICAL: shows must be an array');
     }
+    if (options.contexts !== undefined && !Array.isArray(options.contexts)) {
+      throw new TypeError('CRITICAL: contexts must be an array');
+    }
+    if (options.activePath !== undefined && options.activePath !== null && typeof options.activePath !== 'string') {
+      throw new TypeError('CRITICAL: activePath must be a string or null');
+    }
+    if (options.onSelectShow !== undefined && typeof options.onSelectShow !== 'function') {
+      throw new TypeError('CRITICAL: onSelectShow must be a function');
+    }
+    if (options.onSelectContext !== undefined && typeof options.onSelectContext !== 'function') {
+      throw new TypeError('CRITICAL: onSelectContext must be a function');
+    }
+    if (options.onSync !== undefined && typeof options.onSync !== 'function') {
+      throw new TypeError('CRITICAL: onSync must be a function');
+    }
+
     const { shows = [], contexts = shows, activePath = null, onSelectShow, onSelectContext = onSelectShow, onSync } = options;
     const availableItems = (Array.isArray(contexts) && contexts.length > 0) ? contexts : (Array.isArray(shows) ? shows : []);
 
-    let headerEl = container.querySelector ? container.querySelector('header') : null;
+    const headerEl = container.querySelector ? container.querySelector('header') : null;
     if (!headerEl) {
       container.innerHTML = `
-        <header class="p-3.5 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-between">
-          <div class="flex items-center space-x-2.5">
-            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-500 to-cyan-500 flex items-center justify-center shadow-md p-1">
-              <svg class="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 7C7 7 8 17 12 17C16 17 17 7 21 7" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
-                <path d="M3 17C7 17 8 7 12 7C16 7 17 17 21 17" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="3" cy="7" r="1.6" fill="#38bdf8"/>
-                <circle cx="12" cy="17" r="1.6" fill="#38bdf8"/>
-                <circle cx="21" cy="7" r="1.6" fill="#38bdf8"/>
-                <circle cx="3" cy="17" r="1.6" fill="#ffffff"/>
-                <circle cx="12" cy="7" r="1.6" fill="#ffffff"/>
-                <circle cx="21" cy="17" r="1.6" fill="#ffffff"/>
+        <header class="agy-header" data-weave-header="true">
+          <div class="agy-header-left">
+            <span class="agy-select-wrap">
+              <select id="show-select" class="agy-select" aria-label="Select pipeline run">
+                <option value="">Detecting runs...</option>
+              </select>
+              <svg class="agy-select-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4.5 6.25L8 9.75l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-            </div>
-            <div class="flex-1 min-w-0 pr-2">
-              <div class="flex items-center gap-1.5">
-                <h1 class="text-xs font-bold tracking-wide text-white">WeaveMAS UI</h1>
-                <span class="pulsing-dot" title="Live Auto-Sync Active"></span>
-              </div>
-              <div class="mt-1 flex items-center gap-1.5 flex-wrap">
-                <select id="show-select" class="bg-slate-900 border border-slate-700 text-slate-200 rounded px-1.5 py-0.5 text-[11px] max-w-[220px] md:max-w-[320px] truncate focus:outline-hidden focus:border-indigo-500">
-                  <option value="">Detecting runs...</option>
-                </select>
-                <span id="worktree-badge-root"></span>
-              </div>
-            </div>
+            </span>
+            <span id="worktree-badge-root"></span>
           </div>
-          <button id="sync-btn" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[11px] transition cursor-pointer">
-            Sync
-          </button>
+          <div class="agy-header-right">
+            <span class="agy-live" role="status" title="Live Auto-Sync Active">
+              <span class="pulsing-dot" aria-hidden="true"></span>
+              <span class="agy-live-label">Live</span>
+            </span>
+            <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
+              <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Sync</span>
+            </button>
+          </div>
         </header>
       `;
 

@@ -82,7 +82,7 @@ test('HeaderBar Component Unit Tests', async (t) => {
   const HeaderBar = loadHeaderBar();
   assert.ok(HeaderBar, 'HeaderBar must be exported');
 
-  await t.test('Happy Path 1: renders complete header with SVG icon, title, pulse dot, dropdown, and sync button', () => {
+  await t.test('Happy Path 1: renders flat native agy header with selector, worktree slot, live dot, and sync button without card chrome', () => {
     const { container, showSelect } = createMockContainer();
     const shows = [
       { path: 'c:/output/show_01', displayPath: 'output\\show_01' },
@@ -94,12 +94,23 @@ test('HeaderBar Component Unit Tests', async (t) => {
       activePath: 'c:/output/show_01'
     });
 
-    assert.match(container.innerHTML, /<h1[^>]*>WeaveMAS UI<\/h1>/);
-    assert.match(container.innerHTML, /<svg class="w-4\.5 h-4\.5 text-white"/);
+    assert.match(container.innerHTML, /<header class="agy-header" data-weave-header="true">/);
+    assert.match(container.innerHTML, /<span class="agy-select-wrap">/);
+    assert.match(container.innerHTML, /<select id="show-select" class="agy-select"/);
+    assert.match(container.innerHTML, /<span id="worktree-badge-root"><\/span>/);
+    assert.match(container.innerHTML, /<span class="agy-live"/);
     assert.match(container.innerHTML, /<span class="pulsing-dot"/);
-    assert.match(container.innerHTML, /<button id="sync-btn"/);
+    assert.match(container.innerHTML, /<span class="agy-live-label">Live<\/span>/);
+    assert.match(container.innerHTML, /<button id="sync-btn" type="button" class="agy-sync-btn"/);
     assert.match(showSelect.innerHTML, /value="c:\/output\/show_01" selected/);
     assert.match(showSelect.innerHTML, /output\\show_02/);
+
+    // Ensure old floating card chrome, gradient icon, and duplicate heading are removed
+    assert.doesNotMatch(container.innerHTML, /rounded-xl/);
+    assert.doesNotMatch(container.innerHTML, /bg-\[#0f172a\]/);
+    assert.doesNotMatch(container.innerHTML, /border-\[#1e293b\]/);
+    assert.doesNotMatch(container.innerHTML, /bg-gradient-to-br/);
+    assert.doesNotMatch(container.innerHTML, /<h1/);
   });
 
   await t.test('Happy Path 2: fires onSelectShow and onSync event callbacks', () => {
@@ -135,20 +146,44 @@ test('HeaderBar Component Unit Tests', async (t) => {
     }, /CRITICAL: container element is required/);
   });
 
-  await t.test('Failure Path 2: throws TypeError on invalid or missing options and non-array shows', () => {
+  await t.test('Failure Path 2: throws TypeError on invalid options object or malformed option properties', () => {
     const { container } = createMockContainer();
     assert.throws(() => {
       HeaderBar.render(container, null);
     }, /CRITICAL: options object is required/);
 
     assert.throws(() => {
+      HeaderBar.render(container, []);
+    }, /CRITICAL: options object is required/);
+
+    assert.throws(() => {
       HeaderBar.render(container, { shows: 'not-an-array' });
     }, /CRITICAL: shows must be an array/);
+
+    assert.throws(() => {
+      HeaderBar.render(container, { contexts: 'not-an-array' });
+    }, /CRITICAL: contexts must be an array/);
+
+    assert.throws(() => {
+      HeaderBar.render(container, { shows: [], activePath: 123 });
+    }, /CRITICAL: activePath must be a string or null/);
+
+    assert.throws(() => {
+      HeaderBar.render(container, { shows: [], onSelectShow: 'bad' });
+    }, /CRITICAL: onSelectShow must be a function/);
+
+    assert.throws(() => {
+      HeaderBar.render(container, { shows: [], onSelectContext: 99 });
+    }, /CRITICAL: onSelectContext must be a function/);
+
+    assert.throws(() => {
+      HeaderBar.render(container, { shows: [], onSync: 42 });
+    }, /CRITICAL: onSync must be a function/);
   });
 
-  await t.test('Failure Path 3: handles empty shows array with fallback option without throwing', () => {
+  await t.test('Failure Path 3: handles empty shows array and undefined activePath with fallback option without throwing', () => {
     const { container, showSelect, badgeRoot } = createMockContainer();
-    HeaderBar.render(container, { shows: [] });
+    HeaderBar.render(container, { shows: [], activePath: undefined });
     assert.match(showSelect.innerHTML, /No shows in output\//);
     assert.equal(badgeRoot.innerHTML, '');
   });
@@ -168,6 +203,7 @@ test('HeaderBar Component Unit Tests', async (t) => {
     assert.match(showSelect.innerHTML, /<optgroup label="Main Workspace">/);
     assert.match(showSelect.innerHTML, /<optgroup label="Worktree: feat-jazz">/);
     assert.match(badgeRoot.innerHTML, /id="worktree-badge"/);
+    assert.match(badgeRoot.innerHTML, /class="agy-worktree-badge"/);
     assert.match(badgeRoot.innerHTML, /viewBox="0 0 16 16"/);
     assert.match(badgeRoot.innerHTML, /feat-jazz/);
     assert.doesNotMatch(badgeRoot.innerHTML, /🌿/);
@@ -180,9 +216,18 @@ test('HeaderBar Component Unit Tests', async (t) => {
     assert.equal(badgeRoot.innerHTML, '');
   });
 
-  await t.test('Failure Path 4: buildWorktreeBadgeHtml returns empty string for null, undefined, or non-worktree items', () => {
+  await t.test('Failure Path 4: buildWorktreeBadgeHtml returns empty string for null, undefined, primitive, or non-worktree items', () => {
     assert.equal(HeaderBar.buildWorktreeBadgeHtml(null), '');
     assert.equal(HeaderBar.buildWorktreeBadgeHtml(undefined), '');
+    assert.equal(HeaderBar.buildWorktreeBadgeHtml('str'), '');
     assert.equal(HeaderBar.buildWorktreeBadgeHtml({ path: 'c:/runs/a', isWorktree: false, worktree: null }), '');
+  });
+
+  await t.test('Happy & Failure Paths: escapeHtml escapes special characters and handles null, undefined, empty, and numeric zero', () => {
+    assert.equal(HeaderBar.escapeHtml('<script>"\'&'), '&lt;script&gt;&quot;&#039;&amp;');
+    assert.equal(HeaderBar.escapeHtml(null), '');
+    assert.equal(HeaderBar.escapeHtml(undefined), '');
+    assert.equal(HeaderBar.escapeHtml(''), '');
+    assert.equal(HeaderBar.escapeHtml(0), '0');
   });
 });
