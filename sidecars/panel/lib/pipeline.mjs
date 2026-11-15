@@ -228,6 +228,11 @@ export function extractContextTitle(showDir) {
 
 export const extractShowTitle = extractContextTitle;
 
+/**
+ * Parses the orchestrator's status file (weave.md, state.md, or status.md) in showDir.
+ * @param {string} showDir
+ * @returns {{ rawStatus: string, baseStatus: string, subStatus: string, stageNum: number|null, isInProgress: boolean, isAwaitingReview: boolean, isCompleted: boolean, isBlocked: boolean, isWaiting: boolean, isNotStarted: boolean }|null}
+ */
 export function parseOrchestratorState(showDir) {
   if (!showDir || typeof showDir !== 'string') {
     throw new Error('CRITICAL: Show directory is required and must be a string');
@@ -235,17 +240,39 @@ export function parseOrchestratorState(showDir) {
   const candidates = [join(showDir, 'weave.md'), join(showDir, 'state.md'), join(showDir, 'status.md')];
   for (const c of candidates) {
     if (existsSync(c)) {
-      const text = readFileSync(c, 'utf8');
-      const match = text.match(/status:\s*"?([^"\r\n]+)"?/i);
+      const rawText = readFileSync(c, 'utf8').replace(/^\uFEFF/, '');
+      const fmMatch = rawText.trimStart().match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      const searchScope = fmMatch ? fmMatch[1] : rawText;
+      const match = searchScope.match(/^\s*status:\s*(.+?)\s*$/im);
       if (match) {
-        const rawStatus = match[1].trim();
-        const stageMatch = rawStatus.match(/(?:stage0?|stage)(\d+)/i);
-        const stageNum = stageMatch ? parseInt(stageMatch[1], 10) : null;
+        const rawStatus = match[1].trim().replace(/^["']|["']$/g, '').trim();
+        if (!rawStatus) continue;
+        const stageMatch = rawStatus.match(/(?:stage[_-]?0*(\d+)|\/0*(\d+)(?:[_-]|$))/i);
+        const stageNum = stageMatch ? parseInt(stageMatch[1] || stageMatch[2], 10) : null;
+        const lower = rawStatus.toLowerCase();
+        const slashIdx = lower.indexOf('/');
+        const baseStatus = slashIdx === -1 ? lower : lower.slice(0, slashIdx);
+        const subStatus = slashIdx === -1 ? '' : lower.slice(slashIdx + 1);
+        const isAwaitingReview =
+          baseStatus === 'awaiting_review' ||
+          baseStatus === 'awaiting_user_review' ||
+          (baseStatus === 'waiting' && /(?:^|[_-])(?:review|approval)(?:$|[_-])/.test(subStatus));
+        const isInProgress = baseStatus === 'in_progress' || baseStatus === 'running' || baseStatus === 'revising';
+        const isCompleted = baseStatus === 'completed' || lower === 'done';
+        const isBlocked = baseStatus === 'blocked' || baseStatus === 'error' || baseStatus === 'failed';
+        const isWaiting = baseStatus === 'waiting' && !isAwaitingReview;
+        const isNotStarted = baseStatus === 'not_started' || baseStatus === 'initialized' || baseStatus === 'pending';
         return {
           rawStatus,
+          baseStatus,
+          subStatus,
           stageNum,
-          isInProgress: rawStatus.startsWith('in_progress'),
-          isCompleted: rawStatus.startsWith('completed') || rawStatus === 'done'
+          isInProgress,
+          isAwaitingReview,
+          isCompleted,
+          isBlocked,
+          isWaiting,
+          isNotStarted
         };
       }
     }
@@ -253,6 +280,11 @@ export function parseOrchestratorState(showDir) {
   return null;
 }
 
+/**
+ * Evaluates pipeline stage directories and derives each stage's current lifecycle status.
+ * @param {string} showDir
+ * @returns {{ showTitle: string, contextTitle: string, showDir: string, contextDir: string, activeStageNum: number|null, stages: Record<number, Record<string, unknown>>, stageList: Array<Record<string, unknown>> }}
+ */
 export function evaluatePipelineStages(showDir) {
   if (!showDir || typeof showDir !== 'string') {
     throw new Error('CRITICAL: Show directory is required and must be a string');
@@ -274,6 +306,28 @@ export function evaluatePipelineStages(showDir) {
   subDirs.sort((a, b) => a.num - b.num);
 
   const orchState = parseOrchestratorState(showDir);
+  let effectiveStageNum = orchState ? orchState.stageNum : null;
+  if (orchState && effectiveStageNum === null && orchState.subStatus) {
+    const matchedDir = subDirs.find(
+      d => d.dirName.toLowerCase() === orchState.subStatus || d.rawName.toLowerCase() === orchState.subStatus
+    );
+    if (matchedDir) {
+      effectiveStageNum = matchedDir.num;
+    }
+  }
+  if (orchState && effectiveStageNum === null && (orchState.isAwaitingReview || orchState.isBlocked || orchState.isWaiting) && subDirs.length > 0) {
+    let inferredStageNum = subDirs[0].num;
+    for (const d of subDirs) {
+      const dPath = join(showDir, d.dirName);
+      const entries = readdirSync(dPath, { withFileTypes: true });
+      const hasActivity = entries.some(ent => (ent.isDirectory() && ent.name === 'agents') || (ent.isFile() && ent.name.endsWith('.md')));
+      if (hasActivity) {
+        inferredStageNum = d.num;
+      }
+    }
+    effectiveStageNum = inferredStageNum;
+  }
+
   const stages = {};
   let previousCompleted = true;
   let activeStageNum = null;
@@ -284,27 +338,42 @@ export function evaluatePipelineStages(showDir) {
     let status = 'pending';
     let tag = `STAGE ${s.num}: PENDING`;
 
-    if (orchState && orchState.isCompleted) {
+    if (orchState && orchState.isCompleted && effectiveStageNum === null) {
       isCompleted = true;
       status = 'completed';
       tag = `STAGE ${s.num}: COMPLETED`;
-    } else if (orchState && orchState.stageNum !== null) {
+    } else if (orchState && orchState.isNotStarted && effectiveStageNum === null) {
+      isCompleted = false;
+      status = 'pending';
+      tag = `STAGE ${s.num}: PENDING`;
+    } else if (orchState && effectiveStageNum !== null) {
       // Orchestrator status file is the source of truth
-      if (s.num < orchState.stageNum) {
+      if (s.num < effectiveStageNum) {
         isCompleted = true;
         status = 'completed';
         tag = `STAGE ${s.num}: COMPLETED`;
-      } else if (s.num === orchState.stageNum) {
-        if (orchState.isInProgress) {
-          isCompleted = false;
-          status = 'in_progress';
-          tag = `STAGE ${s.num}: IN PROGRESS`;
-          activeStageNum = s.num;
-        } else if (orchState.isCompleted) {
+      } else if (s.num === effectiveStageNum) {
+        activeStageNum = s.num;
+        if (orchState.isCompleted) {
           isCompleted = true;
           status = 'completed';
           tag = `STAGE ${s.num}: COMPLETED`;
-          activeStageNum = s.num;
+        } else if (orchState.isAwaitingReview) {
+          isCompleted = false;
+          status = 'awaiting_review';
+          tag = `STAGE ${s.num}: AWAITING REVIEW`;
+        } else if (orchState.isBlocked) {
+          isCompleted = false;
+          status = 'blocked';
+          tag = `STAGE ${s.num}: BLOCKED`;
+        } else if (orchState.isInProgress || orchState.isWaiting) {
+          isCompleted = false;
+          status = 'in_progress';
+          tag = `STAGE ${s.num}: IN PROGRESS`;
+        } else {
+          isCompleted = false;
+          status = 'pending';
+          tag = `STAGE ${s.num}: PENDING`;
         }
       } else {
         isCompleted = false;
@@ -313,16 +382,22 @@ export function evaluatePipelineStages(showDir) {
       }
     } else {
       // Heuristic fallback when orchestrator weave file is absent
+      let isAwaitingStageReview = false;
       for (const statusName of ['weave.md', 'status.md']) {
         const stageStatusPath = join(stagePath, statusName);
         if (existsSync(stageStatusPath)) {
           const text = readFileSync(stageStatusPath, 'utf8');
           const sm = text.match(/status:\s*"?([^"\r\n]+)"?/i);
-          if (sm && (sm[1].startsWith('completed') || sm[1] === 'done')) isCompleted = true;
+          if (sm) {
+            const stageRaw = sm[1].trim().toLowerCase();
+            const [stageBase] = stageRaw.split('/');
+            if (stageBase === 'completed' || stageRaw === 'done') isCompleted = true;
+            else if (stageBase === 'awaiting_review' || stageBase === 'awaiting_user_review') isAwaitingStageReview = true;
+          }
         }
       }
 
-      if (!isCompleted) {
+      if (!isCompleted && !isAwaitingStageReview) {
         const filesInStage = readdirSync(stagePath, { withFileTypes: true })
           .filter(f => f.isFile() && f.name.endsWith('.md') && f.name !== 'weave.md' && f.name !== 'status.md');
         if (filesInStage.length > 0) isCompleted = true;
@@ -331,6 +406,11 @@ export function evaluatePipelineStages(showDir) {
       if (isCompleted) {
         status = 'completed';
         tag = `STAGE ${s.num}: COMPLETED`;
+      } else if (isAwaitingStageReview) {
+        status = 'awaiting_review';
+        tag = `STAGE ${s.num}: AWAITING REVIEW`;
+        if (!activeStageNum) activeStageNum = s.num;
+        previousCompleted = false;
       } else if (previousCompleted) {
         status = 'in_progress';
         tag = `STAGE ${s.num}: IN PROGRESS`;
@@ -348,6 +428,7 @@ export function evaluatePipelineStages(showDir) {
       folder: `${s.dirName}/`,
       status,
       isCompleted,
+      isAwaitingReview: status === 'awaiting_review',
       tag,
       dirName: s.dirName
     };
@@ -355,8 +436,8 @@ export function evaluatePipelineStages(showDir) {
 
   const stageList = Object.values(stages);
   if (!activeStageNum && stageList.length > 0) {
-    const firstInProg = stageList.find(s => s.status === 'in_progress');
-    activeStageNum = firstInProg ? firstInProg.num : stageList[0].num;
+    const firstActive = stageList.find(s => s.status === 'awaiting_review' || s.status === 'in_progress' || s.status === 'blocked');
+    activeStageNum = firstActive ? firstActive.num : stageList[0].num;
   }
 
   return {

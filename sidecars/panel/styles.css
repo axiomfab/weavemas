@@ -8,6 +8,7 @@
   --muted-foreground: #9ca3af;
   --primary: #38bdf8;
   --emerald: #10b981;
+  --lime: #84cc16;
   --yellow: #eab308;
   --indigo: #6366f1;
 
@@ -226,9 +227,19 @@ body {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
 }
 
+.stage-dot-awaiting-review {
+  background-color: #84cc16;
+  box-shadow: 0 0 10px rgba(132, 204, 22, 0.6);
+}
+
 .stage-dot-in-progress {
   background-color: #eab308;
   box-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
+}
+
+.stage-dot-blocked {
+  background-color: #f43f5e;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
 }
 
 .stage-dot-flashing {

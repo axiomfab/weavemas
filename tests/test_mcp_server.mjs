@@ -462,4 +462,90 @@ test('MCP Tool Call - Happy Path: weave_init with inputs and weave_verify checks
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+test('MCP Tool Call - Happy Path: weave_update accepts awaiting_review and schema advertises awaiting_review', () => {
+  const listRes = captureResponse({ jsonrpc: '2.0', id: 32, method: 'tools/list', params: {} });
+  const updateTool = listRes.result.tools.find(t => t.name === 'weave_update');
+  assert.ok(updateTool);
+  assert.match(updateTool.inputSchema.properties.status.description, /awaiting_review/);
+
+  const tmp = createTempDir();
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
+  });
+
+  const reviewRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'weave_update',
+      arguments: { dir: tmp, status: 'awaiting_review/stage01_editorial', progress: 'Waiting on user review of 01_editorial_approved.md' }
+    }
+  });
+  assert.equal(reviewRes.result.isError, undefined);
+  assert.match(reviewRes.result.content[0].text, /WEAVE_UPDATE_OK: status -> awaiting_review\/stage01_editorial/);
+
+  const readRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 35,
+    method: 'tools/call',
+    params: { name: 'weave_read', arguments: { dir: tmp, expected_status: 'awaiting_review' } }
+  });
+  assert.equal(readRes.result.isError, undefined);
+  assert.equal(JSON.parse(readRes.result.content[0].text).status, 'awaiting_review/stage01_editorial');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 12: weave_update with awaiting_review and missing outputs returns isError: true', () => {
+  const tmp = createTempDir();
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 36,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
+  });
+
+  const res = captureResponse({
+    jsonrpc: '2.0',
+    id: 37,
+    method: 'tools/call',
+    params: {
+      name: 'weave_update',
+      arguments: { dir: tmp, status: 'awaiting_review/stage01_editorial', outputs: 'nonexistent.md' }
+    }
+  });
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Output file does not exist on disk/);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 13: weave_update with unapproved pending_review prefix returns isError: true', () => {
+  const tmp = createTempDir();
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 38,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
+  });
+
+  const res = captureResponse({
+    jsonrpc: '2.0',
+    id: 39,
+    method: 'tools/call',
+    params: {
+      name: 'weave_update',
+      arguments: { dir: tmp, status: 'pending_review/stage01_editorial' }
+    }
+  });
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Invalid status state/);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 

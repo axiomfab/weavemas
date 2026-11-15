@@ -119,6 +119,11 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
 
 /**
  * Updates weave.md in target directory with new status, optional progress note, and optional outputs.
+ * @param {string} targetDir
+ * @param {string} status
+ * @param {string | null} [progress=null]
+ * @param {string | string[] | null} [outputs=null]
+ * @returns {{ success: boolean, message: string, status: string }}
  */
 export function weaveUpdate(targetDir, status, progress = null, outputs = null) {
   if (!targetDir || typeof targetDir !== 'string') {
@@ -131,7 +136,7 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
     throw new TypeError('CRITICAL: Status must be a non-empty string.');
   }
 
-  const validPrefixes = ['not_started', 'in_progress', 'waiting', 'blocked', 'completed'];
+  const validPrefixes = ['not_started', 'in_progress', 'waiting', 'awaiting_review', 'blocked', 'completed'];
   const hasValidPrefix = validPrefixes.some(p => status === p || status.startsWith(`${p}/`));
   if (!hasValidPrefix) {
     throw new Error(`CRITICAL: Invalid status state '${status}'. Must start with one of: ${validPrefixes.join(', ')}`);
@@ -158,6 +163,11 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
   if (status.startsWith('completed')) {
     if (mergedOutputs.length > 0) {
       verifyOutputFiles(resolvedDir, mergedOutputs);
+    }
+    frontmatter.outputs = mergedOutputs;
+  } else if (status.startsWith('awaiting_review')) {
+    if (normalizedOutputs !== null && normalizedOutputs.length > 0) {
+      verifyOutputFiles(resolvedDir, normalizedOutputs);
     }
     frontmatter.outputs = mergedOutputs;
   } else {

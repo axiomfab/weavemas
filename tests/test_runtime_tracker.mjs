@@ -397,3 +397,44 @@ test('formatHumanLogBody - Failure Path: handles null, undefined, or empty strin
   assert.equal(RuntimeTracker.formatHumanLogBody(undefined), '');
   assert.equal(RuntimeTracker.formatHumanLogBody(''), '');
 });
+
+test('awaiting_review runtime tracking - Happy Path: pauses active execution timer at awaiting_review and renders lime log badge', () => {
+  const body = `
+# Status Log
+
+- 2026-10-15T10:00:00.000Z: \`in_progress/stage01_setup\` - Running stage 1
+- 2026-10-15T10:02:00.000Z: \`awaiting_review/stage01_setup\` - Stage 1 ready for user review
+`;
+  const nowMs = Date.parse('2026-10-15T10:30:00.000Z');
+  const activeRes = RuntimeTracker.calculateActiveRuntime(body, 'awaiting_review/stage01_setup', nowMs);
+  assert.equal(activeRes.seconds, 120);
+  assert.equal(activeRes.isRunning, false);
+
+  const stageRes = RuntimeTracker.calculateStageRuntime([
+    { type: 'agent', frontmatter: { status: 'awaiting_review/stage01_setup' }, body }
+  ], nowMs);
+  assert.equal(stageRes.seconds, 120);
+  assert.equal(stageRes.isRunning, false);
+
+  const formatted = RuntimeTracker.formatHumanLogBody(body, nowMs);
+  assert.match(formatted, /text-lime-400 font-semibold.*\[awaiting_review\/stage01_setup\]/);
+});
+
+test('awaiting_review runtime tracking - Failure Paths: does not tick while awaiting_review and handles bodyless nodes with invalid updated_at', () => {
+  const pausedStage = RuntimeTracker.calculateStageRuntime([
+    {
+      type: 'agent',
+      createdAt: 1000000,
+      frontmatter: { status: 'awaiting_review/stage01_setup', updated_at: 'not-a-date' },
+      body: ''
+    }
+  ], 5000000);
+  assert.equal(pausedStage.seconds, 0);
+  assert.equal(pausedStage.isRunning, false);
+  assert.equal(pausedStage.formatted, '0s');
+
+  const bodyOnly = `- 2026-10-15T10:00:00.000Z: \`awaiting_review/stage01_setup\` - Waiting for review`;
+  const activeNoStart = RuntimeTracker.calculateActiveRuntime(bodyOnly, 'awaiting_review/stage01_setup', Date.parse('2026-10-15T12:00:00.000Z'));
+  assert.equal(activeNoStart.seconds, 0);
+  assert.equal(activeNoStart.isRunning, false);
+});
