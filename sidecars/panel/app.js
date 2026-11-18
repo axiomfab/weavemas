@@ -46,14 +46,11 @@
     }
   }
 
-  function renderUI() {
-    if (!pipelineData) return;
-
-    // Header component
+  function renderHeader() {
     const headerContainer = document.getElementById('header-root');
     if (headerContainer && window.HeaderBar) {
-      const runs = pipelineData.availableContexts || pipelineData.availableShows || [];
-      const activeDir = selectedContextDir || pipelineData.contextDir || pipelineData.showDir;
+      const runs = pipelineData ? (pipelineData.availableContexts || pipelineData.availableShows || []) : [];
+      const activeDir = selectedContextDir || (pipelineData ? (pipelineData.contextDir || pipelineData.showDir) : null);
       window.HeaderBar.render(headerContainer, {
         shows: runs,
         contexts: runs,
@@ -69,6 +66,13 @@
         onSync: refreshData
       });
     }
+  }
+
+  function renderUI() {
+    if (!pipelineData) return;
+
+    // Header component
+    renderHeader();
 
     // Stepper row
     const stepperRoot = document.getElementById('stepper-root');
@@ -132,9 +136,9 @@
         if (isSelected) dotClass += ' stage-dot-selected';
 
         stepperHtml += `
-          <div class="flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
+          <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
             <div class="stage-dot ${dotClass}" title="${st.tag || st.name}"></div>
-            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'text-white' : 'text-slate-300'} text-center">Stage ${st.num}</span>
+            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center">Stage ${st.num}</span>
             <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${st.name}">${st.name}</span>
           </div>
         `;
@@ -169,6 +173,7 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    renderHeader();
     refreshData();
     pollInterval = setInterval(() => {
       if (typeof window.getSelection === 'function' && window.getSelection().toString().trim().length > 0) {

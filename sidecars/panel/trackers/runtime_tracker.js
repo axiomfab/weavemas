@@ -82,9 +82,9 @@
   function getRuntimeBadgeHtml(body, currentStatus, nowMs = Date.now()) {
     const res = calculateActiveRuntime(body, currentStatus, nowMs);
     if (res.isRunning) {
-      return `<span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><span class="text-[10px]">⏱️</span> <span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
+      return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><span class="text-[10px]">⏱️</span> <span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
     }
-    return `<span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time"><span class="text-[10px]">⏱️</span> ${res.formatted}</span>`;
+    return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time"><span class="text-[10px]">⏱️</span> ${res.formatted}</span>`;
   }
 
   function tickTimers(root = (typeof document !== 'undefined' ? document : null), now = Date.now()) {
@@ -289,7 +289,7 @@
     for (let i = 0; i < parsedEntries.length; i++) {
       const entry = parsedEntries[i];
       if (entry.isPlain) {
-        formatted.push(`<div class="text-slate-400 font-mono">${entry.rawLine}</div>`);
+        formatted.push(`<div class="weave-log-plain text-slate-400 font-mono">${entry.rawLine}</div>`);
         continue;
       }
       const timeStr = formatHumanLogTime(entry.iso);
@@ -313,7 +313,7 @@
         ? ` <span class="font-mono text-[11px] ${colorCls}">[${entry.slug}]</span>`
         : '';
       const noteHtml = entry.progress ? ` <span class="text-slate-300 font-sans">— ${entry.progress}</span>` : '';
-      formatted.push(`<div class="leading-relaxed py-0.5"><span class="text-slate-600 font-mono mr-1.5">•</span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
+      formatted.push(`<div class="weave-log-entry leading-relaxed py-0.5"><span class="text-slate-600 font-mono mr-1.5">•</span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
     }
     return formatted.join('\n');
   }

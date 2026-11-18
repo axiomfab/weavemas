@@ -14,12 +14,12 @@
   function getStatusBadge(status, cardId = '') {
     const raw = (status || 'pending').toLowerCase(), [base, sub] = raw.split('/');
     const label = sub ? `${base.replace(/_/g, ' ')}: ${sub.replace(/_/g, ' ')}` : base.replace(/_/g, ' ');
-    let cls = 'bg-slate-800 text-slate-400 border border-slate-700/50';
-    if (base === 'in_progress' || base === 'revising' || base === 'running') cls = 'vivid-pulse text-[10px] font-bold border font-mono';
-    else if (base === 'awaiting_review' || base === 'awaiting_user_review') cls = 'bg-lime-500/20 text-lime-300 border border-lime-500/40 font-semibold font-mono';
-    else if (base === 'waiting') cls = 'bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono';
-    else if (base === 'completed' || base === 'approved') cls = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono';
-    else if (base === 'blocked' || base === 'error' || base === 'failed') cls = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono';
+    let cls = 'weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50';
+    if (base === 'in_progress' || base === 'revising' || base === 'running') cls = 'weave-badge vivid-pulse text-[10px] font-bold border font-mono';
+    else if (base === 'awaiting_review' || base === 'awaiting_user_review') cls = 'weave-badge weave-badge-review bg-lime-500/20 text-lime-300 border border-lime-500/40 font-semibold font-mono';
+    else if (base === 'waiting') cls = 'weave-badge weave-badge-waiting bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono';
+    else if (base === 'completed' || base === 'approved') cls = 'weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono';
+    else if (base === 'blocked' || base === 'error' || base === 'failed') cls = 'weave-badge weave-badge-blocked bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono';
     return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cardId ? 'cursor-pointer hover:opacity-85' : ''} transition-all" ${cardId ? `data-status-toggle="${escapeHtml(cardId)}"` : ''}>${escapeHtml(label)}</span>`;
   }
   function getOutputsList(fm, outputItems = null) {
@@ -34,7 +34,7 @@
     const outs = getOutputsList(fm, outputItems);
     if (outs.length > 0) {
       const chipLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
-      const activeCls = isDeliverableActive ? 'bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400' : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
+      const activeCls = isDeliverableActive ? 'weave-deliverable-chip weave-deliverable-chip-active bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400' : 'weave-deliverable-chip bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
       return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(chipLabel)}</button>`;
     }
     if (fm?.progress) return `${escapeHtml(fm.progress)} Verified`;
@@ -80,18 +80,18 @@
             const itemStr = String(rawItem).trim();
             const info = inputStatusMap.get(itemStr) || { isWildcard: itemStr.includes('*'), exists: false, count: 0 };
             const isW = info.isWildcard;
-            const cls = isW ? (info.count > 0 ? 'text-amber-300 bg-amber-500/10 border-amber-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30') : (info.exists ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30');
+            const cls = isW ? (info.count > 0 ? 'text-amber-300 bg-amber-500/10 border-amber-500/30 weave-input-warn' : 'text-rose-400 bg-rose-500/10 border-rose-500/30 weave-input-missing') : (info.exists ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30 weave-input-ok' : 'text-rose-400 bg-rose-500/10 border-rose-500/30 weave-input-missing');
             const badge = isW ? (info.count > 0 ? ` (${info.count})` : ' (0)') : '';
             lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] ${cls}">"${escapeHtml(itemStr)}"${badge}</span>`);
           }
         }
       } else if (k === 'outputs' || Array.isArray(v)) {
         const outArr = Array.isArray(v) ? v : (v && v !== 'null' ? [v] : []);
-        if (outArr.length === 0) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
-        else { lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>:`); for (const it of outArr) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
-      } else if (v === null) lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-500 font-mono">null</span>`);
-      else if (typeof v === 'string') lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
-      else lines.push(`<span class="text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-cyan-300 font-mono">${escapeHtml(String(v))}</span>`);
+        if (outArr.length === 0) lines.push(`<span class="weave-fm-key text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-400 font-mono">[]</span>`);
+        else { lines.push(`<span class="weave-fm-key text-indigo-300 font-mono">${escapeHtml(k)}</span>:`); for (const it of outArr) lines.push(`  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"${escapeHtml(String(it))}"</span>`); }
+      } else if (v === null) lines.push(`<span class="weave-fm-key text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="text-slate-500 font-mono">null</span>`);
+      else if (typeof v === 'string') lines.push(`<span class="weave-fm-key text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="weave-fm-str text-amber-200 font-mono">"${escapeHtml(v)}"</span>`);
+      else lines.push(`<span class="weave-fm-key text-indigo-300 font-mono">${escapeHtml(k)}</span>: <span class="weave-fm-num text-cyan-300 font-mono">${escapeHtml(String(v))}</span>`);
     }
     lines.push('<span class="text-slate-500 font-mono">---</span>');
     return lines.join('\n');
@@ -122,9 +122,9 @@
   function getGroupSummaryChip(node) {
     const s = getGroupSummary(node);
     const label = `${s.completed}/${s.total} completed`;
-    if (s.total > 0 && s.completed === s.total) return `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[10px] font-semibold font-mono">${escapeHtml(label)}</span>`;
-    if (s.inProgress > 0) return `<span class="vivid-pulse px-2 py-0.5 rounded text-[10px] font-bold border font-mono">${escapeHtml(label)}</span>`;
-    return `<span class="bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] font-mono">${escapeHtml(label)}</span>`;
+    if (s.total > 0 && s.completed === s.total) return `<span class="weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[10px] font-semibold font-mono">${escapeHtml(label)}</span>`;
+    if (s.inProgress > 0) return `<span class="weave-badge vivid-pulse px-2 py-0.5 rounded text-[10px] font-bold border font-mono">${escapeHtml(label)}</span>`;
+    return `<span class="weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] font-mono">${escapeHtml(label)}</span>`;
   }
 
   function detectMediaType(filename, explicitMediaType = null) {
@@ -185,15 +185,15 @@
       const rel = rtTracker?.formatRelativeTime ? rtTracker.formatRelativeTime(fm.updated_at) : new Date(fm.updated_at).toLocaleTimeString();
       updatedLabelHtml = `<span title="${escapeHtml(new Date(fm.updated_at).toLocaleTimeString())}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
     }
-    const chatBtn = convId ? `<button type="button" class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
+    const chatBtn = convId ? `<button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
     const outs = getOutputsList(fm, agentData?.outputItems);
     const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
     const delivLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
-      const copyBtn = `<button type="button" class="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">📋 Copy</button>`;
+      const copyBtn = `<button type="button" class="weave-copy-btn text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">📋 Copy</button>`;
       headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
       const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
@@ -201,12 +201,12 @@
       const formattedLog = formatHumanLogBody(body);
       if (hasFm || formattedLog) {
         const logSection = formattedLog || `<span class="text-slate-500 italic">No logs recorded yet. Agent is pending or starting up...</span>`;
-        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${hasFm ? `${fmContent}\n\n${logSection}` : formattedLog}</div>`;
+        mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${hasFm ? `${fmContent}\n\n${logSection}` : formattedLog}</div>`;
       } else {
         mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono select-text">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
       }
     }
-    return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
+    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
   function getNodeCreationTime(node) {
@@ -224,7 +224,7 @@
         const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
         return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
       });
-      return `<div class="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
+      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-group-title font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const chip = getAgentValueChip(node.frontmatter, cardId, cardViewModes.get(cardId) === 'deliverable', node.outputItems);
@@ -239,7 +239,7 @@
     stageList.forEach(st => { (st.nodes || Object.values(st.agents || {})).forEach(n => { totalAgents += countLeaves(n); }); });
     let contentHtml = '';
     if (stageList.length === 0 || totalAgents === 0) {
-      contentHtml = `<div class="p-6 rounded-xl border border-slate-800 bg-slate-900/30 text-center text-xs text-slate-500 font-mono">No subagents discovered across pipeline stages yet.</div>`;
+      contentHtml = `<div class="weave-empty-state p-6 rounded-xl border border-slate-800 bg-slate-900/30 text-center text-xs text-slate-500 font-mono">No subagents discovered across pipeline stages yet.</div>`;
     } else {
       contentHtml = stageList.map(st => {
         const nodeList = (st.nodes || Object.values(st.agents || {})).filter(n => n.type === 'group' || !n.frontmatter?.type || n.frontmatter.type === 'agent');
@@ -257,9 +257,9 @@
         const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
         const isExpanded = !collapsedStages.has(stageId);
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
-        return `<div class="space-y-2.5"><div class="flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
+        return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
     const prevScrolls = new Map(), activeMediaEls = new Map();
