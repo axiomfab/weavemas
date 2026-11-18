@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WeaveMAS UI</title>
+  <script>
+    (function() {
+      let saved = null;
+      try {
+        saved = window.localStorage ? window.localStorage.getItem('weavemas-ui-theme') : null;
+      } catch (err) {
+        saved = null;
+      }
+      const theme = saved === 'light' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
   <script src="/preload.js"></script>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <link rel="stylesheet" href="styles.css">

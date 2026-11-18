@@ -518,4 +518,61 @@ describe('Pipeline Panel Stage Evaluation', () => {
     assert.match(container.innerHTML, /text-rose-400/);
     assert.doesNotMatch(container.innerHTML, /text-lime-400/);
   });
+
+  it('Light/Dark Theme Tokens & Bootstrap: styles.css, index.html, and trackers define theme variables, early init, and semantic classes', () => {
+    const css = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css'), 'utf8');
+    const html = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'index.html'), 'utf8');
+    const agentPanelJs = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'agent_panel.js'), 'utf8');
+    const runtimeJs = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'runtime_tracker.js'), 'utf8');
+    const stagePanelJs = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'stage_panel.js'), 'utf8');
+
+    // Happy Path 1: styles.css defines [data-theme="dark"] and [data-theme="light"] blocks and .agy-theme-btn
+    assert.match(css, /\[data-theme="dark"\]\s*\{[\s\S]*?--agy-bg:\s*#131316;/);
+    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--agy-bg:\s*#f8fafc;/);
+    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--weave-card-bg:\s*#ffffff;/);
+    assert.match(css, /\.agy-theme-btn/);
+    assert.match(css, /\[data-theme="light"\]\s+\.vivid-pulse/);
+
+    // Happy Path 2: trackers emit semantic weave-* hooks
+    assert.match(agentPanelJs, /weave-card/);
+    assert.match(agentPanelJs, /weave-code-box/);
+    assert.match(agentPanelJs, /weave-badge-completed/);
+    assert.match(runtimeJs, /weave-runtime-badge/);
+    assert.match(runtimeJs, /weave-log-entry/);
+    assert.match(stagePanelJs, /weave-stage-panel/);
+
+    // Happy Path 3: index.html inline bootstrap sets data-theme before /preload.js
+    const inlineMatch = html.match(/<script>([\s\S]*?)<\/script>\s*<script src="\/preload\.js"><\/script>/);
+    assert.ok(inlineMatch, 'Early theme bootstrap script must appear before /preload.js');
+
+    const runBootstrap = (localStorageImpl) => {
+      const attrs = {};
+      const ctx = {
+        window: { localStorage: localStorageImpl },
+        document: {
+          documentElement: {
+            style: {},
+            setAttribute(k, v) { attrs[k] = v; }
+          }
+        }
+      };
+      vm.createContext(ctx);
+      vm.runInContext(inlineMatch[1], ctx);
+      return { attrs, style: ctx.document.documentElement.style };
+    };
+
+    const lightBoot = runBootstrap({ getItem: () => 'light' });
+    assert.equal(lightBoot.attrs['data-theme'], 'light');
+    assert.equal(lightBoot.style.colorScheme, 'light');
+
+    // Failure Path 1: Bootstrap falls back to 'dark' when stored value is unrecognized or null
+    const invalidBoot = runBootstrap({ getItem: () => 'unexpected-theme' });
+    assert.equal(invalidBoot.attrs['data-theme'], 'dark');
+    assert.equal(invalidBoot.style.colorScheme, 'dark');
+
+    // Failure Path 2: Bootstrap falls back safely to 'dark' when localStorage access throws SecurityError
+    const throwingBoot = runBootstrap({ getItem() { throw new Error('SecurityError'); } });
+    assert.equal(throwingBoot.attrs['data-theme'], 'dark');
+    assert.equal(throwingBoot.style.colorScheme, 'dark');
+  });
 });

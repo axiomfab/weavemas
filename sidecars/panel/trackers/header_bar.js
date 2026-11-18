@@ -1,5 +1,9 @@
 // Header Bar Component - WeaveMAS Panel
 (function() {
+  const THEME_STORAGE_KEY = 'weavemas-ui-theme';
+  const VALID_THEMES = ['dark', 'light'];
+  const containerStates = new WeakMap();
+
   /**
    * Escapes special HTML characters in a string or primitive value.
    * @param {string|number|boolean|null|undefined} str - Value to escape for safe HTML interpolation.
@@ -13,6 +17,221 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * Validates that a theme identifier is strictly 'light' or 'dark'.
+   * @param {string} theme - Candidate theme value.
+   * @returns {'light'|'dark'} Validated theme string.
+   */
+  function assertValidTheme(theme) {
+    if (theme !== 'light' && theme !== 'dark') {
+      throw new TypeError("CRITICAL: theme must be 'light' or 'dark'");
+    }
+    return theme;
+  }
+
+  /**
+   * Resolves the effective storage interface, validating explicit storage mocks strictly.
+   * @param {{getItem?: (key: string) => string|null, setItem?: (key: string, val: string) => void}|null|undefined} storage - Optional storage implementation.
+   * @param {'getItem'|'setItem'} requiredMethod - Required Web Storage method name.
+   * @returns {{getItem?: (key: string) => string|null, setItem?: (key: string, val: string) => void}|null} Effective storage object or null when unavailable.
+   */
+  function resolveStorage(storage, requiredMethod) {
+    if (storage !== undefined) {
+      if (storage === null) return null;
+      if (typeof storage !== 'object' || typeof storage[requiredMethod] !== 'function') {
+        throw new TypeError(`CRITICAL: storage must provide a ${requiredMethod} function`);
+      }
+      return storage;
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const ls = window.localStorage;
+        if (ls && typeof ls[requiredMethod] === 'function') return ls;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Reads the persisted user theme preference ('light' or 'dark') from storage.
+   * @param {{getItem: (key: string) => string|null}|null|undefined} [storage] - Optional storage override.
+   * @returns {'light'|'dark'|null} Stored theme value, or null if unset or unrecognized.
+   */
+  function getStoredTheme(storage) {
+    const store = resolveStorage(storage, 'getItem');
+    if (!store) return null;
+    let raw = null;
+    try {
+      raw = store.getItem(THEME_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+    return (raw === 'light' || raw === 'dark') ? raw : null;
+  }
+
+  /**
+   * Persists the user theme preference ('light' or 'dark') to storage.
+   * @param {'light'|'dark'} theme - Theme value to persist.
+   * @param {{setItem: (key: string, val: string) => void}|null|undefined} [storage] - Optional storage override.
+   * @returns {boolean} True when persisted to storage, false when storage is unavailable.
+   */
+  function setStoredTheme(theme, storage) {
+    assertValidTheme(theme);
+    const store = resolveStorage(storage, 'setItem');
+    if (!store) return false;
+    try {
+      store.setItem(THEME_STORAGE_KEY, theme);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Applies the given theme ('light' or 'dark') to the target root element (or document.documentElement).
+   * @param {'light'|'dark'} theme - Theme identifier to apply.
+   * @param {object|null|undefined} [rootEl] - Optional root element override (defaults to document.documentElement).
+   * @returns {'light'|'dark'} Applied theme identifier.
+   */
+  function applyTheme(theme, rootEl) {
+    assertValidTheme(theme);
+    if (rootEl !== undefined && rootEl !== null && typeof rootEl !== 'object') {
+      throw new TypeError('CRITICAL: rootEl must be an object or null');
+    }
+    const target = rootEl !== undefined
+      ? rootEl
+      : (typeof document !== 'undefined' && document.documentElement ? document.documentElement : null);
+    if (target) {
+      if (typeof target.setAttribute === 'function') {
+        target.setAttribute('data-theme', theme);
+      }
+      if (target.dataset && typeof target.dataset === 'object') {
+        target.dataset.theme = theme;
+      }
+      if (target.style && typeof target.style === 'object') {
+        target.style.colorScheme = theme;
+      }
+    }
+    return theme;
+  }
+
+  /**
+   * Reads a valid theme attribute from a root DOM element if present.
+   * @param {object|null} target - Candidate DOM element.
+   * @returns {'light'|'dark'|null} Theme on element or null.
+   */
+  function readElementTheme(target) {
+    if (!target || typeof target !== 'object') return null;
+    const attrVal = typeof target.getAttribute === 'function'
+      ? target.getAttribute('data-theme')
+      : (target.dataset ? target.dataset.theme : null);
+    return (attrVal === 'light' || attrVal === 'dark') ? attrVal : null;
+  }
+
+  /**
+   * Resolves the initial active theme from explicit option, persisted storage, DOM attribute, or 'dark' default.
+   * @param {{
+   *   theme?: 'light'|'dark',
+   *   storage?: {getItem: (key: string) => string|null}|null,
+   *   rootEl?: object|null
+   * }} [options={}] - Resolution options.
+   * @returns {'light'|'dark'} Resolved theme value.
+   */
+  function resolveInitialTheme(options = {}) {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new TypeError('CRITICAL: options must be an object');
+    }
+    if (options.theme !== undefined) {
+      assertValidTheme(options.theme);
+    }
+    if (options.rootEl !== undefined && options.rootEl !== null && typeof options.rootEl !== 'object') {
+      throw new TypeError('CRITICAL: rootEl must be an object or null');
+    }
+    if (options.theme !== undefined) {
+      return options.theme;
+    }
+    const stored = getStoredTheme(options.storage);
+    if (stored) {
+      return stored;
+    }
+    const target = options.rootEl !== undefined
+      ? options.rootEl
+      : (typeof document !== 'undefined' && document.documentElement ? document.documentElement : null);
+    const domTheme = readElementTheme(target);
+    return domTheme || 'dark';
+  }
+
+  /**
+   * Toggles between 'dark' and 'light' themes, applying the new theme to rootEl and persisting it to storage.
+   * @param {{
+   *   currentTheme?: 'light'|'dark',
+   *   storage?: {getItem: (key: string) => string|null, setItem: (key: string, val: string) => void}|null,
+   *   rootEl?: object|null
+   * }} [options={}] - Toggle configuration.
+   * @returns {'light'|'dark'} Newly activated theme.
+   */
+  function toggleTheme(options = {}) {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new TypeError('CRITICAL: options must be an object');
+    }
+    if (options.currentTheme !== undefined) {
+      assertValidTheme(options.currentTheme);
+    }
+    if (options.rootEl !== undefined && options.rootEl !== null && typeof options.rootEl !== 'object') {
+      throw new TypeError('CRITICAL: rootEl must be an object or null');
+    }
+    const target = options.rootEl !== undefined
+      ? options.rootEl
+      : (typeof document !== 'undefined' && document.documentElement ? document.documentElement : null);
+    const current = options.currentTheme
+      || readElementTheme(target)
+      || getStoredTheme(options.storage)
+      || 'dark';
+    const nextTheme = current === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme, target);
+    setStoredTheme(nextTheme, options.storage);
+    return nextTheme;
+  }
+
+  /**
+   * Builds the SVG icon HTML for the theme toggle button corresponding to the active theme.
+   * @param {'light'|'dark'} currentTheme - Currently active theme ('dark' renders sun icon to switch to light; 'light' renders moon icon to switch to dark).
+   * @returns {string} SVG markup string for the toggle button.
+   */
+  function buildThemeToggleInnerHtml(currentTheme) {
+    assertValidTheme(currentTheme);
+    if (currentTheme === 'dark') {
+      return `<svg class="agy-theme-icon" data-theme-icon="sun" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M12.42 3.58l-1.06 1.06M4.64 11.36l-1.06 1.06" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+    }
+    return `<svg class="agy-theme-icon" data-theme-icon="moon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.25 9.85A5.5 5.5 0 0 1 6.15 2.75a5.5 5.5 0 1 0 7.1 7.1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  /**
+   * Synchronizes the theme toggle button's attributes and icon with the active theme.
+   * @param {object|null} btn - Theme toggle button element.
+   * @param {'light'|'dark'} activeTheme - Active theme value.
+   * @returns {void}
+   */
+  function syncThemeButtonState(btn, activeTheme) {
+    if (!btn || typeof btn !== 'object') return;
+    const nextLabel = activeTheme === 'dark' ? 'Switch to light layout' : 'Switch to dark layout';
+    const isLight = activeTheme === 'light';
+    btn.innerHTML = buildThemeToggleInnerHtml(activeTheme);
+    btn.title = nextLabel;
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('data-theme-state', activeTheme);
+      btn.setAttribute('aria-label', nextLabel);
+      btn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+    } else {
+      btn.dataset = btn.dataset || {};
+      btn.dataset.themeState = activeTheme;
+      btn.ariaLabel = nextLabel;
+      btn.ariaPressed = isLight ? 'true' : 'false';
+    }
   }
 
   /**
@@ -51,7 +270,11 @@
    *   activePath?: string|null,
    *   onSelectShow?: (path: string) => void,
    *   onSelectContext?: (path: string) => void,
-   *   onSync?: () => void
+   *   onSync?: () => void,
+   *   theme?: 'light'|'dark',
+   *   onToggleTheme?: (nextTheme: 'light'|'dark') => void,
+   *   storage?: {getItem: (key: string) => string|null, setItem: (key: string, val: string) => void}|null,
+   *   rootEl?: object|null
    * }} options - Header rendering options and callbacks.
    * @returns {void}
    */
@@ -80,9 +303,61 @@
     if (options.onSync !== undefined && typeof options.onSync !== 'function') {
       throw new TypeError('CRITICAL: onSync must be a function');
     }
+    if (options.theme !== undefined) {
+      assertValidTheme(options.theme);
+    }
+    if (options.onToggleTheme !== undefined && typeof options.onToggleTheme !== 'function') {
+      throw new TypeError('CRITICAL: onToggleTheme must be a function');
+    }
+    if (options.storage !== undefined && options.storage !== null) {
+      if (typeof options.storage !== 'object' || typeof options.storage.getItem !== 'function' || typeof options.storage.setItem !== 'function') {
+        throw new TypeError('CRITICAL: storage must provide getItem and setItem functions');
+      }
+    }
+    if (options.rootEl !== undefined && options.rootEl !== null && typeof options.rootEl !== 'object') {
+      throw new TypeError('CRITICAL: rootEl must be an object or null');
+    }
 
-    const { shows = [], contexts = shows, activePath = null, onSelectShow, onSelectContext = onSelectShow, onSync } = options;
+    const {
+      shows = [],
+      contexts = shows,
+      activePath = null,
+      onSelectShow,
+      onSelectContext = onSelectShow,
+      onSync,
+      theme,
+      onToggleTheme,
+      storage,
+      rootEl
+    } = options;
     const availableItems = (Array.isArray(contexts) && contexts.length > 0) ? contexts : (Array.isArray(shows) ? shows : []);
+
+    let state = containerStates.get(container);
+    if (!state) {
+      state = { currentTheme: null };
+      containerStates.set(container, state);
+    }
+    state.onSelect = (typeof onSelectContext === 'function') ? onSelectContext : onSelectShow;
+    state.onSync = onSync;
+    state.onToggleTheme = onToggleTheme;
+    state.storage = storage;
+    state.rootEl = rootEl;
+
+    const resolvedTheme = theme !== undefined
+      ? theme
+      : resolveInitialTheme({ storage, rootEl });
+    const activeTheme = (theme === undefined && state.currentTheme && getStoredTheme(storage) === null && readElementTheme(rootEl !== undefined ? rootEl : (typeof document !== 'undefined' ? document.documentElement : null)) === null)
+      ? state.currentTheme
+      : resolvedTheme;
+
+    state.currentTheme = activeTheme;
+    applyTheme(activeTheme, rootEl);
+    if (theme !== undefined) {
+      setStoredTheme(theme, storage);
+    }
+
+    const toggleLabel = activeTheme === 'dark' ? 'Switch to light layout' : 'Switch to dark layout';
+    const togglePressed = activeTheme === 'light' ? 'true' : 'false';
 
     const headerEl = container.querySelector ? container.querySelector('header') : null;
     if (!headerEl) {
@@ -104,6 +379,9 @@
               <span class="pulsing-dot" aria-hidden="true"></span>
               <span class="agy-live-label">Live</span>
             </span>
+            <button id="theme-toggle-btn" type="button" class="agy-theme-btn" data-theme-state="${activeTheme}" aria-pressed="${togglePressed}" aria-label="${toggleLabel}" title="${toggleLabel}">
+              ${buildThemeToggleInnerHtml(activeTheme)}
+            </button>
             <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
               <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -115,14 +393,39 @@
       `;
 
       const sel = container.querySelector ? container.querySelector('#show-select') : null;
-      const selectCallback = (typeof onSelectContext === 'function') ? onSelectContext : onSelectShow;
-      if (sel && typeof selectCallback === 'function' && sel.addEventListener) {
-        sel.addEventListener('change', (e) => selectCallback(e.target.value));
+      if (sel && sel.addEventListener) {
+        sel.addEventListener('change', (e) => {
+          const st = containerStates.get(container);
+          if (st && typeof st.onSelect === 'function') st.onSelect(e.target.value);
+        });
+      }
+      const themeBtn = container.querySelector ? container.querySelector('#theme-toggle-btn') : null;
+      if (themeBtn && themeBtn.addEventListener) {
+        themeBtn.addEventListener('click', () => {
+          const st = containerStates.get(container);
+          if (!st) return;
+          const next = toggleTheme({
+            currentTheme: st.currentTheme || 'dark',
+            storage: st.storage,
+            rootEl: st.rootEl
+          });
+          st.currentTheme = next;
+          syncThemeButtonState(themeBtn, next);
+          if (typeof st.onToggleTheme === 'function') {
+            st.onToggleTheme(next);
+          }
+        });
       }
       const syncBtn = container.querySelector ? container.querySelector('#sync-btn') : null;
-      if (syncBtn && typeof onSync === 'function' && syncBtn.addEventListener) {
-        syncBtn.addEventListener('click', () => onSync());
+      if (syncBtn && syncBtn.addEventListener) {
+        syncBtn.addEventListener('click', () => {
+          const st = containerStates.get(container);
+          if (st && typeof st.onSync === 'function') st.onSync();
+        });
       }
+    } else {
+      const themeBtn = container.querySelector ? container.querySelector('#theme-toggle-btn') : null;
+      syncThemeButtonState(themeBtn, activeTheme);
     }
 
     const sel = container.querySelector ? container.querySelector('#show-select') : null;
@@ -167,7 +470,23 @@
     }
   }
 
-  const HeaderBar = { render, escapeHtml, buildWorktreeBadgeHtml };
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
+    applyTheme(resolveInitialTheme());
+  }
+
+  const HeaderBar = {
+    THEME_STORAGE_KEY,
+    VALID_THEMES,
+    render,
+    escapeHtml,
+    buildWorktreeBadgeHtml,
+    getStoredTheme,
+    setStoredTheme,
+    applyTheme,
+    resolveInitialTheme,
+    toggleTheme,
+    buildThemeToggleInnerHtml
+  };
 
   if (typeof window !== 'undefined') {
     window.HeaderBar = HeaderBar;
