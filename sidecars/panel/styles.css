@@ -134,9 +134,10 @@
   --weave-scrollbar-thumb: rgba(100, 116, 139, 0.42);
 }
 
+html,
 body {
-  background-color: var(--agy-bg);
-  color: var(--agy-fg);
+  background-color: var(--agy-bg) !important;
+  color: var(--agy-fg) !important;
   font-family: var(--agy-font);
   margin: 0;
   padding: 0;
@@ -469,42 +470,42 @@ body {
 /* Semantic WeaveMAS Tracker Surfaces & Light Theme Adaptations */
 .weave-card,
 .weave-stage-panel {
-  background-color: var(--weave-card-bg);
-  border-color: var(--weave-card-border);
+  background-color: var(--weave-card-bg) !important;
+  border-color: var(--weave-card-border) !important;
 }
 
 .weave-card-header {
-  background-color: var(--weave-card-header-bg);
+  background-color: var(--weave-card-header-bg) !important;
 }
 
 .weave-card-header:hover {
-  background-color: var(--weave-card-header-hover);
+  background-color: var(--weave-card-header-hover) !important;
 }
 
 .weave-card-expanded {
-  background-color: var(--weave-card-expanded-bg);
-  border-color: var(--weave-card-border);
+  background-color: var(--weave-card-expanded-bg) !important;
+  border-color: var(--weave-card-border) !important;
 }
 
 .weave-card-toolbar,
 .weave-stage-panel-wrap {
-  border-color: var(--weave-card-border);
+  border-color: var(--weave-card-border) !important;
 }
 
 .weave-code-box {
-  background-color: var(--weave-code-bg);
-  border-color: var(--weave-code-border);
-  color: var(--weave-fg-secondary);
+  background-color: var(--weave-code-bg) !important;
+  border-color: var(--weave-code-border) !important;
+  color: var(--weave-fg-secondary) !important;
 }
 
 .weave-group,
 .weave-empty-state {
-  background-color: var(--weave-group-bg);
-  border-color: var(--weave-group-border);
+  background-color: var(--weave-group-bg) !important;
+  border-color: var(--weave-group-border) !important;
 }
 
 .weave-stage-divider {
-  background-color: var(--weave-divider);
+  background-color: var(--weave-divider) !important;
 }
 
 [data-theme="light"] .weave-card {

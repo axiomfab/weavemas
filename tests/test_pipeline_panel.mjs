@@ -532,6 +532,10 @@ describe('Pipeline Panel Stage Evaluation', () => {
     assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--weave-card-bg:\s*#ffffff;/);
     assert.match(css, /\.agy-theme-btn/);
     assert.match(css, /\[data-theme="light"\]\s+\.vivid-pulse/);
+    assert.match(css, /html,\s*\r?\nbody\s*\{[\s\S]*?background-color:\s*var\(--agy-bg\)\s*!important;/);
+    assert.match(css, /\.weave-card,\s*\r?\n\.weave-stage-panel\s*\{[\s\S]*?background-color:\s*var\(--weave-card-bg\)\s*!important;/);
+    assert.match(css, /\.weave-card-header\s*\{[\s\S]*?background-color:\s*var\(--weave-card-header-bg\)\s*!important;/);
+    assert.match(css, /\.weave-group,\s*\r?\n\.weave-empty-state\s*\{[\s\S]*?background-color:\s*var\(--weave-group-bg\)\s*!important;/);
 
     // Happy Path 2: trackers emit semantic weave-* hooks
     assert.match(agentPanelJs, /weave-card/);
