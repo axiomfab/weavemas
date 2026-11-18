@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSyn
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState, resolveEffectiveWorkspace, detectWorktreeInfo } from '../sidecars/panel/lib/pipeline.mjs';
+import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, extractShowTitle, parseOrchestratorState, resolveEffectiveWorkspace, detectWorktreeInfo, splitOrchestratorStatus } from '../sidecars/panel/lib/pipeline.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -578,5 +578,81 @@ describe('Pipeline Panel Stage Evaluation', () => {
     const throwingBoot = runBootstrap({ getItem() { throw new Error('SecurityError'); } });
     assert.equal(throwingBoot.attrs['data-theme'], 'dark');
     assert.equal(throwingBoot.style.colorScheme, 'dark');
+  });
+
+  it('R3 Stage-First Grammar: splitOrchestratorStatus and evaluatePipelineStages read [<stage>/]<state>[/<detail>]', () => {
+    // Happy Path: stage-first with and without detail
+    assert.deepEqual(splitOrchestratorStatus('stage01_setup/in_progress'), { stageSlug: 'stage01_setup', baseStatus: 'in_progress', subStatus: '' });
+    assert.deepEqual(
+      splitOrchestratorStatus('stage02_concept/awaiting_review/iteration_2'),
+      { stageSlug: 'stage02_concept', baseStatus: 'awaiting_review', subStatus: 'iteration_2' }
+    );
+    // Bare and agent-style task slugs carry no stage
+    assert.deepEqual(splitOrchestratorStatus('completed'), { stageSlug: null, baseStatus: 'completed', subStatus: '' });
+    assert.deepEqual(splitOrchestratorStatus('in_progress/03_research'), { stageSlug: null, baseStatus: 'in_progress', subStatus: '03_research' });
+    // Failure Path: invalid input
+    assert.throws(() => splitOrchestratorStatus(''), /CRITICAL: rawStatus is required/);
+    assert.throws(() => splitOrchestratorStatus(null), /CRITICAL: rawStatus is required/);
+
+    const tmp = mkdtempSync(join(tmpdir(), 'tm-r3-grammar-'));
+    const showDir = join(tmp, 'runs', 'show_r3').replace(/\\/g, '/');
+    mkdirSync(join(showDir, 'stage01_setup'), { recursive: true });
+    mkdirSync(join(showDir, 'stage02_concept', 'agents', 'showrunner'), { recursive: true });
+    mkdirSync(join(showDir, 'stage03_writing'), { recursive: true });
+    try {
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "stage02_concept/awaiting_review/iteration_2"\n---\n');
+      const parsed = parseOrchestratorState(showDir);
+      assert.equal(parsed.stageSlug, 'stage02_concept');
+      assert.equal(parsed.stageNum, 2);
+      assert.equal(parsed.isAwaitingReview, true);
+      let res = evaluatePipelineStages(showDir);
+      assert.equal(res.activeStageNum, 2);
+      assert.equal(res.stages[1].status, 'completed');
+      assert.equal(res.stages[2].status, 'awaiting_review');
+      assert.equal(res.stages[3].status, 'pending');
+
+      // Final completion on last stage marks every stage completed
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "stage03_writing/completed"\n---\n');
+      res = evaluatePipelineStages(showDir);
+      assert.deepEqual(res.stageList.map(s => s.status), ['completed', 'completed', 'completed']);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('R3 Issue #8 Repro: bare NN_ task slug in root weave.md never maps to a stage number; active stage is inferred from disk activity', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'tm-r3-issue8-'));
+    const showDir = join(tmp, 'runs', 'show_1993').replace(/\\/g, '/');
+    mkdirSync(join(showDir, 'stage01_setup', 'agents', 'director'), { recursive: true });
+    mkdirSync(join(showDir, 'stage02_concept'), { recursive: true });
+    mkdirSync(join(showDir, 'stage03_writing'), { recursive: true });
+    try {
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "in_progress/03_research"\n---\n');
+      const parsed = parseOrchestratorState(showDir);
+      assert.equal(parsed.stageNum, null);
+      assert.equal(parsed.stageSlug, null);
+
+      const res = evaluatePipelineStages(showDir);
+      assert.equal(res.activeStageNum, 1);
+      assert.equal(res.stages[1].status, 'in_progress');
+      assert.equal(res.stages[2].status, 'pending');
+      assert.equal(res.stages[3].status, 'pending');
+
+      // Failure Path: bare task name must not collide with a stage's slug suffix (stage03_writing)
+      writeFileSync(join(showDir, 'weave.md'), '---\ntype: "orchestrator"\nstatus: "in_progress/writing"\n---\n');
+      assert.equal(parseOrchestratorState(showDir).stageNum, null);
+      assert.equal(evaluatePipelineStages(showDir).stages[3].status, 'pending');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  // TODO(R3-legacy): Remove this test together with legacy '<state>/<stage>' read support in pipeline.mjs.
+  it('R3 Legacy Read Compat: pre-R3 <state>/<stage> order is still parsed', () => {
+    assert.deepEqual(
+      splitOrchestratorStatus('awaiting_review/stage01_editorial'),
+      { stageSlug: 'stage01_editorial', baseStatus: 'awaiting_review', subStatus: '' }
+    );
+    assert.equal(splitOrchestratorStatus('in_progress/stage2_concept').stageSlug, 'stage2_concept');
   });
 });

@@ -19,7 +19,7 @@ export const TOOLS = [
         },
         status: {
           type: 'string',
-          description: 'Initial lifecycle status (default: "not_started").'
+          description: 'Initial lifecycle status (default: "not_started"). Orchestrators use [<stage>/]<state>[/<detail>]: staged runs must prefix an existing stage directory (e.g. "stage01_setup/in_progress"); stageless runs omit it (e.g. "in_progress").'
         },
         instructions_file: {
           type: 'string',
@@ -53,7 +53,11 @@ export const TOOLS = [
         },
         status: {
           type: 'string',
-          description: 'Target lifecycle status (e.g. in_progress/step_name, waiting/reason, awaiting_review/stage_slug, completed, blocked/reason).'
+          description: 'Target lifecycle status using the grammar [<stage>/]<state>[/<detail>] where <state> is one of not_started, in_progress, waiting, awaiting_review, blocked, completed. Agents omit <stage> (e.g. in_progress/01_research, completed). Staged orchestrators must prefix an existing stage directory (e.g. stage01_setup/in_progress/iteration_2, stage01_setup/awaiting_review); stageless orchestrators omit it.'
+        },
+        type: {
+          type: 'string',
+          description: 'Node type guard: "agent" or "orchestrator". REQUIRED as "orchestrator" when updating an orchestrator weave.md; subagents omit it. A mismatch with the target weave.md type is rejected.'
         },
         progress: {
           type: 'string',

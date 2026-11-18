@@ -341,7 +341,7 @@ flowchart TD
 
 1. **Startup & Upfront Stage Scaffolding**:
    * The orchestrator reads `orchestrator.md`, outputs the `[WeaveMAS UI](sidecar://weavemas/panel/)` badge, and pre-creates **all** stage folders upfront (`stage01_editorial/` and `stage02_publishing/`) so the UI sidecar immediately renders the full 2-stage stepper.
-   * Calls `weave_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `status: "in_progress/stage01_editorial"`).
+   * Calls `weave_init` at `output/kidswiki_rocket_age4/` (`type: "orchestrator"`, `status: "stage01_editorial/in_progress"`).
 2. **Phase 1: Agent Instantiation via Provisioner (`orchestrator-agent-instantiation`)**:
    * Orchestrator invokes the ephemeral `provisioner` subagent (`TypeName: "provisioner"`, `Model: "flash"`, `Role: "provisioner"`), passing the stage guide path and target execution directory.
    * `provisioner` parses the `## Agents` block, initializes declared agent workspaces (`writer`, `fact_checker`) via `weave_init` (with `instructions_file`), and stages any Tier 2 handoff files.
@@ -357,7 +357,7 @@ flowchart TD
 4. **Deliverable Verification & In-Place Revision Loop (`fact_checker`)**:
    * Orchestrator validates `writer` completion via `weave_read`, stages `draft.md` into `fact_checker`'s workspace, and dispatches `fact_checker`.
    * If `fact_checker` writes `VERDICT: REVISION_REQUIRED` in `audit.md`, the orchestrator sends correction bullets to the existing `writer` session via `send_message(Recipient: <writer_conversationId>)`—preserving context and avoiding subagent churn.
-   * Once approved, the orchestrator copies the approved draft to `01_editorial_approved.md` and transitions master status to `in_progress/stage02_publishing`.
+   * Once approved, the orchestrator copies the approved draft to `01_editorial_approved.md` and transitions master status to `stage02_publishing/in_progress`.
 5. **Stage 2 & Final Compilation (`illustrator`)**:
    * Orchestrator runs Phase 1 (`provisioner`) to initialize `stage02_publishing/agents/illustrator/` and stage `01_editorial_approved.md`.
    * Orchestrator queries `discover_agents` (Phase 2) and dispatches `illustrator`.
@@ -413,6 +413,7 @@ output/kidswiki_rocket_age4/
   ---
   ```
 * Timestamped progress entries are appended automatically to the Markdown body below the frontmatter.
+* **Status grammar `[<stage>/]<state>[/<detail>]`**: `<state>` is one of `not_started`, `in_progress`, `waiting`, `awaiting_review`, `blocked`, `completed`. Agents never use `<stage>` (e.g. `in_progress/02_draft`). Orchestrators of staged pipelines must prefix an existing stage directory (e.g. `stage01_editorial/awaiting_review`, `stage01_editorial/in_progress/iteration_2`); stageless orchestrators omit it. Orchestrator `weave.md` writes are rejected unless `weave_update` is called with `type: "orchestrator"`, so a subagent that accidentally passes the run directory cannot corrupt the master status.
 
 ### Pillar 3: Declarative Skill Injection (Zero Tool Boilerplate)
 * Agent `.md` files and `orchestrator.md` guides **never** contain raw `call_mcp_tool` JSON payloads.
@@ -444,7 +445,7 @@ All `dir` arguments **must be absolute paths**.
 | `weave_init` | Orchestrator & Provisioner | `dir` *(opt: `type`, `status`, `instructions_file`, `inputs`)* | Creates target directory recursively and writes initial `weave.md` (used by Orchestrator for master node, and by Provisioner for subagents). |
 | `discover_agents` | Orchestrator (Phase 2) | `directory` *(opt: `filter_status`, `limit`)* | Discovers provisioned subagents under a stage directory, returning agent ids, directories, and instruction paths. |
 | `weave_verify` | Subagent (Turn 1) | `dir` *(opt: `expected_role`)* | Verifies `weave.md` exists and is ready for execution. Fails fast on missing status. |
-| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `outputs`)* | Updates frontmatter state (`in_progress/*`, `waiting/*`, `awaiting_review/*`, `blocked/*`, `completed`), appends a timestamped entry to the body, and verifies `outputs` exists on disk when `status == "completed"`. |
+| `weave_update` | Orchestrator & Subagent | `dir`, `status` *(opt: `progress`, `outputs`; `type: "orchestrator"` required for orchestrator writes)* | Updates frontmatter state (`[<stage>/]<state>[/<detail>]`), appends a timestamped entry to the body, and verifies `outputs` exists on disk when the state is `completed`. |
 | `weave_read` | Orchestrator | `dir` *(opt: `expected_outputs`, `expected_status`)* | Reads and validates subagent frontmatter upon wakeup without wasting tokens reading the full file via `view_file`. |
 
 ### Two Pipeline Structural Modes

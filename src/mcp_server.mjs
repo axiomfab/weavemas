@@ -87,7 +87,8 @@ export function handleMessage(msg) {
         const progress = args.progress || null;
         const outputs = args.outputs !== undefined ? args.outputs : (args.deliverable !== undefined ? args.deliverable : null);
         if (!status) throw new Error("CRITICAL: 'status' argument is required for weave_update.");
-        const res = weaveUpdate(targetDir, status, progress, outputs);
+        const options = args.type !== undefined ? { type: args.type } : {};
+        const res = weaveUpdate(targetDir, status, progress, outputs, options);
         resultText = res.message;
       } else if (name === 'weave_verify' || name === 'status_verify') {
         const targetDir = args.dir;

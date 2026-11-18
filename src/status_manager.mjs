@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter, serializeStatus, ALLOWED_FRONTMATTER_KEYS } from './frontmatter.mjs';
 import { discoverAgents } from './agent_discovery.mjs';
+import { parseWeaveStatus, STAGE_DIR_REGEX, LIFECYCLE_STATES } from './status_grammar.mjs';
 import {
   parseInputEntry,
   inferLookupRoots,
@@ -23,8 +24,71 @@ export {
   expandPathPattern,
   substitutePathVariables,
   resolveInputEntry,
-  mergeOutputDeclarations
+  mergeOutputDeclarations,
+  parseWeaveStatus,
+  STAGE_DIR_REGEX,
+  LIFECYCLE_STATES
 };
+
+const VALID_NODE_TYPES = ['agent', 'orchestrator'];
+
+/**
+ * Lists stage directory names (`stageNN_<slug>`) directly inside a run directory.
+ * @param {string} runDir
+ * @returns {string[]}
+ */
+function listStageDirs(runDir) {
+  if (!fs.existsSync(runDir)) return [];
+  return fs.readdirSync(runDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && STAGE_DIR_REGEX.test(d.name))
+    .map(d => d.name)
+    .sort();
+}
+
+/**
+ * Validates a status string against the target weave.md node type and pipeline layout.
+ * - agent: no stage prefix allowed.
+ * - orchestrator (staged run, i.e. `stageNN_*` dirs exist): stage prefix required and must name an existing stage dir.
+ * - orchestrator (stageless run): stage prefix not allowed.
+ * - orchestrator (any): legacy `<state>/<stage>` order is rejected.
+ * @param {string} resolvedDir
+ * @param {'agent'|'orchestrator'} nodeType
+ * @param {string} status
+ * @returns {import('./status_grammar.mjs').ParsedWeaveStatus}
+ */
+export function assertStatusMatchesTarget(resolvedDir, nodeType, status) {
+  if (typeof resolvedDir !== 'string' || !resolvedDir.trim()) {
+    throw new TypeError('CRITICAL: resolvedDir must be a non-empty string.');
+  }
+  if (!VALID_NODE_TYPES.includes(nodeType)) {
+    throw new TypeError(`CRITICAL: nodeType must be one of: ${VALID_NODE_TYPES.join(', ')}.`);
+  }
+  const parsed = parseWeaveStatus(status);
+
+  if (nodeType === 'agent') {
+    if (parsed.stage) {
+      throw new Error(`CRITICAL: Agent weave.md status '${status}' must not carry a stage prefix. Use '<state>[/<detail>]' (e.g. 'in_progress/01_research').`);
+    }
+    return parsed;
+  }
+
+  if (parsed.detail && STAGE_DIR_REGEX.test(parsed.detail.split('/')[0])) {
+    throw new Error(`CRITICAL: Orchestrator status '${status}' uses the legacy '<state>/<stage>' order. Use '<stage>/<state>[/<detail>]' (e.g. '${parsed.detail.split('/')[0]}/${parsed.state}').`);
+  }
+
+  const stageDirs = listStageDirs(resolvedDir);
+  if (stageDirs.length > 0) {
+    if (!parsed.stage) {
+      throw new Error(`CRITICAL: Staged orchestrator status '${status}' must use '<stage>/<state>[/<detail>]' with <stage> one of: ${stageDirs.join(', ')}. If you are a subagent, pass your own assigned working directory instead of the run directory.`);
+    }
+    if (!stageDirs.includes(parsed.stage)) {
+      throw new Error(`CRITICAL: Unknown stage '${parsed.stage}' in orchestrator status '${status}'. Existing stage directories: ${stageDirs.join(', ')}.`);
+    }
+  } else if (parsed.stage) {
+    throw new Error(`CRITICAL: Stageless orchestrator status '${status}' must not carry a stage prefix (no stageNN_* directories exist in ${resolvedDir}).`);
+  }
+  return parsed;
+}
 
 /**
  * Validates and normalizes an optional inputs array.
@@ -87,6 +151,9 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
   const validatedOutputs = normalizeOutputs(resolvedOutputs);
 
   const resolvedDir = path.resolve(targetDir);
+  if (resolvedType === 'orchestrator') {
+    assertStatusMatchesTarget(resolvedDir, 'orchestrator', resolvedStatus);
+  }
   if (!fs.existsSync(resolvedDir)) {
     fs.mkdirSync(resolvedDir, { recursive: true });
   }
@@ -119,13 +186,16 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
 
 /**
  * Updates weave.md in target directory with new status, optional progress note, and optional outputs.
+ * Status grammar: `[<stage>/]<state>[/<detail>]` (see status_grammar.mjs).
+ * Writes to a `type: orchestrator` weave.md require `options.type === 'orchestrator'`.
  * @param {string} targetDir
  * @param {string} status
  * @param {string | null} [progress=null]
  * @param {string | string[] | null} [outputs=null]
+ * @param {{ type?: 'agent' | 'orchestrator' }} [options={}]
  * @returns {{ success: boolean, message: string, status: string }}
  */
-export function weaveUpdate(targetDir, status, progress = null, outputs = null) {
+export function weaveUpdate(targetDir, status, progress = null, outputs = null, options = {}) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -135,12 +205,15 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
   if (!status || typeof status !== 'string') {
     throw new TypeError('CRITICAL: Status must be a non-empty string.');
   }
-
-  const validPrefixes = ['not_started', 'in_progress', 'waiting', 'awaiting_review', 'blocked', 'completed'];
-  const hasValidPrefix = validPrefixes.some(p => status === p || status.startsWith(`${p}/`));
-  if (!hasValidPrefix) {
-    throw new Error(`CRITICAL: Invalid status state '${status}'. Must start with one of: ${validPrefixes.join(', ')}`);
+  if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('CRITICAL: options must be a plain object.');
   }
+  if (options.type !== undefined && !VALID_NODE_TYPES.includes(options.type)) {
+    throw new TypeError(`CRITICAL: options.type must be one of: ${VALID_NODE_TYPES.join(', ')}.`);
+  }
+
+  // Syntax check first (independent of target file)
+  parseWeaveStatus(status);
 
   const resolvedDir = path.resolve(targetDir);
   const statusPath = path.join(resolvedDir, 'weave.md');
@@ -150,6 +223,19 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
 
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter, body } = parseFrontmatter(fileContent);
+  // Legacy weave.md files without `type` are agent nodes (matches weaveRead semantics).
+  const nodeType = frontmatter.type === undefined ? 'agent' : String(frontmatter.type);
+  if (!VALID_NODE_TYPES.includes(nodeType)) {
+    throw new Error(`CRITICAL: weave.md in ${resolvedDir} has unsupported type '${nodeType}'.`);
+  }
+  if (nodeType === 'orchestrator' && options.type !== 'orchestrator') {
+    throw new Error(`CRITICAL: Refusing to update orchestrator weave.md in ${resolvedDir} without type: "orchestrator". If you are a subagent, pass your own assigned working directory instead of the run directory.`);
+  }
+  if (options.type !== undefined && options.type !== nodeType) {
+    throw new Error(`CRITICAL: Type mismatch. Expected '${options.type}' weave.md, but ${resolvedDir} contains a '${nodeType}' weave.md.`);
+  }
+  const parsedStatus = assertStatusMatchesTarget(resolvedDir, nodeType, status);
+
   const normalizedOutputs = normalizeOutputs(outputs);
 
   const rawExisting = frontmatter.outputs !== undefined ? frontmatter.outputs : frontmatter.deliverable;
@@ -160,12 +246,12 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null) 
 
   const mergedOutputs = mergeOutputDeclarations(existingOutputs, normalizedOutputs);
 
-  if (status.startsWith('completed')) {
+  if (parsedStatus.state === 'completed') {
     if (mergedOutputs.length > 0) {
       verifyOutputFiles(resolvedDir, mergedOutputs);
     }
     frontmatter.outputs = mergedOutputs;
-  } else if (status.startsWith('awaiting_review')) {
+  } else if (parsedStatus.state === 'awaiting_review') {
     if (normalizedOutputs !== null && normalizedOutputs.length > 0) {
       verifyOutputFiles(resolvedDir, normalizedOutputs);
     }
@@ -219,6 +305,10 @@ export function weaveVerify(targetDir, expectedId = null) {
   const fileContent = fs.readFileSync(statusPath, 'utf-8');
   const { frontmatter } = parseFrontmatter(fileContent);
   const agentId = path.basename(resolvedDir);
+
+  if (frontmatter.type === 'orchestrator') {
+    throw new Error(`CRITICAL: ${resolvedDir} contains the orchestrator weave.md, not an agent workspace. Subagents must pass their own assigned working directory.`);
+  }
 
   if (expectedId !== null && expectedId !== undefined) {
     const normalizedExpected = expectedId.replace(/\\/g, '/');
