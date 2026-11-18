@@ -142,7 +142,7 @@ Even without images, this demonstrates the core value of WeaveMAS: the **Writer*
 
 Open a blank workspace in Antigravity with the **WeaveMAS** plugin enabled and send this single prompt:
 
-> **"Use the `weave-authoring` skill to create a minimal, single-file (stageless) KidsWiki pipeline that writes short text articles for children aged 3 to 12 (defaulting to age 4). Include two agents: a Writer (responsible for age-appropriate readability) and a Fact Checker (strictly verifying factual accuracy, with an in-place revision loop if any statement is wrong), saving the final verified text article to article.md in output/<topic_slug>_<age>yo/."**
+> **"Use the `weave-authoring` skill to create a minimal, single-file (stageless) KidsWiki pipeline for a topic and target age (3–12, default 4). Include a Writer and a Fact Checker that audits accuracy with an in-place revision loop, saving the verified text article to `article.md` in `output/<topic_slug>_<age>yo/`."**
 
 ### Step 2: Inspect the Generated Files
 
@@ -186,14 +186,14 @@ This is the perfect use case for **Stages and Human Review Gates**:
   ![Detailed description of the illustration](./illustration.png)
   *Subtext / caption*
   ```
-  The **Fact Checker** verifies all claims in the text. At the end of Stage 1, the pipeline pauses at a **Human Review Gate** where you can inspect `01_editorial_approved.md` and review both the text and the detailed illustration description inside the alt-text before any image is generated.
+  The **Fact Checker** and **Age Checker** audit factual accuracy and age-appropriate readability in parallel with an in-place revision loop. At the end of Stage 1, the pipeline pauses at a **Human Review Gate** where you can inspect `01_editorial_approved.md` and review both the text and the detailed illustration description inside the alt-text before any image is generated.
 * **Stage 2 (`stage02_publishing`)**: Only after your approval, the new **Illustrator** agent reads the description directly from the placeholder's alt-text, generates `illustration.png` in the directory, and the document is instantly complete—without needing any text rewriting!
 
 ### Step 1: Evolve the Pipeline with One Prompt
 
 Because you already have the setup from Tutorial A, you don't need to recreate the pipeline from scratch! Simply prompt Antigravity to evolve the existing files:
 
-> **"Update our existing KidsWiki pipeline: turn it into a 2-stage pipeline. In Stage 1 (Editorial), have the Writer also insert a markdown image placeholder with a detailed illustration description in the alt-text (e.g. `![Detailed description](./illustration.png)` followed by a caption), keep the Fact Checker, and add a human review gate to approve the verified draft. In Stage 2 (Publishing), add a new Illustrator agent that reads the description from the image placeholder, generates `illustration.png`, and saves the final illustrated article."**
+> **"Update our existing KidsWiki pipeline into a 2-stage pipeline for a topic and target age (3–12, default 4). Stage 1 (Editorial): have the Writer include an `![<illustration prompt>](./illustration.png)` placeholder and italicized caption; add an Age Checker to audit readability in parallel with the Fact Checker's accuracy audit in an in-place revision loop; then add a human review gate to approve the draft. Stage 2 (Publishing): add an Illustrator to generate `illustration.png` from the alt-text prompt."**
 
 *(Side note: If you are starting fresh and want to generate the 2-stage pipeline directly in one step without going through Tutorial A, see the [Standalone 2-Stage Authoring Prompts](examples/kidswiki/prompt_scratch.md).)*
 
@@ -205,12 +205,13 @@ Notice how Antigravity reorganizes the project. Instead of stuffing more logic i
 my-kidswiki-staged/
 ├── orchestrator.md                         # [REFACTORED] High-level stage roadmap
 ├── orchestrator/                           # [NEW FOLDER] Modular stage protocols
-│   ├── stage1_editorial.md                 # [NEW] Coordinates Writer + Fact Checker + Review Gate
+│   ├── stage1_editorial.md                 # [NEW] Coordinates Writer + Fact/Age Checkers + Review Gate
 │   └── stage2_publishing.md                # [NEW] Coordinates Illustrator + Final Assembly
 ├── .agent/agents/
-│   ├── stage1_editorial/                  # (Existing agents grouped into Stage 1)
+│   ├── stage1_editorial/                  # (Stage 1 editorial agents)
 │   │   ├── agent_writer.md                 # (Same as Tutorial A + embeds image placeholder)
-│   │   └── agent_fact_checker.md           # (Unchanged from Tutorial A)
+│   │   ├── agent_fact_checker.md           # (Unchanged from Tutorial A)
+│   │   └── agent_age_checker.md            # [NEW] Audits readability for target age
 │   └── stage2_publishing/
 │       └── agent_illustrator.md            # [NEW] Brand-new Illustrator subagent
 └── .agent/rules/
@@ -222,7 +223,7 @@ my-kidswiki-staged/
 1. **`orchestrator.md` Becomes a High-Level Roadmap**:
    Instead of spelling out every agent execution step, `orchestrator.md` now simply declares the stages, their folders (`stage01_editorial/`, `stage02_publishing/`), and deliverables. This keeps the root guide clean and lets the WeaveMAS UI sidecar draw a visual stage stepper across the top.
 2. **Dedicated Stage Protocol Guides (`orchestrator/`)**:
-   - [`orchestrator/stage1_editorial.md`](examples/kidswiki/orchestrator.md#2-stage-1-protocol-orchestratorstage1_editorialmd): Encapsulates the Writer $\leftrightarrow$ Fact Checker revision loop and pauses at the **Human Review Gate** once the draft and image placeholder are approved.
+   - [`orchestrator/stage1_editorial.md`](examples/kidswiki/orchestrator.md#2-stage-1-protocol-orchestratorstage1_editorialmd): Encapsulates the Writer $\leftrightarrow$ Fact Checker & Age Checker parallel revision loop and pauses at the **Human Review Gate** once the draft and image placeholder are approved.
    - [`orchestrator/stage2_publishing.md`](examples/kidswiki/orchestrator.md#3-stage-2-protocol-orchestratorstage2_publishingmd): Hands the approved draft to the Illustrator to render the image.
 3. **The New Illustrator Agent**:
    - [`agent_illustrator.md`](examples/kidswiki/agent_illustrator.md): A brand-new single-purpose agent that extracts the description from `![...](./illustration.png)`, generates `illustration.png` in the directory, and confirms the deliverable.
@@ -241,9 +242,9 @@ Once `orchestrator_trigger.md` is in `.agent/rules/`, start a run with a simple 
 1. **Live UI Dashboard**: Antigravity displays a clickable `[WeaveMAS UI](sidecar://weavemas/panel/)` pill in chat. Clicking it opens the WeaveMAS side panel showing your 2 stages (**Stage 01: Editorial** and **Stage 02: Publishing**), live agent status cards, task progress bars, and elapsed timers.
 2. **Stage 1 (Editorial & Fact Checking)**:
    * The **Writer** drafts the article and embeds the image placeholder with a detailed prompt in the alt-text (`draft.md`).
-   * The **Fact Checker** audits `draft.md` (`audit.md`). If the Writer used a scientifically false storybook phrase (like *"flies all the way to the stars"*), the Fact Checker flags it and the orchestrator asks the Writer to fix it in place.
+   * The **Fact Checker** and **Age Checker** audit `draft.md` in parallel for accuracy and age-appropriate readability. If the Writer used a scientifically false storybook phrase (like *"flies all the way to the stars"*) or overly complex wording, they flag it and the orchestrator asks the Writer to fix it in place.
 3. **Human Review After Stage 1 (`01_editorial_approved.md`)**:
-   * Once verified by the Fact Checker, the Orchestrator compiles the Stage 1 milestone file (`output/kidswiki_rocket_age4/01_editorial_approved.md`) and pauses for your review:
+   * Once verified by both checkers, the Orchestrator compiles the Stage 1 milestone file (`output/kidswiki_rocket_age4/01_editorial_approved.md`) and pauses for your review:
      ```markdown
      # Rockets!
 
