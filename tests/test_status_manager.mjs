@@ -185,15 +185,16 @@ test('statusInit - Happy Path without role: initializes agent status when role i
 });
 
 
-test('statusInit - Happy Path 2: initializes orchestrator status with custom initial status', () => {
+test('statusInit - Happy Path 2: initializes orchestrator status with custom stage-first initial status', () => {
   const tmp = createTempDir();
-  const res = statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
+  fs.mkdirSync(path.join(tmp, 'stage01_setup'));
+  const res = statusInit(tmp, 'orchestrator', 'stage01_setup/in_progress');
   assert.equal(res.success, true);
   assert.equal(fs.existsSync(res.path), true);
   const fileContent = fs.readFileSync(res.path, 'utf-8');
   assert.match(fileContent, /type: "orchestrator"/);
   assert.doesNotMatch(fileContent, /^role:/m);
-  assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
+  assert.match(fileContent, /status: "stage01_setup\/in_progress"/);
   assert.match(fileContent, /Pipeline execution initialized/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
@@ -673,56 +674,155 @@ test('Deferred Mid-Stage Inputs - Zero Initial Inputs Path: statusVerify succeed
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
-test('statusUpdate - Happy Path: transitions orchestrator lifecycle through awaiting_review/stage01_setup and verifies optional outputs', () => {
-  const tmp = createTempDir();
-  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
+// ---------------------------------------------------------------------------
+// R3: Stage-first status grammar `[<stage>/]<state>[/<detail>]` & orchestrator guard
+// ---------------------------------------------------------------------------
 
-  // 1. Transition to awaiting_review without passing outputs
-  const reviewRes = statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Stage 1 ready for user review');
-  assert.equal(reviewRes.success, true);
-  assert.equal(reviewRes.status, 'awaiting_review/stage01_setup');
+/**
+ * Creates a run directory with stage folders and an initialized orchestrator weave.md.
+ * @param {string[]} stageDirs
+ * @param {string} initialStatus
+ * @returns {string}
+ */
+function createStagedRun(stageDirs, initialStatus) {
+  const runDir = createTempDir();
+  for (const s of stageDirs) fs.mkdirSync(path.join(runDir, s));
+  statusInit(runDir, 'orchestrator', initialStatus);
+  return runDir;
+}
 
-  const midRead = statusRead(tmp, null, 'awaiting_review');
-  assert.equal(midRead.status, 'awaiting_review/stage01_setup');
+const ORCH = { type: 'orchestrator' };
 
-  // 2. Return to in_progress on revision, then back to awaiting_review with verified stage output file
-  const reviseRes = statusUpdate(tmp, 'in_progress/stage01_setup', 'Applying requested changes');
-  assert.equal(reviseRes.status, 'in_progress/stage01_setup');
+test('statusUpdate - Happy Path: transitions staged orchestrator through stage-first lifecycle with detail and verifies optional outputs', () => {
+  const tmp = createStagedRun(['stage01_setup', 'stage02_concept'], 'stage01_setup/in_progress');
+
+  const reviewRes = statusUpdate(tmp, 'stage01_setup/awaiting_review', 'Stage 1 ready for user review', null, ORCH);
+  assert.equal(reviewRes.status, 'stage01_setup/awaiting_review');
+  assert.equal(statusRead(tmp, null).status, 'stage01_setup/awaiting_review');
+
+  const reviseRes = statusUpdate(tmp, 'stage01_setup/in_progress/iteration_2', 'Applying requested changes', null, ORCH);
+  assert.equal(reviseRes.status, 'stage01_setup/in_progress/iteration_2');
 
   fs.writeFileSync(path.join(tmp, '01_setup.md'), '# Approved Setup', 'utf-8');
-  const reviewWithOut = statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Revised stage output ready', '01_setup.md');
-  assert.equal(reviewWithOut.success, true);
+  assert.equal(statusUpdate(tmp, 'stage01_setup/awaiting_review', 'Revised output ready', '01_setup.md', ORCH).success, true);
 
-  // 3. Advance to stage 2 and complete pipeline
-  statusUpdate(tmp, 'in_progress/stage02_concept', 'Unlocked Stage 2');
-  const doneRes = statusUpdate(tmp, 'completed', 'Pipeline complete', '01_setup.md');
-  assert.equal(doneRes.status, 'completed');
+  statusUpdate(tmp, 'stage02_concept/in_progress', 'Unlocked Stage 2', null, ORCH);
+  const doneRes = statusUpdate(tmp, 'stage02_concept/completed', 'Pipeline complete', '01_setup.md', ORCH);
+  assert.equal(doneRes.status, 'stage02_concept/completed');
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusUpdate - Failure Path 4: awaiting_review with non-existent output file throws Error', () => {
-  const tmp = createTempDir();
-  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
-  assert.throws(() => statusUpdate(tmp, 'awaiting_review/stage01_setup', 'Ready', 'missing_stage.md'), {
+test('statusUpdate - Failure Path 4: stage-first awaiting_review with non-existent output file throws Error', () => {
+  const tmp = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  assert.throws(() => statusUpdate(tmp, 'stage01_setup/awaiting_review', 'Ready', 'missing_stage.md', ORCH), {
     name: 'Error',
     message: /CRITICAL: Output file does not exist on disk/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('statusUpdate - Failure Path 5: unapproved review prefix throws Invalid status state Error', () => {
-  const tmp = createTempDir();
-  statusInit(tmp, 'orchestrator', 'in_progress/stage01_setup');
-  assert.throws(() => statusUpdate(tmp, 'review_needed/stage01_setup', 'Invalid state'), {
+test('statusUpdate - Failure Path 5: unapproved review state after stage throws Invalid status state Error', () => {
+  const tmp = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  assert.throws(() => statusUpdate(tmp, 'stage01_setup/review_needed', 'Invalid state', null, ORCH), {
     name: 'Error',
-    message: /CRITICAL: Invalid status state 'review_needed\/stage01_setup'/
+    message: /CRITICAL: Invalid status state 'stage01_setup\/review_needed'/
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+test('statusUpdate - Issue #8 Repro: agent-style task status against root orchestrator weave.md is rejected and file is untouched', () => {
+  const tmp = createStagedRun(['stage01_setup', 'stage02_concept', 'stage03_writing'], 'stage01_setup/in_progress');
+  const before = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
 
+  assert.throws(() => statusUpdate(tmp, 'in_progress/03_research', 'Researching'), {
+    name: 'Error',
+    message: /CRITICAL: Refusing to update orchestrator weave\.md .* without type: "orchestrator"/
+  });
+  assert.throws(() => statusUpdate(tmp, 'completed', 'Done'), {
+    name: 'Error',
+    message: /CRITICAL: Refusing to update orchestrator weave\.md/
+  });
+  assert.equal(fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8'), before);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
 
+test('statusUpdate - Failure Paths: staged orchestrator rejects missing stage, unknown stage, and legacy <state>/<stage> order', () => {
+  const tmp = createStagedRun(['stage01_setup', 'stage02_concept'], 'stage01_setup/in_progress');
+  assert.throws(() => statusUpdate(tmp, 'in_progress', null, null, ORCH), {
+    message: /CRITICAL: Staged orchestrator status 'in_progress' must use '<stage>\/<state>\[\/<detail>\]' with <stage> one of: stage01_setup, stage02_concept/
+  });
+  assert.throws(() => statusUpdate(tmp, 'completed', null, null, ORCH), {
+    message: /CRITICAL: Staged orchestrator status 'completed' must use/
+  });
+  assert.throws(() => statusUpdate(tmp, 'stage03_writing/in_progress', null, null, ORCH), {
+    message: /CRITICAL: Unknown stage 'stage03_writing'/
+  });
+  assert.throws(() => statusUpdate(tmp, 'in_progress/stage02_concept', null, null, ORCH), {
+    message: /CRITICAL: Orchestrator status 'in_progress\/stage02_concept' uses the legacy '<state>\/<stage>' order\. Use .*'stage02_concept\/in_progress'/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
 
+test('statusUpdate - Stageless orchestrator: accepts bare states with detail and rejects stage prefix', () => {
+  const tmp = createTempDir();
+  statusInit(tmp, 'orchestrator', 'in_progress');
+  assert.equal(statusUpdate(tmp, 'awaiting_review', 'Review final article', null, ORCH).success, true);
+  assert.equal(statusUpdate(tmp, 'in_progress/iteration_2', 'Revising', null, ORCH).success, true);
+  assert.equal(statusUpdate(tmp, 'completed', 'Done', null, ORCH).success, true);
+  assert.throws(() => statusUpdate(tmp, 'stage01_setup/in_progress', null, null, ORCH), {
+    message: /CRITICAL: Stageless orchestrator status 'stage01_setup\/in_progress' must not carry a stage prefix/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
 
+test('statusUpdate - Agent guards: stage prefix rejected, type mismatch rejected, invalid options rejected', () => {
+  const tmp = createTempDir();
+  const agentDir = path.join(tmp, 'writer');
+  statusInit(agentDir, 'agent', 'initialized');
 
+  assert.equal(statusUpdate(agentDir, 'in_progress/01_research', 'Researching', null, { type: 'agent' }).success, true);
+  assert.throws(() => statusUpdate(agentDir, 'stage01_setup/in_progress'), {
+    message: /CRITICAL: Agent weave\.md status 'stage01_setup\/in_progress' must not carry a stage prefix/
+  });
+  assert.throws(() => statusUpdate(agentDir, 'in_progress', null, null, ORCH), {
+    message: /CRITICAL: Type mismatch\. Expected 'orchestrator' weave\.md/
+  });
+  assert.throws(() => statusUpdate(agentDir, 'in_progress', null, null, null), {
+    name: 'TypeError',
+    message: /CRITICAL: options must be a plain object/
+  });
+  assert.throws(() => statusUpdate(agentDir, 'in_progress', null, null, { type: 'boss' }), {
+    name: 'TypeError',
+    message: /CRITICAL: options\.type must be one of: agent, orchestrator/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusInit - Orchestrator guard: staged run requires existing stage prefix; stageless run rejects it', () => {
+  const staged = createTempDir();
+  fs.mkdirSync(path.join(staged, 'stage01_setup'));
+  assert.throws(() => statusInit(staged, 'orchestrator', 'in_progress'), {
+    message: /CRITICAL: Staged orchestrator status 'in_progress' must use/
+  });
+  assert.throws(() => statusInit(staged, 'orchestrator', 'in_progress/stage01_setup'), {
+    message: /legacy '<state>\/<stage>' order/
+  });
+  assert.equal(fs.existsSync(path.join(staged, 'weave.md')), false);
+
+  const stageless = createTempDir();
+  assert.throws(() => statusInit(stageless, 'orchestrator', 'stage01_setup/in_progress'), {
+    message: /CRITICAL: Stageless orchestrator status/
+  });
+  fs.rmSync(staged, { recursive: true, force: true });
+  fs.rmSync(stageless, { recursive: true, force: true });
+});
+
+test('statusVerify - Failure Path 4: rejects the orchestrator run directory (subagents must pass their own working directory)', () => {
+  const tmp = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  assert.throws(() => statusVerify(tmp), {
+    name: 'Error',
+    message: /CRITICAL: .* contains the orchestrator weave\.md, not an agent workspace/
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

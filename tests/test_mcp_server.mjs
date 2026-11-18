@@ -147,6 +147,7 @@ test('MCP Failure Path 4: invalid request format returns error -32600', () => {
 
 test('MCP Tool Call - Happy Path 2: weave_init initializes orchestrator node', () => {
   const tmp = createTempDir();
+  fs.mkdirSync(path.join(tmp, 'stage01_setup'));
   const initReq = {
     jsonrpc: '2.0',
     id: 13,
@@ -157,7 +158,7 @@ test('MCP Tool Call - Happy Path 2: weave_init initializes orchestrator node', (
         dir: tmp,
         role: 'orchestrator',
         type: 'orchestrator',
-        status: 'in_progress/stage01_setup'
+        status: 'stage01_setup/in_progress'
       }
     }
   };
@@ -167,7 +168,7 @@ test('MCP Tool Call - Happy Path 2: weave_init initializes orchestrator node', (
   const fileContent = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
   assert.match(fileContent, /type: "orchestrator"/);
   assert.doesNotMatch(fileContent, /^role:/m);
-  assert.match(fileContent, /status: "in_progress\/stage01_setup"/);
+  assert.match(fileContent, /status: "stage01_setup\/in_progress"/);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -462,90 +463,113 @@ test('MCP Tool Call - Happy Path: weave_init with inputs and weave_verify checks
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Tool Call - Happy Path: weave_update accepts awaiting_review and schema advertises awaiting_review', () => {
+
+/**
+ * Creates a staged run directory with the given stage folders and an initialized orchestrator weave.md.
+ * @param {string[]} stageDirs
+ * @param {string} initialStatus
+ * @returns {string} run directory path
+ */
+function createStagedRun(stageDirs, initialStatus) {
+  const runDir = createTempDir();
+  for (const s of stageDirs) fs.mkdirSync(path.join(runDir, s));
+  const initRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 900,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: runDir, type: 'orchestrator', status: initialStatus } }
+  });
+  assert.equal(initRes.result.isError, undefined, initRes.result.content[0].text);
+  return runDir;
+}
+
+/**
+ * Calls weave_update via JSON-RPC and returns the response.
+ * @param {Record<string, unknown>} args
+ * @returns {Record<string, any>}
+ */
+function callUpdate(args) {
+  return captureResponse({ jsonrpc: '2.0', id: 901, method: 'tools/call', params: { name: 'weave_update', arguments: args } });
+}
+
+test('MCP Tool Call - Happy Path: weave_update accepts stage-first awaiting_review with type orchestrator and schema advertises grammar + type', () => {
   const listRes = captureResponse({ jsonrpc: '2.0', id: 32, method: 'tools/list', params: {} });
   const updateTool = listRes.result.tools.find(t => t.name === 'weave_update');
   assert.ok(updateTool);
   assert.match(updateTool.inputSchema.properties.status.description, /awaiting_review/);
+  assert.match(updateTool.inputSchema.properties.status.description, /\[<stage>\/\]<state>\[\/<detail>\]/);
+  assert.ok(updateTool.inputSchema.properties.type);
 
-  const tmp = createTempDir();
-  captureResponse({
-    jsonrpc: '2.0',
-    id: 33,
-    method: 'tools/call',
-    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
-  });
-
-  const reviewRes = captureResponse({
-    jsonrpc: '2.0',
-    id: 34,
-    method: 'tools/call',
-    params: {
-      name: 'weave_update',
-      arguments: { dir: tmp, status: 'awaiting_review/stage01_editorial', progress: 'Waiting on user review of 01_editorial_approved.md' }
-    }
+  const runDir = createStagedRun(['stage01_editorial', 'stage02_publishing'], 'stage01_editorial/in_progress');
+  const reviewRes = callUpdate({
+    dir: runDir,
+    type: 'orchestrator',
+    status: 'stage01_editorial/awaiting_review',
+    progress: 'Waiting on user review of 01_editorial_approved.md'
   });
   assert.equal(reviewRes.result.isError, undefined);
-  assert.match(reviewRes.result.content[0].text, /WEAVE_UPDATE_OK: status -> awaiting_review\/stage01_editorial/);
+  assert.match(reviewRes.result.content[0].text, /WEAVE_UPDATE_OK: status -> stage01_editorial\/awaiting_review/);
+
+  const iterRes = callUpdate({ dir: runDir, type: 'orchestrator', status: 'stage01_editorial/in_progress/iteration_2' });
+  assert.equal(iterRes.result.isError, undefined);
+
+  const doneRes = callUpdate({ dir: runDir, type: 'orchestrator', status: 'stage02_publishing/completed' });
+  assert.equal(doneRes.result.isError, undefined);
 
   const readRes = captureResponse({
     jsonrpc: '2.0',
     id: 35,
     method: 'tools/call',
-    params: { name: 'weave_read', arguments: { dir: tmp, expected_status: 'awaiting_review' } }
+    params: { name: 'weave_read', arguments: { dir: runDir } }
   });
-  assert.equal(readRes.result.isError, undefined);
-  assert.equal(JSON.parse(readRes.result.content[0].text).status, 'awaiting_review/stage01_editorial');
+  assert.equal(JSON.parse(readRes.result.content[0].text).status, 'stage02_publishing/completed');
 
-  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(runDir, { recursive: true, force: true });
 });
 
-test('MCP Failure Path 12: weave_update with awaiting_review and missing outputs returns isError: true', () => {
-  const tmp = createTempDir();
-  captureResponse({
-    jsonrpc: '2.0',
-    id: 36,
-    method: 'tools/call',
-    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
-  });
-
-  const res = captureResponse({
-    jsonrpc: '2.0',
-    id: 37,
-    method: 'tools/call',
-    params: {
-      name: 'weave_update',
-      arguments: { dir: tmp, status: 'awaiting_review/stage01_editorial', outputs: 'nonexistent.md' }
-    }
-  });
+test('MCP Failure Path 12: weave_update with stage-first awaiting_review and missing outputs returns isError: true', () => {
+  const runDir = createStagedRun(['stage01_editorial'], 'stage01_editorial/in_progress');
+  const res = callUpdate({ dir: runDir, type: 'orchestrator', status: 'stage01_editorial/awaiting_review', outputs: 'nonexistent.md' });
   assert.equal(res.result.isError, true);
   assert.match(res.result.content[0].text, /CRITICAL: Output file does not exist on disk/);
-
-  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(runDir, { recursive: true, force: true });
 });
 
-test('MCP Failure Path 13: weave_update with unapproved pending_review prefix returns isError: true', () => {
-  const tmp = createTempDir();
-  captureResponse({
-    jsonrpc: '2.0',
-    id: 38,
-    method: 'tools/call',
-    params: { name: 'weave_init', arguments: { dir: tmp, type: 'orchestrator', status: 'in_progress/stage01_editorial' } }
-  });
-
-  const res = captureResponse({
-    jsonrpc: '2.0',
-    id: 39,
-    method: 'tools/call',
-    params: {
-      name: 'weave_update',
-      arguments: { dir: tmp, status: 'pending_review/stage01_editorial' }
-    }
-  });
+test('MCP Failure Path 13: weave_update with unapproved pending_review state returns isError: true', () => {
+  const runDir = createStagedRun(['stage01_editorial'], 'stage01_editorial/in_progress');
+  const res = callUpdate({ dir: runDir, type: 'orchestrator', status: 'stage01_editorial/pending_review' });
   assert.equal(res.result.isError, true);
   assert.match(res.result.content[0].text, /CRITICAL: Invalid status state/);
-
-  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(runDir, { recursive: true, force: true });
 });
 
+test('MCP Failure Path 14 (Issue #8 repro): subagent weave_update with task slug against root orchestrator weave.md is rejected and leaves it untouched', () => {
+  const runDir = createStagedRun(['stage01_setup', 'stage02_concept', 'stage03_writing'], 'stage01_setup/in_progress');
+  const before = fs.readFileSync(path.join(runDir, 'weave.md'), 'utf-8');
 
+  const res = callUpdate({ dir: runDir, status: 'in_progress/03_research', progress: 'Researching era' });
+  assert.equal(res.result.isError, true);
+  assert.match(res.result.content[0].text, /CRITICAL: Refusing to update orchestrator weave\.md/);
+  assert.match(res.result.content[0].text, /assigned working directory/);
+
+  const bareCompleted = callUpdate({ dir: runDir, status: 'completed' });
+  assert.equal(bareCompleted.result.isError, true);
+
+  assert.equal(fs.readFileSync(path.join(runDir, 'weave.md'), 'utf-8'), before);
+  fs.rmSync(runDir, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 15: weave_update type mismatch and invalid type return isError: true', () => {
+  const agentDir = path.join(createTempDir(), 'writer');
+  captureResponse({ jsonrpc: '2.0', id: 40, method: 'tools/call', params: { name: 'weave_init', arguments: { dir: agentDir } } });
+
+  const mismatch = callUpdate({ dir: agentDir, type: 'orchestrator', status: 'in_progress' });
+  assert.equal(mismatch.result.isError, true);
+  assert.match(mismatch.result.content[0].text, /CRITICAL: Type mismatch/);
+
+  const invalid = callUpdate({ dir: agentDir, type: 'supervisor', status: 'in_progress' });
+  assert.equal(invalid.result.isError, true);
+  assert.match(invalid.result.content[0].text, /CRITICAL: options\.type must be one of/);
+
+  fs.rmSync(path.dirname(agentDir), { recursive: true, force: true });
+});

@@ -1,7 +1,33 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join } from 'node:path';
+import { STAGE_DIR_REGEX } from '../../../src/status_grammar.mjs';
 
-export const STAGE_DIR_REGEX = /^stage(\d{2})_(.+)$/i;
+export { STAGE_DIR_REGEX };
+
+/** Loose stage-number extractor for a single stage segment (`stage01_setup`, `stage2_concept`, `stage_01`). */
+const STAGE_SEGMENT_NUM_REGEX = /^stage[_-]?0*(\d+)(?:[_-]|$)/i;
+
+/**
+ * Splits an orchestrator status into stage / lifecycle base / detail.
+ * Canonical grammar: `[<stage>/]<state>[/<detail>]`.
+ * @param {string} rawStatus
+ * @returns {{ stageSlug: string|null, baseStatus: string, subStatus: string }}
+ */
+export function splitOrchestratorStatus(rawStatus) {
+  if (typeof rawStatus !== 'string' || !rawStatus.trim()) {
+    throw new TypeError('CRITICAL: rawStatus is required and must be a non-empty string');
+  }
+  const segments = rawStatus.trim().toLowerCase().split('/').filter(Boolean);
+  if (segments.length > 1 && STAGE_DIR_REGEX.test(segments[0])) {
+    return { stageSlug: segments[0], baseStatus: segments[1], subStatus: segments.slice(2).join('/') };
+  }
+  // TODO(R3-legacy): Remove legacy '<state>/<stage>' read support (e.g. 'in_progress/stage01_setup')
+  // once pre-R3 runs are retired. weave_update already rejects new writes in this legacy order.
+  if (segments.length > 1 && STAGE_SEGMENT_NUM_REGEX.test(segments[1])) {
+    return { stageSlug: segments[1], baseStatus: segments[0], subStatus: segments.slice(2).join('/') };
+  }
+  return { stageSlug: null, baseStatus: segments[0], subStatus: segments.slice(1).join('/') };
+}
 
 function isDirOrLinkedDir(parentDir, dirent) {
   if (dirent.isDirectory()) return true;
@@ -230,8 +256,9 @@ export const extractShowTitle = extractContextTitle;
 
 /**
  * Parses the orchestrator's status file (weave.md, state.md, or status.md) in showDir.
+ * Canonical status grammar: `[<stage>/]<state>[/<detail>]` (legacy `<state>/<stage>` is still read).
  * @param {string} showDir
- * @returns {{ rawStatus: string, baseStatus: string, subStatus: string, stageNum: number|null, isInProgress: boolean, isAwaitingReview: boolean, isCompleted: boolean, isBlocked: boolean, isWaiting: boolean, isNotStarted: boolean }|null}
+ * @returns {{ rawStatus: string, stageSlug: string|null, baseStatus: string, subStatus: string, stageNum: number|null, isInProgress: boolean, isAwaitingReview: boolean, isCompleted: boolean, isBlocked: boolean, isWaiting: boolean, isNotStarted: boolean }|null}
  */
 export function parseOrchestratorState(showDir) {
   if (!showDir || typeof showDir !== 'string') {
@@ -247,12 +274,10 @@ export function parseOrchestratorState(showDir) {
       if (match) {
         const rawStatus = match[1].trim().replace(/^["']|["']$/g, '').trim();
         if (!rawStatus) continue;
-        const stageMatch = rawStatus.match(/(?:stage[_-]?0*(\d+)|\/0*(\d+)(?:[_-]|$))/i);
-        const stageNum = stageMatch ? parseInt(stageMatch[1] || stageMatch[2], 10) : null;
         const lower = rawStatus.toLowerCase();
-        const slashIdx = lower.indexOf('/');
-        const baseStatus = slashIdx === -1 ? lower : lower.slice(0, slashIdx);
-        const subStatus = slashIdx === -1 ? '' : lower.slice(slashIdx + 1);
+        const { stageSlug, baseStatus, subStatus } = splitOrchestratorStatus(rawStatus);
+        const stageNumMatch = stageSlug ? stageSlug.match(STAGE_SEGMENT_NUM_REGEX) : null;
+        const stageNum = stageNumMatch ? parseInt(stageNumMatch[1], 10) : null;
         const isAwaitingReview =
           baseStatus === 'awaiting_review' ||
           baseStatus === 'awaiting_user_review' ||
@@ -264,6 +289,7 @@ export function parseOrchestratorState(showDir) {
         const isNotStarted = baseStatus === 'not_started' || baseStatus === 'initialized' || baseStatus === 'pending';
         return {
           rawStatus,
+          stageSlug,
           baseStatus,
           subStatus,
           stageNum,
@@ -307,15 +333,11 @@ export function evaluatePipelineStages(showDir) {
 
   const orchState = parseOrchestratorState(showDir);
   let effectiveStageNum = orchState ? orchState.stageNum : null;
-  if (orchState && effectiveStageNum === null && orchState.subStatus) {
-    const matchedDir = subDirs.find(
-      d => d.dirName.toLowerCase() === orchState.subStatus || d.rawName.toLowerCase() === orchState.subStatus
-    );
-    if (matchedDir) {
-      effectiveStageNum = matchedDir.num;
-    }
-  }
-  if (orchState && effectiveStageNum === null && (orchState.isAwaitingReview || orchState.isBlocked || orchState.isWaiting) && subDirs.length > 0) {
+  // When no stage is named (bare state, stageless-style status, or a non-stage detail such as a stray
+  // subagent task slug 'in_progress/03_research'), infer the active stage from on-disk agent activity.
+  const isActiveWithoutStage = orchState && effectiveStageNum === null &&
+    (orchState.isInProgress || orchState.isAwaitingReview || orchState.isBlocked || orchState.isWaiting);
+  if (isActiveWithoutStage && subDirs.length > 0) {
     let inferredStageNum = subDirs[0].num;
     for (const d of subDirs) {
       const dPath = join(showDir, d.dirName);

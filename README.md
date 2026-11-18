@@ -23,7 +23,7 @@ When mounted by Antigravity under the `weavemas_weave` identifier, the following
 | Tool | Description | Required Arguments |
 | :--- | :--- | :--- |
 | `weave_init` | Initializes `weave.md` in a directory with `not_started` state | `dir` (required absolute path) |
-| `weave_update` | Updates state (`in_progress/*`, `waiting/*`, `awaiting_review/*`, `blocked/*`, `completed`) and appends progress notes | `status`, `dir` (required absolute path), `progress` (opt), `outputs` (opt) |
+| `weave_update` | Updates state using `[<stage>/]<state>[/<detail>]` (`<state>`: `not_started`, `in_progress`, `waiting`, `awaiting_review`, `blocked`, `completed`) and appends progress notes. Orchestrator `weave.md` writes require `type: "orchestrator"`; staged orchestrators must prefix an existing stage (e.g. `stage01_setup/in_progress`) | `status`, `dir` (required absolute path), `progress` (opt), `outputs` (opt), `type` (required for orchestrators) |
 | `weave_verify` | Pre-flight verification that the directory's `weave.md` matches assigned role | `dir` (required absolute path), `expected_role` (opt) |
 | `weave_read` | Ingests agent status, verify completed state, and resolves outputs | `dir` (required absolute path) |
 
