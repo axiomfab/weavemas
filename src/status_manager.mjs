@@ -113,9 +113,33 @@ function validateInputsArray(inputs) {
 }
 
 /**
- * Initializes a new weave.md in target directory.
+ * Validates and normalizes a worker or stage subagent conversation_id string.
+ * @param {unknown} conversationId
+ * @returns {string}
  */
-export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null, outputs = null) {
+export function validateConversationId(conversationId) {
+  if (typeof conversationId !== 'string' || !conversationId.trim()) {
+    throw new TypeError('CRITICAL: conversation_id must be a non-empty string.');
+  }
+  const trimmed = conversationId.trim();
+  if (/[\r\n"]/.test(trimmed)) {
+    throw new TypeError('CRITICAL: conversation_id must not contain newlines or double quotes.');
+  }
+  return trimmed;
+}
+
+/**
+ * Initializes a new weave.md in target directory.
+ * @param {string} targetDir
+ * @param {string | Record<string, unknown>} [type='agent']
+ * @param {string} [initialStatus='not_started']
+ * @param {string | null} [instructionsFile=null]
+ * @param {string[] | null} [inputs=null]
+ * @param {string | string[] | null} [outputs=null]
+ * @param {string} [conversationId=undefined]
+ * @returns {{ success: boolean, message: string, path: string }}
+ */
+export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_started', instructionsFile = null, inputs = null, outputs = null, conversationId = undefined) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
@@ -128,6 +152,7 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
   let resolvedInstructions = instructionsFile;
   let resolvedInputs = inputs;
   let resolvedOutputs = outputs;
+  let resolvedConversationId = conversationId;
 
   if (typeof type === 'object' && type !== null) {
     resolvedType = type.type || 'agent';
@@ -135,6 +160,9 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
     resolvedInstructions = type.instructions_file || type.instructionsFile || null;
     resolvedInputs = type.inputs !== undefined ? type.inputs : null;
     resolvedOutputs = type.outputs !== undefined ? type.outputs : null;
+    resolvedConversationId = type.conversation_id !== undefined
+      ? type.conversation_id
+      : (type.conversationId !== undefined ? type.conversationId : undefined);
   }
 
   const validTypes = ['agent', 'orchestrator'];
@@ -151,6 +179,9 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
   }
   const validatedInputs = validateInputsArray(resolvedInputs);
   const validatedOutputs = normalizeOutputs(resolvedOutputs);
+  const validatedConversationId = resolvedConversationId !== undefined
+    ? validateConversationId(resolvedConversationId)
+    : null;
 
   const resolvedDir = path.resolve(targetDir);
   if (resolvedType === 'orchestrator') {
@@ -169,6 +200,7 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
     ...(resolvedInstructions ? { instructions_file: resolvedInstructions } : {}),
     ...(validatedInputs !== null ? { inputs: validatedInputs } : {}),
     outputs: validatedOutputs !== null ? validatedOutputs : [],
+    ...(validatedConversationId !== null ? { conversation_id: validatedConversationId } : {}),
     updated_at: now
   };
 
@@ -187,15 +219,18 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
 }
 
 /**
- * Updates weave.md in target directory with new status, optional progress note, and optional outputs.
+ * Updates weave.md in target directory with new status, optional progress note, optional outputs,
+ * and/or optional persisted `conversation_id`.
  * Status grammar: `[<stage>/]<state>[/<detail>]` (see status_grammar.mjs).
  * Writes to a `type: orchestrator` weave.md require `options.type === 'orchestrator'`.
+ * When `status` is `null` or `undefined` and `options.conversationId` is supplied, persists
+ * `conversation_id` without modifying the existing `status`.
  * @param {string} targetDir
- * @param {string} status
+ * @param {string | null | undefined} status
  * @param {string | null} [progress=null]
  * @param {string | string[] | null} [outputs=null]
- * @param {{ type?: 'agent' | 'orchestrator', mirrorTo?: string }} [options={}]
- * @returns {{ success: boolean, message: string, status: string, mirrored_files?: string[] }}
+ * @param {{ type?: 'agent' | 'orchestrator', mirrorTo?: string, conversationId?: string, conversation_id?: string }} [options={}]
+ * @returns {{ success: boolean, message: string, status: string, conversation_id?: string, mirrored_files?: string[] }}
  */
 export function weaveUpdate(targetDir, status, progress = null, outputs = null, options = {}) {
   if (!targetDir || typeof targetDir !== 'string') {
@@ -203,9 +238,6 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
   }
   if (!path.isAbsolute(targetDir)) {
     throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
-  }
-  if (!status || typeof status !== 'string') {
-    throw new TypeError('CRITICAL: Status must be a non-empty string.');
   }
   if (options === null || typeof options !== 'object' || Array.isArray(options)) {
     throw new TypeError('CRITICAL: options must be a plain object.');
@@ -222,8 +254,26 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
     }
   }
 
+  const rawConversationId = options.conversationId !== undefined
+    ? options.conversationId
+    : options.conversation_id;
+  const hasConversationId = rawConversationId !== undefined;
+  const validatedConversationId = hasConversationId
+    ? validateConversationId(rawConversationId)
+    : null;
+
+  const isStatusOmitted = status === undefined || status === null;
+  if (isStatusOmitted && !hasConversationId) {
+    throw new TypeError('CRITICAL: Status must be a non-empty string (unless recording conversation_id).');
+  }
+  if (!isStatusOmitted && (!status || typeof status !== 'string')) {
+    throw new TypeError('CRITICAL: Status must be a non-empty string.');
+  }
+
   // Syntax check first (independent of target file)
-  parseWeaveStatus(status);
+  if (!isStatusOmitted) {
+    parseWeaveStatus(status);
+  }
 
   const resolvedDir = path.resolve(targetDir);
   const statusPath = path.join(resolvedDir, 'weave.md');
@@ -244,6 +294,29 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
   if (options.type !== undefined && options.type !== nodeType) {
     throw new Error(`CRITICAL: Type mismatch. Expected '${options.type}' weave.md, but ${resolvedDir} contains a '${nodeType}' weave.md.`);
   }
+
+  const now = new Date().toISOString();
+
+  if (isStatusOmitted) {
+    const existingStatus = String(frontmatter.status ?? '');
+    frontmatter.conversation_id = validatedConversationId;
+    frontmatter.updated_at = now;
+
+    let updatedBody = body ? body.trim() : '';
+    if (progress) {
+      const logEntry = `- ${now}: \`${existingStatus}\` - ${progress}`;
+      updatedBody = updatedBody ? `${updatedBody}\n${logEntry}` : `# Status Log\n\n${logEntry}`;
+    }
+
+    fs.writeFileSync(statusPath, serializeStatus(frontmatter, updatedBody), 'utf-8');
+    return {
+      success: true,
+      message: `WEAVE_UPDATE_OK: conversation_id -> ${validatedConversationId} (status unchanged: ${existingStatus})`,
+      status: existingStatus,
+      conversation_id: validatedConversationId
+    };
+  }
+
   const parsedStatus = assertStatusMatchesTarget(resolvedDir, nodeType, status);
 
   const normalizedOutputs = normalizeOutputs(outputs);
@@ -282,8 +355,10 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
     mirroredFiles = mirrorOutputFiles(verifiedPaths, options.mirrorTo);
   }
 
-  const now = new Date().toISOString();
   frontmatter.status = status;
+  if (validatedConversationId !== null) {
+    frontmatter.conversation_id = validatedConversationId;
+  }
   frontmatter.updated_at = now;
 
   let updatedBody = body ? body.trim() : '';
@@ -297,11 +372,13 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
   }
 
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, updatedBody), 'utf-8');
+  const conversationSuffix = validatedConversationId !== null ? ` | conversation_id -> ${validatedConversationId}` : '';
   const mirrorSuffix = mirroredFiles ? ` | Mirrored: ${JSON.stringify(mirroredFiles)}` : '';
   return {
     success: true,
-    message: `WEAVE_UPDATE_OK: status -> ${status}${mirrorSuffix}`,
+    message: `WEAVE_UPDATE_OK: status -> ${status}${conversationSuffix}${mirrorSuffix}`,
     status,
+    ...(validatedConversationId !== null ? { conversation_id: validatedConversationId } : {}),
     ...(mirroredFiles ? { mirrored_files: mirroredFiles } : {})
   };
 }
@@ -375,6 +452,7 @@ export function weaveVerify(targetDir, expectedId = null) {
  * @property {string} agent_id
  * @property {string} status
  * @property {string | null} verdict
+ * @property {string | null} conversation_id
  * @property {string[]} outputs
  * @property {string[]} missing_outputs
  */
@@ -424,7 +502,7 @@ function normalizeVerdictToken(rawToken) {
 /**
  * Extracts a structured verdict token (e.g. PASS, FAIL, APPROVED, REJECTED, REVISION_REQUIRED)
  * from an agent's status detail, its latest weave.md log entry, or the header of local .md/.txt outputs.
- * Preserves the closed 6-key weave.md frontmatter schema without adding extra keys.
+ * Preserves the closed 7-key weave.md frontmatter schema without adding extra keys.
  * @param {string} status
  * @param {string} body
  * @param {string[]} [localTextFiles=[]]
@@ -733,10 +811,14 @@ export function weaveReadBatch(batchConfig) {
     }
 
     const verdict = extractAgentVerdict(status, body, localTextFiles);
+    const conversationId = typeof frontmatter.conversation_id === 'string' && frontmatter.conversation_id.trim()
+      ? frontmatter.conversation_id.trim()
+      : null;
     agentRows.push({
       agent_id: target.agent_id,
       status,
       verdict,
+      conversation_id: conversationId,
       outputs,
       missing_outputs: missingOutputs
     });
@@ -837,6 +919,9 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
   const outputs = Array.isArray(rawOutputs)
     ? rawOutputs.map(String)
     : (rawOutputs ? [String(rawOutputs)] : []);
+  const conversationId = typeof frontmatter.conversation_id === 'string' && frontmatter.conversation_id.trim()
+    ? frontmatter.conversation_id.trim()
+    : null;
   const updatedAt = frontmatter.updated_at ? String(frontmatter.updated_at) : null;
 
   if (expectedStatus !== undefined && expectedStatus !== null) {
@@ -878,6 +963,7 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
     inputs,
     outputs,
     type,
+    conversation_id: conversationId,
     updated_at: updatedAt,
     ...(mirroredFiles ? { mirrored_files: mirroredFiles } : {})
   };

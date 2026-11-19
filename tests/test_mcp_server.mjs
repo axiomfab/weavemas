@@ -754,3 +754,119 @@ test('MCP Failure Paths 17 & 18 (R8): weave_read rejects mutually-exclusive dir/
 
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('MCP Tool Call - Happy Path (R9): persists conversation_id via weave_init/weave_update and surfaces it in weave_read and discover_agents', () => {
+  const listRes = captureResponse({ jsonrpc: '2.0', id: 60, method: 'tools/list', params: {} });
+  const initTool = listRes.result.tools.find(t => t.name === 'weave_init');
+  const updateTool = listRes.result.tools.find(t => t.name === 'weave_update');
+  assert.ok(initTool.inputSchema.properties.conversation_id);
+  assert.ok(updateTool.inputSchema.properties.conversation_id);
+
+  const tmp = createTempDir();
+  const stageDir = path.join(tmp, 'runs', 'show_r9', 'stage01_setup');
+  const writerDir = path.join(stageDir, 'agents', 'writer');
+  const criticDir = path.join(stageDir, 'agents', 'critic');
+  const writerUuid = '0394d2cc-dbf1-4fd7-892b-d7426b08641f';
+  const criticUuid = '99999999-8888-4777-8666-555555555555';
+
+  const initWriter = captureResponse({
+    jsonrpc: '2.0',
+    id: 61,
+    method: 'tools/call',
+    params: {
+      name: 'weave_init',
+      arguments: { dir: writerDir, status: 'initialized', instructions_file: '.agent/agents/writer.md' }
+    }
+  });
+  assert.equal(initWriter.result.isError, undefined);
+
+  const initCritic = captureResponse({
+    jsonrpc: '2.0',
+    id: 62,
+    method: 'tools/call',
+    params: {
+      name: 'weave_init',
+      arguments: {
+        dir: criticDir,
+        status: 'initialized',
+        instructions_file: '.agent/agents/critic.md',
+        conversation_id: criticUuid
+      }
+    }
+  });
+  assert.equal(initCritic.result.isError, undefined);
+
+  // Record writer conversation_id without overwriting status
+  const recordRes = callUpdate({ dir: writerDir, conversation_id: writerUuid });
+  assert.equal(recordRes.result.isError, undefined, recordRes.result.content[0].text);
+  assert.match(recordRes.result.content[0].text, /conversation_id -> 0394d2cc-dbf1-4fd7-892b-d7426b08641f/);
+
+  // Worker completes its own task without re-sending conversation_id -> must be preserved
+  const doneRes = callUpdate({ dir: writerDir, status: 'completed', progress: 'Draft ready' });
+  assert.equal(doneRes.result.isError, undefined);
+
+  // Single weave_read surfaces conversation_id
+  const singleRead = captureResponse({
+    jsonrpc: '2.0',
+    id: 63,
+    method: 'tools/call',
+    params: { name: 'weave_read', arguments: { dir: writerDir } }
+  });
+  assert.equal(singleRead.result.isError, undefined);
+  const singleParsed = JSON.parse(singleRead.result.content[0].text);
+  assert.equal(singleParsed.status, 'completed');
+  assert.equal(singleParsed.conversation_id, writerUuid);
+
+  // Batch weave_read surfaces conversation_id per agent
+  const batchRead = captureResponse({
+    jsonrpc: '2.0',
+    id: 64,
+    method: 'tools/call',
+    params: { name: 'weave_read', arguments: { stage_dir: stageDir } }
+  });
+  assert.equal(batchRead.result.isError, undefined);
+  const batchParsed = JSON.parse(batchRead.result.content[0].text);
+  assert.equal(batchParsed.agents.find(a => a.agent_id === 'critic').conversation_id, criticUuid);
+  assert.equal(batchParsed.agents.find(a => a.agent_id === 'writer').conversation_id, writerUuid);
+
+  // discover_agents surfaces conversation_id
+  const discRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 65,
+    method: 'tools/call',
+    params: { name: 'discover_agents', arguments: { directory: stageDir, filter_status: null } }
+  });
+  assert.equal(discRes.result.isError, undefined);
+  const discParsed = JSON.parse(discRes.result.content[0].text);
+  assert.equal(discParsed.agents.find(a => a.agent_id === 'critic').conversation_id, criticUuid);
+  assert.equal(discParsed.agents.find(a => a.agent_id === 'writer').conversation_id, writerUuid);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Paths 19 & 20 (R9): rejects invalid conversation_id and missing status+conversation_id on weave_update', () => {
+  const tmp = createTempDir();
+  const agentDir = path.join(tmp, 'writer');
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 66,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: agentDir, status: 'initialized' } }
+  });
+
+  // Failure Path 19: invalid conversation_id
+  const emptyId = callUpdate({ dir: agentDir, conversation_id: '   ' });
+  assert.equal(emptyId.result.isError, true);
+  assert.match(emptyId.result.content[0].text, /CRITICAL: conversation_id must be a non-empty string/);
+
+  const badChars = callUpdate({ dir: agentDir, status: 'in_progress', conversation_id: 'bad\nvalue' });
+  assert.equal(badChars.result.isError, true);
+  assert.match(badChars.result.content[0].text, /CRITICAL: conversation_id must not contain newlines or double quotes/);
+
+  // Failure Path 20: neither status nor conversation_id provided
+  const missingBoth = callUpdate({ dir: agentDir, progress: 'Nothing changed' });
+  assert.equal(missingBoth.result.isError, true);
+  assert.match(missingBoth.result.content[0].text, /CRITICAL: 'status' argument is required for weave_update/);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

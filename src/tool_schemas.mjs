@@ -36,6 +36,10 @@ export const TOOLS = [
             { type: 'array', items: { type: 'string' } }
           ],
           description: 'Optional expected output filename(s)/pattern(s) or promoted output binding(s) ("<local_file>: <target_path>"). Omit if agent produces no file outputs.'
+        },
+        conversation_id: {
+          type: 'string',
+          description: 'Optional worker or stage subagent conversationId UUID to persist in weave.md frontmatter for surgical send_message resumes.'
         }
       },
       required: ['dir']
@@ -43,7 +47,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_update',
-    description: 'Update the WeaveMAS weave.md with a new lifecycle state and progress note.',
+    description: 'Update the WeaveMAS weave.md with a new lifecycle state, progress note, outputs, and/or persisted worker conversation_id.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -53,7 +57,7 @@ export const TOOLS = [
         },
         status: {
           type: 'string',
-          description: 'Target lifecycle status using the grammar [<stage>/]<state>[/<detail>] where <state> is one of not_started, in_progress, waiting, awaiting_review, blocked, completed. Agents omit <stage> (e.g. in_progress/01_research, completed). Staged orchestrators must prefix an existing stage directory (e.g. stage01_setup/in_progress/iteration_2, stage01_setup/awaiting_review); stageless orchestrators omit it.'
+          description: 'Target lifecycle status using the grammar [<stage>/]<state>[/<detail>] where <state> is one of not_started, in_progress, waiting, awaiting_review, blocked, completed. Agents omit <stage> (e.g. in_progress/01_research, completed). Staged orchestrators must prefix an existing stage directory (e.g. stage01_setup/in_progress/iteration_2, stage01_setup/awaiting_review); stageless orchestrators omit it. Optional only when recording conversation_id without changing status.'
         },
         type: {
           type: 'string',
@@ -70,12 +74,16 @@ export const TOOLS = [
           ],
           description: 'Optional relative path(s) or wildcard pattern(s) to local output file(s) in the agent working directory. Verified (and promoted if bound in weave.md) when status is completed.'
         },
+        conversation_id: {
+          type: 'string',
+          description: 'Optional worker or stage subagent conversationId UUID to persist in weave.md frontmatter for surgical send_message resumes across compaction or sub-orchestrators. May be supplied with or without status.'
+        },
         mirror_to: {
           type: 'string',
           description: 'Optional absolute destination file or directory path to mirror verified output file(s) directly in Node.js (zero-token copy). Requires at least one verified output.'
         }
       },
-      required: ['dir', 'status']
+      required: ['dir']
     }
   },
   {
@@ -98,7 +106,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_read',
-    description: 'Read and verify status metadata from a single WeaveMAS weave.md (dir) or batch-verify multiple agent workspaces in one call (dirs or stage_dir).',
+    description: 'Read and verify status metadata (including persisted conversation_id) from a single WeaveMAS weave.md (dir) or batch-verify multiple agent workspaces in one call (dirs or stage_dir).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -136,7 +144,7 @@ export const TOOLS = [
   },
   {
     name: 'discover_agents',
-    description: 'Discover initialized or matching WeaveMAS subagent workspaces in a stage or context directory.',
+    description: 'Discover initialized or matching WeaveMAS subagent workspaces (including persisted conversation_id) in a stage or context directory.',
     inputSchema: {
       type: 'object',
       properties: {

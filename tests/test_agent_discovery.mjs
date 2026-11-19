@@ -36,6 +36,7 @@ test('discoverAgents - Happy Path: discovers initialized agents sorted determini
   assert.equal(res.agents[0].instructions_file, '.agent/agents/architect.md');
   assert.deepEqual(res.agents[0].inputs, ['../../02_concept.md']);
   assert.deepEqual(res.agents[0].outputs, ['beats.md']);
+  assert.equal(res.agents[0].conversation_id, null);
   assert.equal(res.agents[0].status, 'initialized');
 
   assert.equal(res.agents[1].agent_id, 'b_writer');
@@ -43,6 +44,7 @@ test('discoverAgents - Happy Path: discovers initialized agents sorted determini
   assert.equal(res.agents[1].instructions_file, '.agent/agents/writer.md');
   assert.deepEqual(res.agents[1].inputs, ['../a_architect/beats.md']);
   assert.deepEqual(res.agents[1].outputs, ['draft.md: ${RUN_DIR}/02_draft.md']);
+  assert.equal(res.agents[1].conversation_id, null);
   assert.equal(res.agents[1].status, 'initialized');
 
   fs.rmSync(root, { recursive: true, force: true });
@@ -81,6 +83,27 @@ test('discoverAgents - Happy Path: custom filter_status finds completed agents',
   assert.equal(res.total_matching, 1);
   assert.equal(res.agents[0].agent_id, 'worker');
   assert.equal(res.agents[0].status, 'completed');
+  assert.equal(res.agents[0].conversation_id, null);
+
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('discoverAgents (R9) - Happy Path: surfaces persisted conversation_id for surgical send_message resumes', () => {
+  const root = createTempDir();
+  const stageDir = path.join(root, 'stage03_writing');
+  const writerDir = path.join(stageDir, 'agents', 'writer');
+  const editorDir = path.join(stageDir, 'agents', 'editor');
+  const writerUuid = '12345678-1234-4321-8765-abcdefabcdef';
+
+  weaveInit(writerDir, 'agent', 'completed', '.agent/agents/writer.md', null, ['draft.md'], writerUuid);
+  weaveInit(editorDir, 'agent', 'completed', '.agent/agents/editor.md');
+
+  const res = discoverAgents(stageDir, null);
+  assert.equal(res.total_matching, 2);
+  assert.equal(res.agents[0].agent_id, 'editor');
+  assert.equal(res.agents[0].conversation_id, null);
+  assert.equal(res.agents[1].agent_id, 'writer');
+  assert.equal(res.agents[1].conversation_id, writerUuid);
 
   fs.rmSync(root, { recursive: true, force: true });
 });

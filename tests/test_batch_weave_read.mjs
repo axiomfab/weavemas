@@ -87,10 +87,14 @@ test('weaveReadBatch & weaveRead - Happy Path 1: stage_dir verifies high-fan-out
   weaveInit(editorDir, 'agent', 'initialized', '.agent/agents/editor.md', null, ['script.md: ${RUN_DIR}/03_script.md']);
 
   fs.writeFileSync(path.join(fc1Dir, 'audit_report.md'), '# Audit 1\nAll verified.', 'utf-8');
-  weaveUpdate(fc1Dir, 'completed', 'verdict: PASS — 10 claims verified', 'audit_report.md');
+  weaveUpdate(fc1Dir, 'completed', 'verdict: PASS — 10 claims verified', 'audit_report.md', {
+    conversationId: '11111111-1111-4111-8111-111111111111'
+  });
 
   fs.writeFileSync(path.join(fc2Dir, 'audit_report.md'), '# Audit 2\n**Verdict:** FAIL\n1 issue.', 'utf-8');
-  weaveUpdate(fc2Dir, 'completed', 'Completed shard 2 audit', 'audit_report.md');
+  weaveUpdate(fc2Dir, 'completed', 'Completed shard 2 audit', 'audit_report.md', {
+    conversationId: '22222222-2222-4222-8222-222222222222'
+  });
 
   fs.writeFileSync(path.join(editorDir, 'script.md'), '# Master Script', 'utf-8');
   weaveUpdate(editorDir, 'completed', 'Compiled master script', 'script.md');
@@ -107,8 +111,11 @@ test('weaveReadBatch & weaveRead - Happy Path 1: stage_dir verifies high-fan-out
 
   assert.deepEqual(res.agents.map(a => a.agent_id), ['editor', 'factchecker_01', 'factchecker_02']);
   assert.equal(res.agents[0].verdict, null);
+  assert.equal(res.agents[0].conversation_id, null);
   assert.equal(res.agents[1].verdict, 'PASS');
+  assert.equal(res.agents[1].conversation_id, '11111111-1111-4111-8111-111111111111');
   assert.equal(res.agents[2].verdict, 'FAIL');
+  assert.equal(res.agents[2].conversation_id, '22222222-2222-4222-8222-222222222222');
 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
