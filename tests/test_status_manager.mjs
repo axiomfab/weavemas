@@ -417,7 +417,7 @@ test('statusInit - Failure Path with invalid instructions_file: empty string thr
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves CWD, output/<context_slug>, workspaceRoot, and wildcards', () => {
+test('Strict Input Resolution & Named Inputs - Happy Path: resolves local CWD, explicit relative (../), ${RUN_DIR}, ${PROJECT_DIR}, and wildcards', () => {
   const workspaceRoot = createTempDir();
   const contextDir = path.join(workspaceRoot, 'output', 'kidswiki_rocket');
   const stageDir = path.join(contextDir, 'stage02_publishing');
@@ -429,12 +429,14 @@ test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves CWD, output/
   fs.mkdirSync(illustratorDir, { recursive: true });
   fs.mkdirSync(promptsDir, { recursive: true });
 
+  const localBrief = path.join(illustratorDir, 'brief.md');
   const peerDraft = path.join(writerDir, 'draft.md');
   const contextApproved = path.join(contextDir, '01_editorial_approved.md');
   const repoPersona = path.join(promptsDir, 'style_guide.md');
   const beat1 = path.join(writerDir, 'beat_01.md');
   const beat2 = path.join(writerDir, 'beat_02.md');
 
+  fs.writeFileSync(localBrief, '# Local Brief', 'utf-8');
   fs.writeFileSync(peerDraft, '# Peer Draft', 'utf-8');
   fs.writeFileSync(contextApproved, '# Approved', 'utf-8');
   fs.writeFileSync(repoPersona, '# Style Guide', 'utf-8');
@@ -442,39 +444,53 @@ test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves CWD, output/
   fs.writeFileSync(beat2, '# Beat 2', 'utf-8');
 
   statusInit(illustratorDir, 'agent', 'initialized', '.agent/agents/illustrator.md', [
+    'brief.md',
     'Draft: ../writer/draft.md',
-    'Approved Article: 01_editorial_approved.md',
-    'prompts/style_guide.md',
+    'Approved Article: ${RUN_DIR}/01_editorial_approved.md',
+    '${PROJECT_DIR}/prompts/style_guide.md',
     'Beats: ../writer/beat_*.md'
   ]);
 
   const verifyRes = statusVerify(illustratorDir, 'illustrator');
   assert.equal(verifyRes.success, true);
+  assert.equal(verifyRes.resolved_inputs['brief.md'], localBrief);
   assert.equal(verifyRes.resolved_inputs['Draft'], peerDraft);
   assert.equal(verifyRes.resolved_inputs['Approved Article'], contextApproved);
-  assert.equal(verifyRes.resolved_inputs['prompts/style_guide.md'], repoPersona);
+  assert.equal(verifyRes.resolved_inputs[`${workspaceRoot}/prompts/style_guide.md`], repoPersona);
   assert.deepEqual(verifyRes.resolved_inputs['Beats'], [beat1, beat2]);
+  assert.deepEqual(verifyRes.pending_inputs, []);
 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
-test('3-Tier Input Resolution & Named Inputs - Happy Path: resolves runs/<context_slug> as run directory', () => {
+test('Strict Input Resolution - Fail-Fast Path: bare filenames in runs/<context_slug> or workspaceRoot without ${RUN_DIR}/${PROJECT_DIR} stay in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const runDir = path.join(workspaceRoot, 'runs', 'show_caledonia');
   const stageDir = path.join(runDir, 'stage02_concept');
   const showrunnerDir = path.join(stageDir, 'agents', 'showrunner');
+  const promptsDir = path.join(workspaceRoot, 'prompts');
   fs.mkdirSync(showrunnerDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
 
   const setupFile = path.join(runDir, '01_setup.md');
+  const styleFile = path.join(promptsDir, 'style_guide.md');
   fs.writeFileSync(setupFile, '# Setup in runs/ root', 'utf-8');
+  fs.writeFileSync(styleFile, '# Style Guide in workspace root', 'utf-8');
 
   statusInit(showrunnerDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
-    '01_setup.md'
+    '01_setup.md',
+    'prompts/style_guide.md',
+    'Explicit Setup: ${RUN_DIR}/01_setup.md',
+    'Explicit Style: ${PROJECT_DIR}/prompts/style_guide.md'
   ]);
 
   const verifyRes = statusVerify(showrunnerDir, 'showrunner');
   assert.equal(verifyRes.success, true);
-  assert.equal(verifyRes.resolved_inputs['01_setup.md'], setupFile);
+  assert.equal(verifyRes.resolved_inputs['Explicit Setup'], setupFile);
+  assert.equal(verifyRes.resolved_inputs['Explicit Style'], styleFile);
+  assert.equal(verifyRes.resolved_inputs['01_setup.md'], undefined);
+  assert.equal(verifyRes.resolved_inputs['prompts/style_guide.md'], undefined);
+  assert.deepEqual(verifyRes.pending_inputs, ['01_setup.md', 'prompts/style_guide.md']);
 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
@@ -558,13 +574,13 @@ test('statusInit & statusUpdate - Happy Path: initializes mapped outputs in weav
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
-test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
+test('Strict Input Resolution - Boundary Path 1: explicit relative path (../) does not fall through to workspaceRoot and stays in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'stage01', 'agents', 'checker');
   fs.mkdirSync(agentDir, { recursive: true });
   // Create file at workspaceRoot/writer/draft.md, NOT at stage01/agents/writer/draft.md
   fs.mkdirSync(path.join(workspaceRoot, 'writer'), { recursive: true });
-  fs.writeFileSync(path.join(workspaceRoot, 'writer', 'draft.md'), 'wrong tier', 'utf-8');
+  fs.writeFileSync(path.join(workspaceRoot, 'writer', 'draft.md'), 'wrong root', 'utf-8');
 
   statusInit(agentDir, 'agent', 'initialized', null, ['../writer/draft.md']);
   const res = statusVerify(agentDir);
@@ -574,7 +590,7 @@ test('3-Tier Input Resolution - Boundary Path 1: explicit relative path (../) do
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
 });
 
-test('3-Tier Input Resolution - Boundary Path 2: wildcard matching zero files stays in pending_inputs', () => {
+test('Strict Input Resolution - Boundary Path 2: wildcard matching zero files stays in pending_inputs', () => {
   const workspaceRoot = createTempDir();
   const agentDir = path.join(workspaceRoot, 'output', 'ctx', 'agents', 'compiler');
   fs.mkdirSync(agentDir, { recursive: true });
@@ -634,14 +650,14 @@ test('Deferred Mid-Stage Inputs - Happy Path: statusVerify succeeds when Turn-1 
   fs.writeFileSync(setupFile, '# Setup', 'utf-8');
 
   statusInit(showrunnerDir, 'agent', 'initialized', '.agent/agents/stage2_showrunner.md', [
-    '01_setup.md',
+    '${RUN_DIR}/01_setup.md',
     '../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md'
   ]);
 
-  // Turn 1: 01_setup.md exists, sourced_tracks.md does not exist yet
+  // Turn 1: ${RUN_DIR}/01_setup.md exists, sourced_tracks.md does not exist yet
   const turn1Res = statusVerify(showrunnerDir, 'showrunner');
   assert.equal(turn1Res.success, true);
-  assert.equal(turn1Res.resolved_inputs['01_setup.md'], setupFile);
+  assert.equal(turn1Res.resolved_inputs[`${contextDir}/01_setup.md`], setupFile);
   assert.deepEqual(turn1Res.pending_inputs, ['../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md']);
 
   // Mid-stage: youtube_sourcer_01 creates sourced_tracks.md, showrunner wakes up and re-verifies
@@ -650,7 +666,7 @@ test('Deferred Mid-Stage Inputs - Happy Path: statusVerify succeeds when Turn-1 
 
   const wakeupRes = statusVerify(showrunnerDir, 'showrunner');
   assert.equal(wakeupRes.success, true);
-  assert.equal(wakeupRes.resolved_inputs['01_setup.md'], setupFile);
+  assert.equal(wakeupRes.resolved_inputs[`${contextDir}/01_setup.md`], setupFile);
   assert.equal(wakeupRes.resolved_inputs['../youtube_sourcers/youtube_sourcer_*/sourced_tracks.md'], tracksFile);
   assert.deepEqual(wakeupRes.pending_inputs, []);
 

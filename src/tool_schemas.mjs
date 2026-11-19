@@ -28,7 +28,7 @@ export const TOOLS = [
         inputs: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved via 3-tier lookup (agent CWD -> runs/<context_slug> -> workspace root).'
+          description: 'Optional list of input file paths or named entries ("Name: path") with optional wildcards (*), resolved strictly relative to agent CWD after substituting explicit ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR} path variables.'
         },
         outputs: {
           oneOf: [
@@ -76,7 +76,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_verify',
-    description: 'Verify that the working directory weave.md exists, matches the assigned subagent workspace, and resolves all declared inputs across the 3-tier hierarchy.',
+    description: 'Verify that the working directory weave.md exists, matches the assigned subagent workspace, and resolves all declared inputs strictly relative to agent CWD (with explicit ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR} variable substitution).',
     inputSchema: {
       type: 'object',
       properties: {

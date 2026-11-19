@@ -419,10 +419,9 @@ output/kidswiki_rocket_age4/
 * Agent `.md` files and `orchestrator.md` guides **never** contain raw `call_mcp_tool` JSON payloads.
 * Agents mount `weave-core-agent` and orchestrators mount `weave-core-orchestrator`. The skills teach the runtime how to call the MCP tools; your markdown files stay 100% declarative.
 
-### Pillar 4: 3-Tier Input Model & Session Continuity
-* **Tier 1 (Runtime Parameters)**: Short key-value directives (`Topic: Rocket`, `Target Age: 4`) inlined in the `invoke_subagent` prompt.
-* **Tier 2 (Prior Deliverables)**: Complete files (`draft.md`, `audit.md`) physically copied into the next subagent's working directory during the pre-spawn hook—never summarized in prompts.
-* **Tier 3 (Read-Only Assets)**: Heavy media or reference libraries passed via explicit file paths.
+### Pillar 4: Explicit Input Path Resolution & Session Continuity
+* **Runtime Parameters**: Short key-value directives (`Topic: Rocket`, `Target Age: 4`) inlined in the `invoke_subagent` prompt.
+* **Explicit Path Variables**: All non-local file inputs must be scoped explicitly using `${PROJECT_DIR}` (workspace root), `${RUN_DIR}` (`runs/<context_slug>`), `${AGENT_DIR}` (agent CWD), or explicit relative paths (`./`, `../`). Bare filenames resolve strictly inside the agent's own working directory—there is no implicit fallback to run or workspace roots, so missing prefixes fail fast during `weave_verify`.
 * **Session Continuity**: `invoke_subagent` is called **only once** per agent role instance. All feedback loops and revisions use `send_message(Recipient: <conversationId>, Message: ...)`.
 
 ---

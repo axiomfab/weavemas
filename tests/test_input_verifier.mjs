@@ -66,6 +66,33 @@ test('checkAgentInputs - Failure Path 2: non-existent file returns exists=false 
   assert.equal(result[0].count, 0);
 });
 
+test('checkAgentInputs - Strict Single-Root Resolution: bare filenames only resolve in agentDir and never fall back to runDir or workspaceRoot', () => {
+  const runDir = path.join(testDir, 'runs', 'show_test');
+  fs.writeFileSync(path.join(runDir, '01_setup.md'), '# Run Setup', 'utf-8');
+  fs.writeFileSync(path.join(dummyAgentDir, 'local_input.md'), '# Local Input', 'utf-8');
+
+  const inputs = [
+    'local_input.md',
+    '01_setup.md',
+    'prompts/personas/persona_alpha.md',
+    'Run Setup: ${RUN_DIR}/01_setup.md'
+  ];
+  const result = checkAgentInputs(dummyAgentDir, inputs, testDir, 'show_test');
+
+  assert.equal(result.length, 4);
+  assert.equal(result[0].exists, true);
+  assert.equal(result[0].count, 1);
+  // Bare filename in runDir must NOT resolve without ${RUN_DIR}/
+  assert.equal(result[1].exists, false);
+  assert.equal(result[1].count, 0);
+  // Bare relative path in workspaceRoot must NOT resolve without ${PROJECT_DIR}/
+  assert.equal(result[2].exists, false);
+  assert.equal(result[2].count, 0);
+  // Explicit ${RUN_DIR}/ resolves cleanly
+  assert.equal(result[3].exists, true);
+  assert.equal(result[3].count, 1);
+});
+
 test('getMediaType & getMediaMimeType - Happy Path: classifies image, audio, and video files and resolves MIME types', () => {
   assert.equal(getMediaType('cover.png'), 'image');
   assert.equal(getMediaType('photo.JPG'), 'image');
