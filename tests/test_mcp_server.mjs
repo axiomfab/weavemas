@@ -573,3 +573,76 @@ test('MCP Failure Path 15: weave_update type mismatch and invalid type return is
 
   fs.rmSync(path.dirname(agentDir), { recursive: true, force: true });
 });
+
+test('MCP Tool Call - Happy Path: weave_update and weave_read support optional mirror_to for zero-token deliverable copy', () => {
+  const listRes = captureResponse({ jsonrpc: '2.0', id: 41, method: 'tools/list', params: {} });
+  const updateTool = listRes.result.tools.find(t => t.name === 'weave_update');
+  const readTool = listRes.result.tools.find(t => t.name === 'weave_read');
+  assert.ok(updateTool.inputSchema.properties.mirror_to);
+  assert.ok(readTool.inputSchema.properties.mirror_to);
+
+  const runDir = createStagedRun(['stage01_editorial'], 'stage01_editorial/in_progress');
+  fs.writeFileSync(path.join(runDir, '01_draft.md'), '# Draft Content', 'utf-8');
+
+  const mirrorPath1 = path.join(runDir, 'review_artifacts', '01_draft.md');
+  const updRes = callUpdate({
+    dir: runDir,
+    type: 'orchestrator',
+    status: 'stage01_editorial/awaiting_review',
+    outputs: '01_draft.md',
+    progress: 'Awaiting review of 01_draft.md',
+    mirror_to: mirrorPath1
+  });
+  assert.equal(updRes.result.isError, undefined, updRes.result.content[0].text);
+  assert.match(updRes.result.content[0].text, /Mirrored:/);
+  assert.equal(fs.readFileSync(mirrorPath1, 'utf-8'), '# Draft Content');
+
+  const mirrorPath2 = path.join(runDir, 'review_artifacts_2', '01_draft_read.md');
+  const readRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 42,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: {
+        dir: runDir,
+        expected_outputs: '01_draft.md',
+        expected_status: 'stage01_editorial/awaiting_review',
+        mirror_to: mirrorPath2
+      }
+    }
+  });
+  assert.equal(readRes.result.isError, undefined, readRes.result.content[0].text);
+  const parsed = JSON.parse(readRes.result.content[0].text);
+  assert.deepEqual(parsed.mirrored_files, [path.resolve(mirrorPath2)]);
+  assert.equal(fs.readFileSync(mirrorPath2, 'utf-8'), '# Draft Content');
+
+  fs.rmSync(runDir, { recursive: true, force: true });
+});
+
+test('MCP Failure Path 16: mirror_to rejects relative paths and empty outputs on weave_update and weave_read', () => {
+  const runDir = createStagedRun(['stage01_editorial'], 'stage01_editorial/in_progress');
+
+  const relUpd = callUpdate({
+    dir: runDir,
+    type: 'orchestrator',
+    status: 'stage01_editorial/awaiting_review',
+    mirror_to: 'relative/copy.md'
+  });
+  assert.equal(relUpd.result.isError, true);
+  assert.match(relUpd.result.content[0].text, /CRITICAL: mirror_to must be an absolute path/);
+
+  const emptyRead = captureResponse({
+    jsonrpc: '2.0',
+    id: 43,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: { dir: runDir, mirror_to: path.join(runDir, 'out.md') }
+    }
+  });
+  assert.equal(emptyRead.result.isError, true);
+  assert.match(emptyRead.result.content[0].text, /CRITICAL: mirror_to requires at least one verified output file/);
+
+  fs.rmSync(runDir, { recursive: true, force: true });
+});

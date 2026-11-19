@@ -842,3 +842,60 @@ test('statusVerify - Failure Path 4: rejects the orchestrator run directory (sub
   });
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test('statusUpdate & statusRead - Happy Path: mirrorTo copies verified deliverables in Node.js with zero LLM context', () => {
+  const tmp = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  const deliverable = path.join(tmp, '01_setup.md');
+  fs.writeFileSync(deliverable, '# Stage 1 Setup Deliverable', 'utf-8');
+
+  const mirrorDest1 = path.join(tmp, 'external_review', '01_setup.md');
+  const updRes = statusUpdate(
+    tmp,
+    'stage01_setup/awaiting_review',
+    'Awaiting user review of 01_setup.md',
+    '01_setup.md',
+    { type: 'orchestrator', mirrorTo: mirrorDest1 }
+  );
+  assert.equal(updRes.success, true);
+  assert.deepEqual(updRes.mirrored_files, [path.resolve(mirrorDest1)]);
+  assert.equal(fs.readFileSync(mirrorDest1, 'utf-8'), '# Stage 1 Setup Deliverable');
+  assert.match(updRes.message, /Mirrored:/);
+
+  const mirrorDest2 = path.join(tmp, 'external_review_2', '01_setup_read.md');
+  const readRes = statusRead(tmp, '01_setup.md', 'stage01_setup/awaiting_review', { mirrorTo: mirrorDest2 });
+  assert.deepEqual(readRes.mirrored_files, [path.resolve(mirrorDest2)]);
+  assert.equal(fs.readFileSync(mirrorDest2, 'utf-8'), '# Stage 1 Setup Deliverable');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusUpdate & statusRead - Failure Paths: mirrorTo rejects relative path, empty outputs, and invalid options', () => {
+  const tmp = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  const before = fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8');
+
+  assert.throws(() => statusUpdate(tmp, 'stage01_setup/awaiting_review', null, null, { type: 'orchestrator', mirrorTo: 'relative/copy.md' }), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to must be an absolute path/
+  });
+  assert.throws(() => statusUpdate(tmp, 'stage01_setup/awaiting_review', null, null, { type: 'orchestrator', mirrorTo: path.join(tmp, 'copy.md') }), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to requires at least one verified output file/
+  });
+  // weave.md must remain untouched on failed mirrorTo
+  assert.equal(fs.readFileSync(path.join(tmp, 'weave.md'), 'utf-8'), before);
+
+  assert.throws(() => statusRead(tmp, undefined, undefined, null), {
+    name: 'TypeError',
+    message: /CRITICAL: options must be a plain object/
+  });
+  assert.throws(() => statusRead(tmp, undefined, undefined, { mirrorTo: 'relative/copy.md' }), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to must be an absolute path/
+  });
+  assert.throws(() => statusRead(tmp, undefined, undefined, { mirrorTo: path.join(tmp, 'copy.md') }), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to requires at least one verified output file/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

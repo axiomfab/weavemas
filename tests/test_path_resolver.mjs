@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { substitutePathVariables, resolveInputEntry, mergeOutputDeclarations, verifyOutputFiles } from '../src/path_resolver.mjs';
+import { substitutePathVariables, resolveInputEntry, mergeOutputDeclarations, verifyOutputFiles, mirrorOutputFiles } from '../src/path_resolver.mjs';
 
 test('substitutePathVariables - Happy Path: substitutes ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR}', () => {
   const roots = {
@@ -123,6 +123,60 @@ test('verifyOutputFiles - Failure Paths: throws on missing local file or invalid
   });
 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('mirrorOutputFiles - Happy Path: mirrors single file to exact file path and multiple files to directory', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mirror-test-'));
+  const srcA = path.join(tmp, '01_setup.md');
+  const srcB = path.join(tmp, '01_host.md');
+  fs.writeFileSync(srcA, '# Setup Deliverable', 'utf-8');
+  fs.writeFileSync(srcB, '# Host Deliverable', 'utf-8');
+
+  // 1. Single file -> exact destination file path
+  const exactDest = path.join(tmp, 'review', '01_setup_copy.md');
+  const mirroredSingle = mirrorOutputFiles([srcA], exactDest);
+  assert.deepEqual(mirroredSingle, [path.resolve(exactDest)]);
+  assert.equal(fs.readFileSync(exactDest, 'utf-8'), '# Setup Deliverable');
+
+  // 2. Multiple files -> target directory with trailing slash
+  const dirDest = path.join(tmp, 'review_dir') + path.sep;
+  const mirroredMulti = mirrorOutputFiles([srcA, srcB], dirDest);
+  assert.equal(mirroredMulti.length, 2);
+  assert.equal(fs.readFileSync(path.join(tmp, 'review_dir', '01_setup.md'), 'utf-8'), '# Setup Deliverable');
+  assert.equal(fs.readFileSync(path.join(tmp, 'review_dir', '01_host.md'), 'utf-8'), '# Host Deliverable');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('mirrorOutputFiles - Failure Paths: rejects invalid mirror_to, empty sources, missing source, and multi-to-file', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mirror-fail-'));
+  const srcA = path.join(tmp, 'a.md');
+  const srcB = path.join(tmp, 'b.md');
+  fs.writeFileSync(srcA, 'A', 'utf-8');
+  fs.writeFileSync(srcB, 'B', 'utf-8');
+
+  assert.throws(() => mirrorOutputFiles([srcA], ''), {
+    name: 'TypeError',
+    message: /CRITICAL: mirror_to must be a non-empty string/
+  });
+  assert.throws(() => mirrorOutputFiles([srcA], 'relative/out.md'), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to must be an absolute path/
+  });
+  assert.throws(() => mirrorOutputFiles([], path.join(tmp, 'out.md')), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to requires at least one verified output file/
+  });
+  assert.throws(() => mirrorOutputFiles([path.join(tmp, 'missing.md')], path.join(tmp, 'out.md')), {
+    name: 'Error',
+    message: /CRITICAL: Source output file does not exist on disk/
+  });
+  assert.throws(() => mirrorOutputFiles([srcA, srcB], path.join(tmp, 'single_file.md')), {
+    name: 'Error',
+    message: /CRITICAL: mirror_to target .* must be a directory/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
 
 test('resolveInputEntry - Happy Path: resolves local agentDir, explicit ${RUN_DIR}, ${PROJECT_DIR}, ${AGENT_DIR}, and relative paths', () => {

@@ -350,6 +350,70 @@ export function verifyOutputFiles(resolvedDir, outputs) {
   return allMatches;
 }
 
+/**
+ * Copies verified output file(s) directly in Node.js to an external absolute destination
+ * file or directory path so zero deliverable bytes pass through LLM context.
+ * @param {string[]} sourcePaths - Resolved absolute paths of verified output files.
+ * @param {string} mirrorTo - Absolute destination file path (for a single source) or directory path.
+ * @returns {string[]} Resolved absolute destination paths written/verified.
+ */
+export function mirrorOutputFiles(sourcePaths, mirrorTo) {
+  if (typeof mirrorTo !== 'string' || !mirrorTo.trim()) {
+    throw new TypeError('CRITICAL: mirror_to must be a non-empty string.');
+  }
+  const trimmedTarget = mirrorTo.trim();
+  if (!path.isAbsolute(trimmedTarget)) {
+    throw new Error(`CRITICAL: mirror_to must be an absolute path (received relative path: "${trimmedTarget}"). Provide the full destination path.`);
+  }
+  if (!Array.isArray(sourcePaths) || sourcePaths.length === 0) {
+    throw new Error('CRITICAL: mirror_to requires at least one verified output file to copy.');
+  }
+
+  const endsWithSep = trimmedTarget.endsWith('/') || trimmedTarget.endsWith('\\');
+  const absMirror = path.resolve(trimmedTarget);
+  const existsAsDir = fs.existsSync(absMirror) && fs.statSync(absMirror).isDirectory();
+  const isTargetDir = endsWithSep || existsAsDir;
+
+  if (!isTargetDir && sourcePaths.length > 1) {
+    throw new Error(`CRITICAL: mirror_to target '${trimmedTarget}' must be a directory (ending in '/' or an existing directory) when mirroring ${sourcePaths.length} output files.`);
+  }
+
+  const mirrored = [];
+  if (isTargetDir) {
+    fs.mkdirSync(absMirror, { recursive: true });
+    for (const src of sourcePaths) {
+      if (typeof src !== 'string' || !fs.existsSync(src)) {
+        throw new Error(`CRITICAL: Source output file does not exist on disk: ${src}`);
+      }
+      const dest = path.join(absMirror, path.basename(src));
+      if (path.resolve(src) !== path.resolve(dest)) {
+        if (fs.statSync(src).isDirectory()) {
+          fs.cpSync(src, dest, { recursive: true, force: true });
+        } else {
+          fs.copyFileSync(src, dest);
+        }
+      }
+      mirrored.push(dest);
+    }
+  } else {
+    const src = sourcePaths[0];
+    if (typeof src !== 'string' || !fs.existsSync(src)) {
+      throw new Error(`CRITICAL: Source output file does not exist on disk: ${src}`);
+    }
+    fs.mkdirSync(path.dirname(absMirror), { recursive: true });
+    if (path.resolve(src) !== path.resolve(absMirror)) {
+      if (fs.statSync(src).isDirectory()) {
+        fs.cpSync(src, absMirror, { recursive: true, force: true });
+      } else {
+        fs.copyFileSync(src, absMirror);
+      }
+    }
+    mirrored.push(absMirror);
+  }
+
+  return mirrored;
+}
+
 export {
   normalizeOutputs as normalizeDeliverable,
   verifyOutputFiles as verifyDeliverableFiles

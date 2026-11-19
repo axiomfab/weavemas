@@ -87,7 +87,10 @@ export function handleMessage(msg) {
         const progress = args.progress || null;
         const outputs = args.outputs !== undefined ? args.outputs : (args.deliverable !== undefined ? args.deliverable : null);
         if (!status) throw new Error("CRITICAL: 'status' argument is required for weave_update.");
-        const options = args.type !== undefined ? { type: args.type } : {};
+        const options = {
+          ...(args.type !== undefined ? { type: args.type } : {}),
+          ...(args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {})
+        };
         const res = weaveUpdate(targetDir, status, progress, outputs, options);
         resultText = res.message;
       } else if (name === 'weave_verify' || name === 'status_verify') {
@@ -111,7 +114,8 @@ export function handleMessage(msg) {
         }
         const expectedOutputs = args.expected_outputs !== undefined ? args.expected_outputs : args.expected_deliverable;
         const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
-        const res = weaveRead(targetDir, expectedOutputs, expectedStatus);
+        const readOptions = args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {};
+        const res = weaveRead(targetDir, expectedOutputs, expectedStatus, readOptions);
         resultText = JSON.stringify(res, null, 2);
       } else if (name === 'discover_agents') {
         const directory = args.directory;
