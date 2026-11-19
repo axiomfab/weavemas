@@ -28,10 +28,10 @@ export function parseInputEntry(entry) {
 }
 
 /**
- * Infers the 3-tier lookup roots from an agent's absolute working directory:
- * 1. agentDir (CWD of the agent)
- * 2. contextDir (runs/<context_slug>/ or legacy output/<context_slug>/)
- * 3. workspaceRoot (parent of runs/ or output/)
+ * Infers the path variable roots from an agent's absolute working directory:
+ * 1. agentDir (${AGENT_DIR} — CWD of the agent)
+ * 2. contextDir (${RUN_DIR} — runs/<context_slug>/ or legacy output/<context_slug>/)
+ * 3. workspaceRoot (${PROJECT_DIR} — parent of runs/ or output/)
  * @param {string} agentDir
  * @returns {{ agentDir: string, contextDir: string | null, workspaceRoot: string | null }}
  */
@@ -183,11 +183,9 @@ export function substitutePathVariables(targetPath, roots) {
 }
 
 /**
- * Resolves a single input entry across the 3-tier hierarchy:
- * 1. Agent CWD (agentDir)
- * 2. Run Context Directory (runs/<context_slug>/ or output/<context_slug>/)
- * 3. Workspace Root (<workspace_root>/)
- * Throws a CRITICAL error if no matching file exists in any tier.
+ * Resolves a single input entry strictly relative to agentDir after substituting
+ * explicit ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR} path variables.
+ * Throws a CRITICAL error if no matching file exists on disk.
  * @param {string} agentDir
  * @param {string} entry
  * @returns {{ raw: string, name: string | null, pattern: string, matches: string[] }}
@@ -196,21 +194,15 @@ export function resolveInputEntry(agentDir, entry) {
   const { name, rawPath } = parseInputEntry(entry);
   const roots = inferLookupRoots(agentDir);
   const substitutedPath = substitutePathVariables(rawPath, roots);
-  const hadVariable = rawPath !== substitutedPath;
+  const matches = expandPathPattern(agentDir, substitutedPath);
 
-  const isExplicitRelative = substitutedPath.startsWith('./') || substitutedPath.startsWith('../') || substitutedPath.startsWith('.\\') || substitutedPath.startsWith('..\\');
-  const candidateRoots = hadVariable || path.isAbsolute(substitutedPath) || isExplicitRelative
-    ? [agentDir]
-    : [agentDir, roots.contextDir, roots.workspaceRoot].filter(Boolean);
-
-  for (const root of candidateRoots) {
-    const matches = expandPathPattern(root, substitutedPath);
-    if (matches.length > 0) {
-      return { raw: entry, name, pattern: substitutedPath, matches };
-    }
+  if (matches.length > 0) {
+    return { raw: entry, name, pattern: substitutedPath, matches };
   }
 
-  const tried = candidateRoots.map(r => path.isAbsolute(substitutedPath) ? substitutedPath : path.resolve(r, substitutedPath)).join(', ');
+  const tried = path.isAbsolute(substitutedPath)
+    ? substitutedPath
+    : path.resolve(agentDir, substitutedPath);
   throw new Error(`CRITICAL: Input file does not exist on disk: ${tried} (declared as "${entry}")`);
 }
 
