@@ -36,22 +36,9 @@ export function checkAgentInputs(agentDir, inputs, workspaceRoot, showDir) {
       contextDir: effectiveContext,
       workspaceRoot: effectiveWs
     });
-    const hadVariable = rawPath !== substitutedPath;
     const isWildcard = substitutedPath.includes('*');
-    const isExplicitRel = substitutedPath.startsWith('./') || substitutedPath.startsWith('../') || substitutedPath.startsWith('.\\') || substitutedPath.startsWith('..\\');
-
-    const candidateRoots = hadVariable || path.isAbsolute(substitutedPath) || isExplicitRel
-      ? [agentDir]
-      : [agentDir, effectiveContext, effectiveWs].filter(Boolean);
-
-    let matchCount = 0;
-    for (const root of candidateRoots) {
-      const matches = expandPathPattern(root, substitutedPath);
-      if (matches.length > 0) {
-        matchCount = matches.length;
-        break;
-      }
-    }
+    const matches = expandPathPattern(agentDir, substitutedPath);
+    const matchCount = matches.length;
 
     return {
       raw: rawInput,

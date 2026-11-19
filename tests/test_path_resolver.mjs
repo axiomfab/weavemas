@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { substitutePathVariables, mergeOutputDeclarations, verifyOutputFiles } from '../src/path_resolver.mjs';
+import { substitutePathVariables, resolveInputEntry, mergeOutputDeclarations, verifyOutputFiles } from '../src/path_resolver.mjs';
 
 test('substitutePathVariables - Happy Path: substitutes ${PROJECT_DIR}, ${RUN_DIR}, and ${AGENT_DIR}', () => {
   const roots = {
@@ -120,6 +120,68 @@ test('verifyOutputFiles - Failure Paths: throws on missing local file or invalid
   assert.throws(() => verifyOutputFiles(agentDir, ['seg_*.md: ${RUN_DIR}/01_single_target.md']), {
     name: 'Error',
     message: /CRITICAL: Wildcard output 'seg_\*\.md' cannot map to a single file target/
+  });
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('resolveInputEntry - Happy Path: resolves local agentDir, explicit ${RUN_DIR}, ${PROJECT_DIR}, ${AGENT_DIR}, and relative paths', () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-ok-'));
+  const runDir = path.join(workspaceRoot, 'runs', 'show_01');
+  const stageDir = path.join(runDir, 'stage01_setup');
+  const writerDir = path.join(stageDir, 'agents', 'writer');
+  const editorDir = path.join(stageDir, 'agents', 'editor');
+  const promptsDir = path.join(workspaceRoot, 'prompts');
+
+  fs.mkdirSync(writerDir, { recursive: true });
+  fs.mkdirSync(editorDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+
+  const localNotes = path.join(editorDir, 'notes.md');
+  const siblingDraft = path.join(writerDir, 'draft.md');
+  const runSetup = path.join(runDir, '01_setup.md');
+  const projGuide = path.join(promptsDir, 'guide.md');
+
+  fs.writeFileSync(localNotes, '# Notes', 'utf-8');
+  fs.writeFileSync(siblingDraft, '# Draft', 'utf-8');
+  fs.writeFileSync(runSetup, '# Setup', 'utf-8');
+  fs.writeFileSync(projGuide, '# Guide', 'utf-8');
+
+  assert.deepEqual(resolveInputEntry(editorDir, 'notes.md').matches, [localNotes]);
+  assert.deepEqual(resolveInputEntry(editorDir, 'Draft: ../writer/draft.md').matches, [siblingDraft]);
+  assert.deepEqual(resolveInputEntry(editorDir, 'Setup: ${RUN_DIR}/01_setup.md').matches, [runSetup]);
+  assert.deepEqual(resolveInputEntry(editorDir, 'Guide: ${PROJECT_DIR}/prompts/guide.md').matches, [projGuide]);
+  assert.deepEqual(resolveInputEntry(editorDir, '${AGENT_DIR}/notes.md').matches, [localNotes]);
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('resolveInputEntry - Failure Path 1: bare filename in runDir without ${RUN_DIR} throws CRITICAL Error', () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-fail1-'));
+  const runDir = path.join(workspaceRoot, 'runs', 'show_01');
+  const agentDir = path.join(runDir, 'stage01', 'agents', 'editor');
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.writeFileSync(path.join(runDir, '01_setup.md'), '# Setup', 'utf-8');
+
+  assert.throws(() => resolveInputEntry(agentDir, '01_setup.md'), {
+    name: 'Error',
+    message: /CRITICAL: Input file does not exist on disk/
+  });
+
+  fs.rmSync(workspaceRoot, { recursive: true, force: true });
+});
+
+test('resolveInputEntry - Failure Path 2: bare relative path in workspaceRoot without ${PROJECT_DIR} throws CRITICAL Error', () => {
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-fail2-'));
+  const agentDir = path.join(workspaceRoot, 'runs', 'show_01', 'stage01', 'agents', 'editor');
+  const promptsDir = path.join(workspaceRoot, 'prompts');
+  fs.mkdirSync(agentDir, { recursive: true });
+  fs.mkdirSync(promptsDir, { recursive: true });
+  fs.writeFileSync(path.join(promptsDir, 'guide.md'), '# Guide', 'utf-8');
+
+  assert.throws(() => resolveInputEntry(agentDir, 'prompts/guide.md'), {
+    name: 'Error',
+    message: /CRITICAL: Input file does not exist on disk/
   });
 
   fs.rmSync(workspaceRoot, { recursive: true, force: true });
