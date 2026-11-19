@@ -41,6 +41,10 @@ tools:
    - Declare each step as `## Task: <NN>_<short_slug>` (lowercase snake_case, zero-padded `01_`, `02_`, 1–2 words max so UI badges do not truncate).
    - List the execution sequence or branching rules under `# Lifecycle`.
 3. **Single-Purpose Agents**: Omit `# Tasks` and `# Lifecycle` when the role performs a single atomic action.
+4. **Concise 1-Line Chat Acknowledgments (Zero Prose Recap)**:
+   - Require workers to write all detailed findings, critiques, and deliverables strictly to their declared output file(s) and `weave.md`. Never instruct an agent to paste, summarize, or recap its report in chat.
+   - `weave-core-agent` enforces a 1-line final chat response (e.g. `COMPLETED: <agent_id> | verdict: PASS | outputs: [audit_report.md]`, or `COMPLETED: <agent_id> | outputs: [draft.md]`). For audit/review agents, instruct the agent to record an explicit `PASS` or `FAIL` verdict in its output file and `weave_update` `progress` (`verdict: PASS` / `verdict: FAIL`).
+   - **Exception for Emitted Handoff Parameters ($P_{\text{out}}$)**: Only when a stage explicitly requires an agent to return scalar/structured runtime handoff parameters ($P_{\text{out}}$, such as `track_queries` emitted before pausing for peer sourcing) may the agent instructions specify returning that compact $P_{\text{out}}$ block beneath the 1-line status header.
 
 ---
 

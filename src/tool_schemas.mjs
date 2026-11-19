@@ -98,13 +98,22 @@ export const TOOLS = [
   },
   {
     name: 'weave_read',
-    description: 'Read and verify status metadata from a WeaveMAS weave.md without reading full markdown.',
+    description: 'Read and verify status metadata from a single WeaveMAS weave.md (dir) or batch-verify multiple agent workspaces in one call (dirs or stage_dir).',
     inputSchema: {
       type: 'object',
       properties: {
         dir: {
           type: 'string',
-          description: 'Absolute path to the target directory containing weave.md.'
+          description: 'Absolute path to a single target directory containing weave.md (mutually exclusive with dirs and stage_dir).'
+        },
+        dirs: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Non-empty array of absolute paths to agent directories containing weave.md for batch verification (mutually exclusive with dir and stage_dir).'
+        },
+        stage_dir: {
+          type: 'string',
+          description: 'Absolute path to a stage or context directory whose agents/ workspaces are batch-verified in a single call (mutually exclusive with dir and dirs).'
         },
         expected_outputs: {
           oneOf: [
@@ -120,10 +129,9 @@ export const TOOLS = [
         },
         mirror_to: {
           type: 'string',
-          description: 'Optional absolute destination file or directory path to mirror verified output file(s) directly in Node.js (zero-token copy). Requires at least one verified output.'
+          description: 'Optional absolute destination file or directory path to mirror verified output file(s) directly in Node.js (zero-token copy; single-directory dir mode only). Requires at least one verified output.'
         }
-      },
-      required: ['dir']
+      }
     }
   },
   {

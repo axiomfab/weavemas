@@ -69,7 +69,7 @@ Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, and `outputs`
        1. `<child_agent_1_id>` (TypeName: `<child_1_type>`, WD: `<wd_1>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<local_output_1>`)
        2. `<child_agent_2_id>` (TypeName: `<child_2_type>`, WD: `<wd_2>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<local_output_2>`)
      - Local Revision Loop: Route downstream audit corrections directly to the upstream child agent's `conversationId` via `send_message` (max 2 cycles).
-     - Finalization: Verify each child agent's completion and output(s) via `weave_read` and message the parent orchestrator.
+     - Finalization: Batch-verify child agents' completion and output(s) in a single `weave_read` call (`dirs: ["<wd_1>", "<wd_2>", ...]`, `expected_status: "completed"`) and return a 1-line completion ack to the parent orchestrator.
      ```
 
 ---
@@ -78,8 +78,10 @@ Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, and `outputs`
 
 Upon subagent or sub-orchestrator wakeup:
 1. **Fail-Fast on Verification Errors**: If a subagent reports a `weave_verify` error (such as a missing `inputs` file) or halts in a `blocked` state, update master `weave.md` (`<workspace_root>/runs/<context_slug>`) via `weave_update` with `type: "orchestrator"` and `status: "<stage_slug>/blocked"` (or `"blocked"` for stageless pipelines; put the reason in `progress`) and **halt immediately and report the error to the user**—never attempt workarounds.
-2. **Verify via `weave_read` (Zero Manual File Copying)**:
-   Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_outputs": "<expected_local_filename_or_array_or_null>" }`. `weave_update` already promoted any `<local>: <target>` output bindings to `${RUN_DIR}` upon subagent completion, and `weave_read` verifies that both local and promoted output files exist on disk. Halt immediately if verification fails. Never manually copy or promote subagent output files in the orchestrator.
+2. **Verify via `weave_read` (Batch Wave/Stage Verification & Zero Manual File Copying)**:
+   - **Single Agent**: Call `weave_read`: `{ "dir": "<abs_agent_dir>", "expected_status": "completed", "expected_outputs": "<expected_local_filename_or_array_or_null>" }`.
+   - **Parallel Wave or Multi-Agent Stage (Mandatory Batch Call)**: Never issue $N$ separate `weave_read` calls across parallel workers. Verify the entire wave or stage in **one** call using `"dirs": ["<abs_agent_dir_1>", ...]` (for a specific wave/subset) or `"stage_dir": "<workspace_root>/runs/<context_slug>/<stage_slug>"` with `"expected_status": "completed"`. Inspect the returned compact summary (`all_completed`, `verified`, per-agent `status`/`verdict`, `status_mismatches`, and `missing_outputs`); halt immediately if `verified` is `false` or `missing_outputs` is non-empty.
+   - `weave_update` already promoted any `<local>: <target>` output bindings to `${RUN_DIR}` upon subagent completion, and `weave_read` verifies that both local and promoted output files exist on disk. Never manually copy or promote subagent output files in the orchestrator.
 3. **User Review Gate (when declared in stage guide — Zero-Copy)**:
    - Transition master status via `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<stage_slug>/awaiting_review", "progress": "Awaiting user review of <stage_output_name>" }` (or `"status": "awaiting_review"` for stageless pipelines).
    - **NEVER** call `read_file` + `write_file` to copy full stage deliverables through the orchestrator's LLM context (neither into `<appDataDir>/brain/<conversation-id>/` nor inline into chat). `weave_read` already verified existence and promotion in Node.js, and the WeaveMAS UI previews text and media deliverables directly from `${RUN_DIR}`.
