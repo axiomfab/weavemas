@@ -171,11 +171,19 @@ test('R7 Provisioner & Stage Orchestrator Audit - Happy Path: provisioner sets i
   assert.match(pluginProvisioner, /^inheritMcp:\s*true$/m);
   verifyInlineToolSignatures(pluginProvisioner, ['weave_init']);
 
-  // Forward-compatible guard for stage_orchestrator.md (R5): if present, must keep inheritCustomizations: true
+  // Stage orchestrator guard (R5): both plugin and local .agent copies must exist, match, and keep inheritCustomizations: true
   const stageOrchPath = path.join(REPO_ROOT, 'agents', 'stage_orchestrator.md');
-  if (fs.existsSync(stageOrchPath)) {
-    const stageOrch = fs.readFileSync(stageOrchPath, 'utf-8');
-    assert.match(stageOrch, /^inheritCustomizations:\s*true$/m);
-    verifyInlineToolSignatures(stageOrch, ['weave_update', 'weave_read', 'discover_agents']);
-  }
+  const localStageOrchPath = path.join(REPO_ROOT, '.agent', 'agents', 'stage_orchestrator.md');
+  assert.equal(fs.existsSync(stageOrchPath), true, 'agents/stage_orchestrator.md must exist');
+  assert.equal(fs.existsSync(localStageOrchPath), true, '.agent/agents/stage_orchestrator.md must exist');
+
+  const stageOrch = fs.readFileSync(stageOrchPath, 'utf-8');
+  const localStageOrch = fs.readFileSync(localStageOrchPath, 'utf-8');
+  assert.equal(
+    stageOrch,
+    localStageOrch,
+    'agents/stage_orchestrator.md and .agent/agents/stage_orchestrator.md must remain identical'
+  );
+  assert.match(stageOrch, /^inheritCustomizations:\s*true$/m);
+  verifyInlineToolSignatures(stageOrch, ['weave_update', 'weave_read', 'discover_agents']);
 });

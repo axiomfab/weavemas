@@ -1,3 +1,5 @@
+import { parseFrontmatter } from './frontmatter.mjs';
+
 /**
  * Tool definitions and schemas for WeaveMAS MCP server.
  */
@@ -222,4 +224,107 @@ export function verifyInlineToolSignatures(content, requiredTools) {
 
   return { verified: true, tools: [...requiredTools] };
 }
+
+/**
+ * Exact minimal built-in coordination toolset allowed for `agents/stage_orchestrator.md`
+ * so Turn-1 prefill stays around ~8.5K–9.5K tokens instead of inheriting the full IDE harness.
+ * (`call_mcp_tool` is granted automatically via `inheritMcp: true`.)
+ * @type { readonly string[] }
+ */
+export const STAGE_ORCHESTRATOR_TOOLS = Object.freeze([
+  'view_file',
+  'invoke_subagent',
+  'send_message'
+]);
+
+/**
+ * Required inline `weavemas_weave` MCP tool signatures for `agents/stage_orchestrator.md`.
+ * @type { readonly string[] }
+ */
+export const STAGE_ORCHESTRATOR_MCP_TOOLS = Object.freeze([
+  'weave_update',
+  'weave_read',
+  'discover_agents'
+]);
+
+/**
+ * Validates the frontmatter configuration, minimal tool surface, inline MCP signatures,
+ * and inlined Two-Phase execution protocol of `agents/stage_orchestrator.md` (R5 / #11).
+ *
+ * @param {string} content - Raw Markdown content of `stage_orchestrator.md`.
+ * @returns {{ verified: true, name: string, tools: string[], mcpTools: string[] }}
+ */
+export function verifyStageOrchestratorContract(content) {
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new TypeError('CRITICAL: content must be a non-empty string.');
+  }
+
+  const { frontmatter, body } = parseFrontmatter(content);
+  if (!frontmatter || Object.keys(frontmatter).length === 0) {
+    throw new Error('CRITICAL: Missing YAML frontmatter in stage_orchestrator definition.');
+  }
+  if (frontmatter.name !== 'stage_orchestrator') {
+    throw new Error(
+      `CRITICAL: stage_orchestrator frontmatter 'name' must be 'stage_orchestrator', got '${String(frontmatter.name)}'.`
+    );
+  }
+  if (frontmatter.subagent !== true) {
+    throw new Error("CRITICAL: stage_orchestrator must set 'subagent: true'.");
+  }
+  if (frontmatter.inheritMcp !== true) {
+    throw new Error("CRITICAL: stage_orchestrator must set 'inheritMcp: true'.");
+  }
+  if (frontmatter.inheritCustomizations !== true) {
+    throw new Error(
+      "CRITICAL: stage_orchestrator must set 'inheritCustomizations: true' so workspace .agent/agents/*.md and child skills remain discoverable."
+    );
+  }
+  if (frontmatter.skills !== undefined && (!Array.isArray(frontmatter.skills) || frontmatter.skills.length > 0)) {
+    throw new Error(
+      'CRITICAL: stage_orchestrator must inline its execution protocol and omit external startup skills.'
+    );
+  }
+  if (!Array.isArray(frontmatter.tools) || frontmatter.tools.length === 0) {
+    throw new Error('CRITICAL: stage_orchestrator must declare an explicit non-empty tools list.');
+  }
+
+  const actualTools = frontmatter.tools.map(String);
+  if (
+    actualTools.length !== STAGE_ORCHESTRATOR_TOOLS.length ||
+    !STAGE_ORCHESTRATOR_TOOLS.every((t) => actualTools.includes(t))
+  ) {
+    throw new Error(
+      `CRITICAL: stage_orchestrator tools must match minimal coordination set [${STAGE_ORCHESTRATOR_TOOLS.join(', ')}], got [${actualTools.join(', ')}].`
+    );
+  }
+
+  verifyInlineToolSignatures(content, [...STAGE_ORCHESTRATOR_MCP_TOOLS]);
+
+  const requiredBodyMarkers = [
+    { pattern: /\bprovisioner\b/, label: 'Phase 1 provisioner delegation' },
+    { pattern: /\bPROVISIONING_COMPLETE\b/, label: 'PROVISIONING_COMPLETE gate' },
+    { pattern: /\bdiscover_agents\b/, label: 'Phase 2 discover_agents' },
+    { pattern: /\binvoke_subagent\b/, label: 'Phase 2 invoke_subagent dispatch' },
+    { pattern: /\bsend_message\b/, label: 'send_message revision routing' },
+    { pattern: /\bconversation_id\b/, label: 'immediate conversation_id persistence' },
+    { pattern: /\bweave_read\b/, label: 'batch weave_read verification' },
+    { pattern: /NEVER call `manage_subagents` or `kill`/i, label: 'idle child preservation (no kill)' },
+    { pattern: /\bSTAGE_COMPLETED:/, label: '1-line STAGE_COMPLETED acknowledgment' },
+    { pattern: /\bCLUSTER_COMPLETED:/, label: '1-line CLUSTER_COMPLETED acknowledgment' }
+  ];
+
+  for (const { pattern, label } of requiredBodyMarkers) {
+    if (!pattern.test(body)) {
+      throw new Error(`CRITICAL: stage_orchestrator prompt body is missing required '${label}' contract.`);
+    }
+  }
+
+  return {
+    verified: true,
+    name: 'stage_orchestrator',
+    tools: [...STAGE_ORCHESTRATOR_TOOLS],
+    mcpTools: [...STAGE_ORCHESTRATOR_MCP_TOOLS]
+  };
+}
+
 
