@@ -165,3 +165,61 @@ export const TOOLS = [
     }
   }
 ];
+
+/**
+ * Canonical 1-line parameter signatures for inlining into WeaveMAS skills and subagents
+ * so models call `weavemas_weave` tools directly without reading `<appDataDir>/mcp/weavemas_weave/*.json`.
+ * @type {Readonly<Record<string, string>>}
+ */
+export const COMPACT_TOOL_SIGNATURES = Object.freeze({
+  weave_init: '{"dir": string, "type"?: "agent"|"orchestrator", "status"?: string, "instructions_file"?: string, "inputs"?: string[], "outputs"?: string|string[], "conversation_id"?: string}',
+  weave_update: '{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}',
+  weave_verify: '{"dir": string, "expected_role"?: string}',
+  weave_read: '{"dir"?: string, "dirs"?: string[], "stage_dir"?: string, "expected_outputs"?: string|string[]|null, "expected_status"?: string, "mirror_to"?: string}',
+  discover_agents: '{"directory": string, "filter_status"?: string, "limit"?: number}'
+});
+
+/**
+ * Required path fragment prohibiting unnecessary lazy MCP schema file reads.
+ * @type {string}
+ */
+export const NO_SCHEMA_READ_FRAGMENT = '<appDataDir>/mcp/weavemas_weave/*.json';
+
+/**
+ * Validates that a skill or agent Markdown document contains exact compact 1-line
+ * `weavemas_weave` MCP parameter signatures for all `requiredTools` plus an explicit
+ * rule against reading `<appDataDir>/mcp/weavemas_weave/*.json`.
+ *
+ * @param {string} content - Markdown file content to validate.
+ * @param {string[]} requiredTools - Non-empty list of tool names from `COMPACT_TOOL_SIGNATURES`.
+ * @returns {{ verified: true, tools: string[] }}
+ */
+export function verifyInlineToolSignatures(content, requiredTools) {
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new TypeError('CRITICAL: content must be a non-empty string.');
+  }
+  if (!Array.isArray(requiredTools) || requiredTools.length === 0) {
+    throw new TypeError('CRITICAL: requiredTools must be a non-empty array of tool names.');
+  }
+
+  for (const toolName of requiredTools) {
+    if (typeof toolName !== 'string' || !Object.hasOwn(COMPACT_TOOL_SIGNATURES, toolName)) {
+      throw new Error(`CRITICAL: Unknown WeaveMAS MCP tool '${String(toolName)}' in requiredTools.`);
+    }
+    const expectedSig = COMPACT_TOOL_SIGNATURES[toolName];
+    if (!content.includes(toolName) || !content.includes(expectedSig)) {
+      throw new Error(
+        `CRITICAL: Missing or drifted compact signature for '${toolName}'. Expected: ${expectedSig}`
+      );
+    }
+  }
+
+  if (!content.includes(NO_SCHEMA_READ_FRAGMENT)) {
+    throw new Error(
+      `CRITICAL: Missing explicit prohibition against reading '${NO_SCHEMA_READ_FRAGMENT}'.`
+    );
+  }
+
+  return { verified: true, tools: [...requiredTools] };
+}
+
