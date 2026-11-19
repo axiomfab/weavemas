@@ -49,13 +49,21 @@ As you start each task in your instructions, update `weave.md`:
   ```
 
 ### Completion & Outputs Verification
-Once your required output(s) (if any) are written to disk inside your working directory (`.`), mark your status `completed`. Always pass only your **local** output filename(s) or wildcard pattern(s) in `outputs` (omit `outputs` if your role produces no file outputs); `weave_update` automatically verifies every local file exists on disk and promotes any orchestrator-bound `<local>: <target>` outputs to the run directory:
+Once your required output(s) (if any) are written to disk inside your working directory (`.`), mark your status `completed`. Always pass only your **local** output filename(s) or wildcard pattern(s) in `outputs` (omit `outputs` if your role produces no file outputs); `weave_update` automatically verifies every local file exists on disk and promotes any orchestrator-bound `<local>: <target>` outputs to the run directory. Audit, verification, and review roles MUST prefix `progress` with `verdict: PASS` or `verdict: FAIL` so batch `weave_read` extracts the verdict automatically:
 * `ToolName`: `"weave_update"`, `Arguments`:
   ```json
   {
     "dir": "<absolute_working_directory>",
     "status": "completed",
     "outputs": "<local_output_filename_or_array>",
-    "progress": "<Final executive summary of output>"
+    "progress": "<verdict: PASS|FAIL — (for audit roles)> <Concise 1-sentence summary>"
   }
   ```
+
+### Final Chat Response (Strict 1-Line Structured Acknowledgment)
+Write **all** detailed findings, critiques, prose, and reports strictly to your declared output file(s) on disk and `weave.md`. Never return multi-paragraph prose summaries, bulleted recaps, or inline copies of output files in chat—return **only a single compact status line**:
+* **Completed (audit/review roles)**: `COMPLETED: <agent_id> | verdict: <PASS|FAIL> | outputs: [<local_output_1>, ...]` (e.g., `COMPLETED: factchecker_01 | verdict: PASS | outputs: [audit_report.md]`)
+* **Completed (standard roles)**: `COMPLETED: <agent_id> | outputs: [<local_output_1>, ...]` (use `outputs: []` when your role produces no file outputs)
+* **Mid-stage pause (`waiting/...`)**: `WAITING: <agent_id> | status: waiting/<detail>`
+* **Blocked (`blocked/...`)**: `BLOCKED: <agent_id> | reason: <1-sentence_error>`
+* **Sole Exception — Emitted Handoff Parameters ($P_{\text{out}}$)**: Only when your stage/agent instructions explicitly require emitting structured runtime handoff parameters ($P_{\text{out}}$, such as `track_queries`) back to the orchestrator on pause or completion may you append the compact $P_{\text{out}}$ payload immediately below the 1-line status header (still with zero prose narrative).

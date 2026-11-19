@@ -1,9 +1,48 @@
 import readline from 'node:readline';
 import path from 'node:path';
 import { TOOLS } from './tool_schemas.mjs';
-import { weaveInit, weaveUpdate, weaveVerify, weaveRead, discoverAgents } from './status_manager.mjs';
+import { weaveInit, weaveUpdate, weaveVerify, weaveRead, weaveReadBatch, discoverAgents } from './status_manager.mjs';
 
 const PROTOCOL_VERSION = '2024-11-05';
+
+/**
+ * Formats a batch weave_read result as compact valid JSON with one line per agent row.
+ * @param {import('./status_manager.mjs').BatchWeaveReadResult} batchRes
+ * @returns {string}
+ */
+export function formatBatchReadResult(batchRes) {
+  if (!batchRes || typeof batchRes !== 'object' || !Array.isArray(batchRes.agents)) {
+    throw new TypeError('CRITICAL: batchRes must be a valid BatchWeaveReadResult object.');
+  }
+  const headerFields = {
+    all_completed: batchRes.all_completed,
+    verified: batchRes.verified,
+    total_agents: batchRes.total_agents,
+    completed_count: batchRes.completed_count,
+    ...(batchRes.expected_status !== undefined ? { expected_status: batchRes.expected_status } : {}),
+    status_mismatches: batchRes.status_mismatches,
+    missing_outputs: batchRes.missing_outputs,
+    ...(Array.isArray(batchRes.outputs_mismatches) && batchRes.outputs_mismatches.length > 0
+      ? { outputs_mismatches: batchRes.outputs_mismatches }
+      : {})
+  };
+  const lines = ['{'];
+  for (const [k, v] of Object.entries(headerFields)) {
+    lines.push(`  ${JSON.stringify(k)}: ${JSON.stringify(v)},`);
+  }
+  if (batchRes.agents.length === 0) {
+    lines.push('  "agents": []');
+  } else {
+    lines.push('  "agents": [');
+    batchRes.agents.forEach((agent, idx) => {
+      const comma = idx < batchRes.agents.length - 1 ? ',' : '';
+      lines.push(`    ${JSON.stringify(agent)}${comma}`);
+    });
+    lines.push('  ]');
+  }
+  lines.push('}');
+  return lines.join('\n');
+}
 
 /**
  * Sends a single JSON-RPC response or notification line to stdout.
@@ -108,15 +147,35 @@ export function handleMessage(msg) {
           : '';
         resultText = `WEAVE_VERIFY_OK: Agent verified as '${res.agent_id}' (Current status: ${res.status}${inputsSummary})`;
       } else if (name === 'weave_read' || name === 'status_read') {
-        const targetDir = args.dir;
-        if (!targetDir || typeof targetDir !== 'string') {
-          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+        const hasDir = args.dir !== undefined;
+        const hasDirs = args.dirs !== undefined;
+        const hasStageDir = args.stage_dir !== undefined;
+        const targetCount = Number(hasDir) + Number(hasDirs) + Number(hasStageDir);
+        if (targetCount === 0) {
+          throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path (or provide 'dirs' / 'stage_dir' for batch verification).");
+        }
+        if (targetCount > 1) {
+          throw new Error("CRITICAL: Provide exactly one of 'dir', 'dirs', or 'stage_dir' to weave_read.");
         }
         const expectedOutputs = args.expected_outputs !== undefined ? args.expected_outputs : args.expected_deliverable;
         const expectedStatus = args.expected_status !== undefined ? args.expected_status : undefined;
-        const readOptions = args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {};
-        const res = weaveRead(targetDir, expectedOutputs, expectedStatus, readOptions);
-        resultText = JSON.stringify(res, null, 2);
+        if (hasDir) {
+          if (!args.dir || typeof args.dir !== 'string') {
+            throw new Error("CRITICAL: 'dir' argument is required and must be an absolute path.");
+          }
+          const readOptions = args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {};
+          const res = weaveRead(args.dir, expectedOutputs, expectedStatus, readOptions);
+          resultText = JSON.stringify(res, null, 2);
+        } else {
+          const batchRes = weaveReadBatch({
+            ...(hasDirs ? { dirs: args.dirs } : {}),
+            ...(hasStageDir ? { stage_dir: args.stage_dir } : {}),
+            ...(expectedOutputs !== undefined ? { expected_outputs: expectedOutputs } : {}),
+            ...(expectedStatus !== undefined ? { expected_status: expectedStatus } : {}),
+            ...(args.mirror_to !== undefined ? { mirror_to: args.mirror_to } : {})
+          });
+          resultText = formatBatchReadResult(batchRes);
+        }
       } else if (name === 'discover_agents') {
         const directory = args.directory;
         if (!directory || typeof directory !== 'string') {

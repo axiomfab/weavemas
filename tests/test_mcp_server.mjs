@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { handleMessage } from '../src/mcp_server.mjs';
+import { handleMessage, formatBatchReadResult } from '../src/mcp_server.mjs';
 
 function createTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mcp-test-'));
@@ -645,4 +645,112 @@ test('MCP Failure Path 16: mirror_to rejects relative paths and empty outputs on
   assert.match(emptyRead.result.content[0].text, /CRITICAL: mirror_to requires at least one verified output file/);
 
   fs.rmSync(runDir, { recursive: true, force: true });
+});
+
+test('MCP Tool Call - Happy Path (R8): weave_read supports batch stage_dir and dirs with compact 1-line-per-agent JSON summary', () => {
+  const listRes = captureResponse({ jsonrpc: '2.0', id: 50, method: 'tools/list', params: {} });
+  const readTool = listRes.result.tools.find(t => t.name === 'weave_read');
+  assert.ok(readTool.inputSchema.properties.dirs);
+  assert.ok(readTool.inputSchema.properties.stage_dir);
+
+  const tmp = createTempDir();
+  const stageDir = path.join(tmp, 'runs', 'show_r8', 'stage03_writing');
+  const fc1 = path.join(stageDir, 'agents', 'factchecker_01');
+  const fc2 = path.join(stageDir, 'agents', 'factchecker_02');
+
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 51,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: fc1, status: 'initialized', outputs: ['audit.md'] } }
+  });
+  captureResponse({
+    jsonrpc: '2.0',
+    id: 52,
+    method: 'tools/call',
+    params: { name: 'weave_init', arguments: { dir: fc2, status: 'initialized', outputs: ['audit.md'] } }
+  });
+
+  fs.writeFileSync(path.join(fc1, 'audit.md'), '# Audit 1\n', 'utf-8');
+  fs.writeFileSync(path.join(fc2, 'audit.md'), '# Audit 2\n', 'utf-8');
+  callUpdate({ dir: fc1, status: 'completed', outputs: 'audit.md', progress: 'verdict: PASS — clean' });
+  callUpdate({ dir: fc2, status: 'completed', outputs: 'audit.md', progress: 'verdict: FAIL — 1 issue' });
+
+  const stageRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 53,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: { stage_dir: stageDir, expected_status: 'completed' }
+    }
+  });
+  assert.equal(stageRes.result.isError, undefined, stageRes.result.content[0].text);
+  const rawText = stageRes.result.content[0].text;
+  // Compact 1-line-per-agent formatting check
+  const agentLines = rawText.split('\n').filter(l => l.trim().startsWith('{"agent_id":'));
+  assert.equal(agentLines.length, 2);
+
+  const parsedStage = JSON.parse(rawText);
+  assert.equal(parsedStage.all_completed, true);
+  assert.equal(parsedStage.verified, true);
+  assert.equal(parsedStage.total_agents, 2);
+  assert.equal(parsedStage.agents[0].verdict, 'PASS');
+  assert.equal(parsedStage.agents[1].verdict, 'FAIL');
+
+  const dirsRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 54,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: { dirs: [fc2, fc1], expected_status: 'completed', expected_outputs: 'audit.md' }
+    }
+  });
+  assert.equal(dirsRes.result.isError, undefined, dirsRes.result.content[0].text);
+  const parsedDirs = JSON.parse(dirsRes.result.content[0].text);
+  assert.equal(parsedDirs.all_completed, true);
+  assert.equal(parsedDirs.verified, true);
+  assert.deepEqual(parsedDirs.agents.map(a => a.agent_id), ['factchecker_02', 'factchecker_01']);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('MCP Failure Paths 17 & 18 (R8): weave_read rejects mutually-exclusive dir/dirs/stage_dir, mirror_to in batch mode, and formatBatchReadResult validates input', () => {
+  const tmp = createTempDir();
+
+  const bothRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 55,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: { dir: tmp, stage_dir: tmp }
+    }
+  });
+  assert.equal(bothRes.result.isError, true);
+  assert.match(bothRes.result.content[0].text, /CRITICAL: Provide exactly one of 'dir', 'dirs', or 'stage_dir'/);
+
+  const mirrorBatchRes = captureResponse({
+    jsonrpc: '2.0',
+    id: 56,
+    method: 'tools/call',
+    params: {
+      name: 'weave_read',
+      arguments: { dirs: [tmp], mirror_to: path.join(tmp, 'copy') }
+    }
+  });
+  assert.equal(mirrorBatchRes.result.isError, true);
+  assert.match(mirrorBatchRes.result.content[0].text, /CRITICAL: 'mirror_to' is only supported for single-directory weave_read/);
+
+  assert.throws(() => formatBatchReadResult(null), {
+    name: 'TypeError',
+    message: /CRITICAL: batchRes must be a valid BatchWeaveReadResult object/
+  });
+  assert.throws(() => formatBatchReadResult({ all_completed: true }), {
+    name: 'TypeError',
+    message: /CRITICAL: batchRes must be a valid BatchWeaveReadResult object/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
