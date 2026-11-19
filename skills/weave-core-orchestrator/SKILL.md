@@ -50,7 +50,7 @@ Execute every stage (or stageless manifest) by chaining these two microskills in
 ## 4. Stage Transitions & Pipeline Completion
 
 * **Pause at User Review Gate**:
-  When a stage completes subagent verification (`weave_read`) and declares a User Review Gate, call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<stage_slug>/awaiting_review", "progress": "<Stage summary — awaiting user review>" }` (or `"status": "awaiting_review"` for stageless pipelines) **before** pausing for user feedback.
+  When a stage completes subagent verification (`weave_read`) and declares a User Review Gate, call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<stage_slug>/awaiting_review", "progress": "<Stage summary — awaiting user review>" }` (or `"status": "awaiting_review"` for stageless pipelines) **before** pausing for user feedback. Surface `[WeaveMAS UI](sidecar://weavemas/panel/)` and a direct clickable link to `${RUN_DIR}/<stage_output_name>`—never `read_file` + `write_file` full deliverable contents through orchestrator context (use optional `mirror_to` in `weave_update`/`weave_read` if a zero-token Node.js file copy is needed).
 * **Revision Requested at Review Gate**:
   If the user requests adjustments at a review gate, call `weave_update`: `{ "dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<stage_slug>/in_progress/iteration_<N>", "progress": "<Applying user review feedback>" }` (or `"status": "in_progress/iteration_<N>"` for stageless pipelines) before routing feedback via `send_message`, then transition back to `"<stage_slug>/awaiting_review"` once revised outputs pass `weave_read`.
 * **Advance to Next Stage**:

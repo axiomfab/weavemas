@@ -11,7 +11,8 @@ import {
   resolveInputEntry,
   normalizeOutputs,
   mergeOutputDeclarations,
-  verifyOutputFiles
+  verifyOutputFiles,
+  mirrorOutputFiles
 } from './path_resolver.mjs';
 
 export {
@@ -25,6 +26,7 @@ export {
   substitutePathVariables,
   resolveInputEntry,
   mergeOutputDeclarations,
+  mirrorOutputFiles,
   parseWeaveStatus,
   STAGE_DIR_REGEX,
   LIFECYCLE_STATES
@@ -192,8 +194,8 @@ export function weaveInit(targetDir, type = 'agent', initialStatus = 'not_starte
  * @param {string} status
  * @param {string | null} [progress=null]
  * @param {string | string[] | null} [outputs=null]
- * @param {{ type?: 'agent' | 'orchestrator' }} [options={}]
- * @returns {{ success: boolean, message: string, status: string }}
+ * @param {{ type?: 'agent' | 'orchestrator', mirrorTo?: string }} [options={}]
+ * @returns {{ success: boolean, message: string, status: string, mirrored_files?: string[] }}
  */
 export function weaveUpdate(targetDir, status, progress = null, outputs = null, options = {}) {
   if (!targetDir || typeof targetDir !== 'string') {
@@ -210,6 +212,14 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
   }
   if (options.type !== undefined && !VALID_NODE_TYPES.includes(options.type)) {
     throw new TypeError(`CRITICAL: options.type must be one of: ${VALID_NODE_TYPES.join(', ')}.`);
+  }
+  if (options.mirrorTo !== undefined) {
+    if (typeof options.mirrorTo !== 'string' || !options.mirrorTo.trim()) {
+      throw new TypeError('CRITICAL: mirror_to must be a non-empty string.');
+    }
+    if (!path.isAbsolute(options.mirrorTo.trim())) {
+      throw new Error(`CRITICAL: mirror_to must be an absolute path (received relative path: "${options.mirrorTo.trim()}"). Provide the full destination path.`);
+    }
   }
 
   // Syntax check first (independent of target file)
@@ -246,18 +256,30 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
 
   const mergedOutputs = mergeOutputDeclarations(existingOutputs, normalizedOutputs);
 
+  let verifiedPaths = null;
   if (parsedStatus.state === 'completed') {
     if (mergedOutputs.length > 0) {
-      verifyOutputFiles(resolvedDir, mergedOutputs);
+      verifiedPaths = verifyOutputFiles(resolvedDir, mergedOutputs);
     }
     frontmatter.outputs = mergedOutputs;
   } else if (parsedStatus.state === 'awaiting_review') {
     if (normalizedOutputs !== null && normalizedOutputs.length > 0) {
-      verifyOutputFiles(resolvedDir, normalizedOutputs);
+      verifiedPaths = verifyOutputFiles(resolvedDir, normalizedOutputs);
     }
     frontmatter.outputs = mergedOutputs;
   } else {
     frontmatter.outputs = mergedOutputs;
+  }
+
+  let mirroredFiles = null;
+  if (options.mirrorTo !== undefined) {
+    if (verifiedPaths === null) {
+      const toVerify = (normalizedOutputs !== null && normalizedOutputs.length > 0)
+        ? normalizedOutputs
+        : mergedOutputs;
+      verifiedPaths = verifyOutputFiles(resolvedDir, toVerify);
+    }
+    mirroredFiles = mirrorOutputFiles(verifiedPaths, options.mirrorTo);
   }
 
   const now = new Date().toISOString();
@@ -275,10 +297,12 @@ export function weaveUpdate(targetDir, status, progress = null, outputs = null, 
   }
 
   fs.writeFileSync(statusPath, serializeStatus(frontmatter, updatedBody), 'utf-8');
+  const mirrorSuffix = mirroredFiles ? ` | Mirrored: ${JSON.stringify(mirroredFiles)}` : '';
   return {
     success: true,
-    message: `WEAVE_UPDATE_OK: status -> ${status}`,
-    status
+    message: `WEAVE_UPDATE_OK: status -> ${status}${mirrorSuffix}`,
+    status,
+    ...(mirroredFiles ? { mirrored_files: mirroredFiles } : {})
   };
 }
 
@@ -348,14 +372,29 @@ export function weaveVerify(targetDir, expectedId = null) {
 
 /**
  * Reads weave.md from targetDir, parses frontmatter, optionally verifies expected outputs/status,
- * and returns status metadata matching weave.md schema.
+ * optionally mirrors verified output files in Node.js (zero-token copy), and returns status metadata.
+ * @param {string} targetDir
+ * @param {string | string[] | null} [expectedOutputs]
+ * @param {string} [expectedStatus]
+ * @param {{ mirrorTo?: string }} [options={}]
  */
-export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus = undefined) {
+export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus = undefined, options = {}) {
   if (!targetDir || typeof targetDir !== 'string') {
     throw new TypeError('CRITICAL: Target directory must be a non-empty string.');
   }
   if (!path.isAbsolute(targetDir)) {
     throw new Error(`CRITICAL: Target directory must be an absolute path (received relative path: "${targetDir}"). Provide the full workspace path.`);
+  }
+  if (options === null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('CRITICAL: options must be a plain object.');
+  }
+  if (options.mirrorTo !== undefined) {
+    if (typeof options.mirrorTo !== 'string' || !options.mirrorTo.trim()) {
+      throw new TypeError('CRITICAL: mirror_to must be a non-empty string.');
+    }
+    if (!path.isAbsolute(options.mirrorTo.trim())) {
+      throw new Error(`CRITICAL: mirror_to must be an absolute path (received relative path: "${options.mirrorTo.trim()}"). Provide the full destination path.`);
+    }
   }
   const resolvedDir = path.resolve(targetDir);
   const statusPath = path.join(resolvedDir, 'weave.md');
@@ -384,6 +423,7 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
     }
   }
 
+  let verifiedPaths = null;
   if (expectedOutputs !== undefined) {
     if (expectedOutputs === null || (Array.isArray(expectedOutputs) && expectedOutputs.length === 0)) {
       if (outputs.length > 0) {
@@ -402,8 +442,16 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
       if (!matches) {
         throw new Error(`CRITICAL: Outputs mismatch. Expected '${JSON.stringify(expectedList)}', but weave.md defines '${JSON.stringify(outputs)}'.`);
       }
-      verifyOutputFiles(resolvedDir, outputs);
+      verifiedPaths = verifyOutputFiles(resolvedDir, outputs);
     }
+  }
+
+  let mirroredFiles = null;
+  if (options.mirrorTo !== undefined) {
+    if (verifiedPaths === null) {
+      verifiedPaths = verifyOutputFiles(resolvedDir, outputs);
+    }
+    mirroredFiles = mirrorOutputFiles(verifiedPaths, options.mirrorTo);
   }
 
   return {
@@ -412,7 +460,8 @@ export function weaveRead(targetDir, expectedOutputs = undefined, expectedStatus
     inputs,
     outputs,
     type,
-    updated_at: updatedAt
+    updated_at: updatedAt,
+    ...(mirroredFiles ? { mirrored_files: mirroredFiles } : {})
   };
 }
 

@@ -69,6 +69,10 @@ export const TOOLS = [
             { type: 'array', items: { type: 'string' } }
           ],
           description: 'Optional relative path(s) or wildcard pattern(s) to local output file(s) in the agent working directory. Verified (and promoted if bound in weave.md) when status is completed.'
+        },
+        mirror_to: {
+          type: 'string',
+          description: 'Optional absolute destination file or directory path to mirror verified output file(s) directly in Node.js (zero-token copy). Requires at least one verified output.'
         }
       },
       required: ['dir', 'status']
@@ -113,6 +117,10 @@ export const TOOLS = [
         expected_status: {
           type: 'string',
           description: 'Optional expected status prefix to verify (e.g. "completed").'
+        },
+        mirror_to: {
+          type: 'string',
+          description: 'Optional absolute destination file or directory path to mirror verified output file(s) directly in Node.js (zero-token copy). Requires at least one verified output.'
         }
       },
       required: ['dir']
