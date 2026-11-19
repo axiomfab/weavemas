@@ -1,20 +1,19 @@
 ---
 name: orchestrator-agent-instantiation
 description: >-
-  Phase 1 WeaveMAS microskill. Delegates pre-spawn subagent workspace creation and
-  weave.md initialization (with instructions_file, inputs, and outputs) to the isolated Provisioner subagent.
+  Standalone Phase 1 reference (already inlined in weave-core-orchestrator — do NOT
+  read this file if weave-core-orchestrator is already loaded).
 ---
 
 # 🛠️ Phase 1: Orchestrator Agent Instantiation
 
-Execute at the start of every stage before evaluating `## Execution` or spawning worker subagents.
+> **Note**: Already inlined in `weave-core-orchestrator`. Skip reading this skill when `weave-core-orchestrator` is loaded. Do **NOT** read `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs (`weave_init`: `{"dir": string, "type"?: "agent"|"orchestrator", "status"?: string, "instructions_file"?: string, "inputs"?: string[], "outputs"?: string|string[], "conversation_id"?: string}`).
 
-1. **Delegate to Provisioner**:
-   Invoke the plugin's `provisioner` subagent (`TypeName: "provisioner"` or `"weavemas:provisioner"`, `Model: "flash"`, `Role: "provisioner"`). Never check for `.agent/agents/provisioner.md` locally or scaffold worker directories yourself:
+1. **Delegate to Provisioner**: Invoke `provisioner` (`TypeName: "provisioner"` or `"weavemas:provisioner"`, `Model: "flash"`, `Role: "provisioner"`):
    ```markdown
    Target Manifest / Stage Guide: <absolute_path_to_manifest_or_stage_md>
-   Target Directory: <workspace_root>/output/<context_slug>/<stage_slug>
+   Target Directory: <workspace_root>/runs/<context_slug>/<stage_slug>
    Context Slug: <context_slug>
    ```
-2. **Phase Gate**: Wait reactively for `PROVISIONING_COMPLETE`. Do NOT inspect agent `weave.md` files or evaluate `## Execution` while the Provisioner runs.
-3. **Handoff to Phase 2**: Once `PROVISIONING_COMPLETE` arrives, immediately expand and execute `orchestrator-agent-execution`.
+   *(Omit `/<stage_slug>` in stageless pipelines.)* Never scaffold worker directories directly.
+2. **Phase Gate**: Wait reactively for `PROVISIONING_COMPLETE`, then proceed immediately to Phase 2 (`discover_agents` + dispatch).
