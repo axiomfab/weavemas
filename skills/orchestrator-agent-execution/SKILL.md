@@ -30,7 +30,7 @@ Query `discover_agents` in batches (never scan directories or rely on chat histo
   "limit": 10
 }
 ```
-Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, and `outputs` for `invoke_subagent`. If `remaining_count > 0`, repeat `discover_agents` for the next wave after completing the current wave.
+Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, `outputs`, and (for existing/resumed workers) `conversation_id` for `invoke_subagent` or `send_message`. If `remaining_count > 0`, repeat `discover_agents` for the next wave after completing the current wave.
 
 ---
 
@@ -47,6 +47,7 @@ Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, and `outputs`
 
    Required Output: <local_output_filename>
    ```
+3. **Persist Worker `conversation_id` Immediately After Dispatch**: Immediately after `invoke_subagent` returns a `conversationId`, persist it into the worker's `weave.md` via `weave_update`: `{ "dir": "<dir>", "conversation_id": "<conversationId>" }` (omitting `status` preserves whatever status the worker has written). This ensures surgical `send_message` resumes survive `/compact` and sub-orchestrator boundaries.
 
 ---
 
@@ -68,7 +69,8 @@ Use the returned `dir`, `agent_id`, `instructions_file`, `inputs`, and `outputs`
      - Dispatch child agents sequentially via `invoke_subagent` using each child agent's native `TypeName: "<child_agent_type>"` (the filename stem of its `instructions_file`, omitting `Model` so its frontmatter `model:` is used) and `Role: "<child_agent_id>"`, always including `context_slug: <context_slug>` in `Runtime Parameters` and passing only the local output filename(s) in `Required Output:` (never execute child agent tasks yourself in the sub-orchestrator context):
        1. `<child_agent_1_id>` (TypeName: `<child_1_type>`, WD: `<wd_1>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<local_output_1>`)
        2. `<child_agent_2_id>` (TypeName: `<child_2_type>`, WD: `<wd_2>`, Runtime Parameters: `context_slug: <context_slug>, <unit_params>`, Output: `<local_output_2>`)
-     - Local Revision Loop: Route downstream audit corrections directly to the upstream child agent's `conversationId` via `send_message` (max 2 cycles).
+     - Persist Child `conversation_id`: Immediately after each `invoke_subagent` call returns a `conversationId`, persist it to the child's `weave.md` via `weave_update`: `{ "dir": "<child_wd>", "conversation_id": "<conversationId>" }` (without `status`, so the child's status is untouched).
+     - Local Revision Loop: Route downstream audit corrections directly to the upstream child agent's `conversationId` via `send_message` (max 2 cycles); if needed, read the persisted `conversation_id` via `weave_read` or `discover_agents`.
      - Finalization: Batch-verify child agents' completion and output(s) in a single `weave_read` call (`dirs: ["<wd_1>", "<wd_2>", ...]`, `expected_status: "completed"`) and return a 1-line completion ack to the parent orchestrator.
      ```
 
@@ -87,4 +89,4 @@ Upon subagent or sub-orchestrator wakeup:
    - **NEVER** call `read_file` + `write_file` to copy full stage deliverables through the orchestrator's LLM context (neither into `<appDataDir>/brain/<conversation-id>/` nor inline into chat). `weave_read` already verified existence and promotion in Node.js, and the WeaveMAS UI previews text and media deliverables directly from `${RUN_DIR}`.
    - Present `[WeaveMAS UI](sidecar://weavemas/panel/)` together with a direct clickable `file://` link to `${RUN_DIR}/<stage_output_name>` and pause for approval. If mirroring a deliverable to an external review path is explicitly requested, pass `"outputs": "<stage_output_name>"` and `"mirror_to": "<abs_dest_path>"` to `weave_update` (or `mirror_to` to `weave_read`) so Node.js copies the file directly with zero LLM tokens.
    - **Approved** $\rightarrow$ Advance master status via `weave_update` with `type: "orchestrator"` (`"<next_stage_slug>/in_progress"`, or `"<stage_slug>/completed"` if this is the final stage; `"completed"` for stageless pipelines).
-   - **Changes Requested** $\rightarrow$ Transition master status back to `"<stage_slug>/in_progress/iteration_<N>"` (or `"in_progress/iteration_<N>"` if stageless) via `weave_update` with `type: "orchestrator"`, route feedback to the existing subagent via `send_message(Recipient: <conversationId>, Message: "<feedback>")` (never spawn duplicate subagent instances), re-verify via `weave_read` upon wakeup, and set `"<stage_slug>/awaiting_review"` again before re-presenting for approval.
+   - **Changes Requested** $\rightarrow$ Transition master status back to `"<stage_slug>/in_progress/iteration_<N>"` (or `"in_progress/iteration_<N>"` if stageless) via `weave_update` with `type: "orchestrator"`, retrieve the target worker's persisted `conversation_id` from `weave_read` or `discover_agents` (rather than relying on chat history that may have been compacted or isolated inside a sub-orchestrator), route feedback to the existing subagent via `send_message(Recipient: <conversation_id>, Message: "<feedback>")` (never spawn duplicate subagent instances), re-verify via `weave_read` upon wakeup, and set `"<stage_slug>/awaiting_review"` again before re-presenting for approval.

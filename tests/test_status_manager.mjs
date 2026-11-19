@@ -10,6 +10,7 @@ import {
   statusUpdate,
   statusVerify,
   statusRead,
+  validateConversationId,
   ALLOWED_FRONTMATTER_KEYS
 } from '../src/status_manager.mjs';
 
@@ -75,10 +76,10 @@ test('serializeStatus - Failure Path 3: forbidden frontmatter key throws Error',
   });
 });
 
-test('Frontmatter Contract - Integrity Canary: exactly 6 closed keys', () => {
-  const EXPECTED_KEYS = ['inputs', 'instructions_file', 'outputs', 'status', 'type', 'updated_at'];
+test('Frontmatter Contract - Integrity Canary: exactly 7 closed keys', () => {
+  const EXPECTED_KEYS = ['conversation_id', 'inputs', 'instructions_file', 'outputs', 'status', 'type', 'updated_at'];
   assert.deepEqual(Array.from(ALLOWED_FRONTMATTER_KEYS).sort(), EXPECTED_KEYS);
-  assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 6);
+  assert.equal(ALLOWED_FRONTMATTER_KEYS.size, 7);
 });
 
 test('parseFrontmatter & serializeStatus - Happy Path: round-trips multi-line YAML inputs list', () => {
@@ -898,4 +899,128 @@ test('statusUpdate & statusRead - Failure Paths: mirrorTo rejects relative path,
   });
 
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// R9: conversation_id validation, persistence & surfacing ("1-2" Coverage)
+// ---------------------------------------------------------------------------
+
+test('validateConversationId - Happy Path & Failure Paths: accepts trimmed UUID and rejects invalid inputs', () => {
+  assert.equal(
+    validateConversationId('  0394d2cc-dbf1-4fd7-892b-d7426b08641f  '),
+    '0394d2cc-dbf1-4fd7-892b-d7426b08641f'
+  );
+
+  // Failure Path 1: non-string or empty/whitespace
+  assert.throws(() => validateConversationId(''), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+  assert.throws(() => validateConversationId('   '), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+  assert.throws(() => validateConversationId(null), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+  assert.throws(() => validateConversationId(12345), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+
+  // Failure Path 2: newlines or double quotes that could corrupt YAML frontmatter
+  assert.throws(() => validateConversationId('abc\ninjected: true'), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must not contain newlines or double quotes/
+  });
+  assert.throws(() => validateConversationId('abc"def'), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must not contain newlines or double quotes/
+  });
+});
+
+test('statusInit, statusUpdate & statusRead (R9) - Happy Path: persists conversation_id with or without status and preserves it across worker transitions', () => {
+  const tmp = createTempDir();
+  const agentA = path.join(tmp, 'agent_a');
+  const agentB = path.join(tmp, 'agent_b');
+  const uuidA = '11111111-2222-3333-4444-555555555555';
+  const uuidB = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+  // 1. statusInit with optional conversation_id (options object)
+  statusInit(agentA, {
+    type: 'agent',
+    status: 'initialized',
+    instructions_file: '.agent/agents/writer.md',
+    conversation_id: uuidA
+  });
+  const readA1 = statusRead(agentA);
+  assert.equal(readA1.conversation_id, uuidA);
+
+  // Subsequent worker statusUpdate without conversation_id must preserve persisted conversation_id
+  statusUpdate(agentA, 'in_progress/01_drafting', 'Drafting section 1');
+  const readA2 = statusRead(agentA);
+  assert.equal(readA2.status, 'in_progress/01_drafting');
+  assert.equal(readA2.conversation_id, uuidA);
+
+  // 2. statusInit without conversation_id -> weaveRead returns null
+  statusInit(agentB, 'agent', 'initialized', '.agent/agents/critic.md');
+  assert.equal(statusRead(agentB).conversation_id, null);
+
+  // Worker starts running first, then orchestrator records conversation_id WITHOUT clobbering status
+  statusUpdate(agentB, 'in_progress/01_audit', 'Auditing claims');
+  const metaRes = statusUpdate(agentB, null, null, null, { conversationId: uuidB });
+  assert.equal(metaRes.success, true);
+  assert.equal(metaRes.status, 'in_progress/01_audit');
+  assert.equal(metaRes.conversation_id, uuidB);
+  assert.match(metaRes.message, /conversation_id -> aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/);
+
+  const readB = statusRead(agentB);
+  assert.equal(readB.status, 'in_progress/01_audit');
+  assert.equal(readB.conversation_id, uuidB);
+
+  // Updating both status and conversation_id simultaneously
+  const uuidB2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
+  const bothRes = statusUpdate(agentB, 'in_progress/02_recheck', 'Rechecking', null, { conversationId: uuidB2 });
+  assert.equal(bothRes.conversation_id, uuidB2);
+  assert.equal(statusRead(agentB).conversation_id, uuidB2);
+  assert.equal(statusRead(agentB).status, 'in_progress/02_recheck');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('statusInit & statusUpdate (R9) - Failure Paths: rejects invalid conversation_id, missing status+conversation_id, and unguarded orchestrator writes', () => {
+  const tmp = createTempDir();
+  const agentDir = path.join(tmp, 'agent_bad');
+  statusInit(agentDir, 'agent', 'initialized');
+
+  // Failure Path 1: invalid conversation_id in statusInit and statusUpdate
+  assert.throws(() => statusInit(path.join(tmp, 'bad_init'), { type: 'agent', conversation_id: '' }), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+  assert.throws(() => statusUpdate(agentDir, null, null, null, { conversationId: '   ' }), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must be a non-empty string/
+  });
+  assert.throws(() => statusUpdate(agentDir, 'in_progress', null, null, { conversationId: 'bad\nid' }), {
+    name: 'TypeError',
+    message: /CRITICAL: conversation_id must not contain newlines or double quotes/
+  });
+
+  // Failure Path 2: omitting both status and conversation_id still fails fast
+  assert.throws(() => statusUpdate(agentDir, null, null, null, {}), {
+    name: 'TypeError',
+    message: /CRITICAL: Status must be a non-empty string/
+  });
+
+  // Failure Path 3: orchestrator guard still blocks conversation_id-only update without type: 'orchestrator'
+  const runDir = createStagedRun(['stage01_setup'], 'stage01_setup/in_progress');
+  assert.throws(() => statusUpdate(runDir, null, null, null, { conversationId: '11111111-2222-3333-4444-555555555555' }), {
+    name: 'Error',
+    message: /CRITICAL: Refusing to update orchestrator weave\.md/
+  });
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  fs.rmSync(runDir, { recursive: true, force: true });
 });

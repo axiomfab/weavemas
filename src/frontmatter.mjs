@@ -8,6 +8,7 @@ export const ALLOWED_FRONTMATTER_KEYS = new Set([
   'instructions_file',
   'inputs',
   'outputs',
+  'conversation_id',
   'updated_at'
 ]);
 

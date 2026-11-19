@@ -115,7 +115,8 @@ export function handleMessage(msg) {
         const instructionsFile = args.instructions_file || null;
         const inputs = args.inputs !== undefined ? args.inputs : null;
         const outputs = args.outputs !== undefined ? args.outputs : null;
-        const res = weaveInit(targetDir, type, status, instructionsFile, inputs, outputs);
+        const conversationId = args.conversation_id !== undefined ? args.conversation_id : undefined;
+        const res = weaveInit(targetDir, type, status, instructionsFile, inputs, outputs, conversationId);
         resultText = res.message;
       } else if (name === 'weave_update' || name === 'status_update') {
         const targetDir = args.dir;
@@ -125,12 +126,16 @@ export function handleMessage(msg) {
         const status = args.status;
         const progress = args.progress || null;
         const outputs = args.outputs !== undefined ? args.outputs : (args.deliverable !== undefined ? args.deliverable : null);
-        if (!status) throw new Error("CRITICAL: 'status' argument is required for weave_update.");
+        const hasConversationId = args.conversation_id !== undefined;
+        if ((status === undefined || status === null) && !hasConversationId) {
+          throw new Error("CRITICAL: 'status' argument is required for weave_update (unless recording 'conversation_id').");
+        }
         const options = {
           ...(args.type !== undefined ? { type: args.type } : {}),
-          ...(args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {})
+          ...(args.mirror_to !== undefined ? { mirrorTo: args.mirror_to } : {}),
+          ...(hasConversationId ? { conversationId: args.conversation_id } : {})
         };
-        const res = weaveUpdate(targetDir, status, progress, outputs, options);
+        const res = weaveUpdate(targetDir, status ?? null, progress, outputs, options);
         resultText = res.message;
       } else if (name === 'weave_verify' || name === 'status_verify') {
         const targetDir = args.dir;

@@ -114,12 +114,17 @@ export function discoverAgents(directory, filterStatus = 'initialized', limit = 
       continue;
     }
 
+    const conversationId = typeof frontmatter.conversation_id === 'string' && frontmatter.conversation_id.trim()
+      ? frontmatter.conversation_id.trim()
+      : null;
+
     matching.push({
       agent_id: item.agent_id,
       dir: item.dir,
       instructions_file: typeof frontmatter.instructions_file === 'string' ? frontmatter.instructions_file : null,
       inputs: Array.isArray(frontmatter.inputs) ? frontmatter.inputs.map(String) : [],
       outputs: Array.isArray(frontmatter.outputs) ? frontmatter.outputs.map(String) : [],
+      conversation_id: conversationId,
       status
     });
   }
