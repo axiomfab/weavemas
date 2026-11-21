@@ -15,6 +15,10 @@
     "multi-agent",
     "status"
   ],
-  "author": "Antigravity Team",
-  "license": "MIT"
+  "author": "Martin Lukasiewycz <martin@axiomfab.org>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/axiomfab/weavemas-agy.git"
+  }
 }

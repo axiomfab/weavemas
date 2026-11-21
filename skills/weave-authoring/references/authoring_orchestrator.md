@@ -33,7 +33,7 @@ trigger: always_on
 **Action:** Before invoking any subagents or running commands, read `orchestrator.md` (in multi-stage pipelines, do **NOT** preload modular guides under `orchestrator/*.md` into the root orchestrator—delegate each stage to `stage_orchestrator` so only that stage's sub-orchestrator reads its assigned guide).
 
 ## 2. Outcome Feedback & Pipeline Revision
-**Trigger:** Any request providing feedback, critique, or reporting mistakes on the outcome of a pipeline run in `output/<context_slug>/`.
+**Trigger:** Any request providing feedback, critique, or reporting mistakes on the outcome of a pipeline run in `runs/<context_slug>/`.
 **Action:** Activate the `weave-authoring` skill and follow `references/authoring_revision.md`.
 ```
 
