@@ -10,31 +10,7 @@ With the `weavemas` plugin enabled in Antigravity, a single prompt to `weave-aut
 
 ### Induced Workflow Graph
 
-```mermaid
-flowchart TD
-    topic{{"topic"}} --> writer(["Writer"])
-    target_age{{"target_age"}} --> writer
-    writer --> draft["01_draft.md"]
-
-    draft --> fact_checker(["Fact Checker"])
-    draft -..-> gate["Human Review Gate"]
-    draft --> age_checker(["Age Checker"])
-
-    fact_checker --> fact_audit["fact_audit.md"]
-    age_checker --> age_audit["age_audit.md"]
-
-    topic --> fact_checker
-    target_age --> age_checker
-    fact_audit --> writer
-    age_audit --> writer
-
-    gate -.-> illustrator(["Illustrator"])
-    illustrator --> illustration["illustration.png"]
-
-    style gate stroke-dasharray: 5 5
-```
-
-*Shapes: Hexagon = Parameter, Stadium = Agent, Rectangle = File, Dashed = Control-Plane Gate.*
+![KidsWiki Workflow Graph](assets/kidswiki_graph.svg)
 
 ### Generated Markdown Specifications ([`examples/kidswiki/`](examples/kidswiki/))
 

@@ -103,9 +103,15 @@ test('Repository Polish (R11) - Failure/Guard Path: checkStrictAscii rejects Uni
   assert.equal(checkStrictAscii('Em-dash — text').ok, false);
 });
 
-test('Repository Polish (R11) - Happy Path: examples/kidswiki markdown specifications exist, are linked from README.md, and are strict ASCII', () => {
+test('Repository Polish (R11) - Happy Path: examples/kidswiki markdown specifications and workflow graph SVG exist, are linked from README.md, and are strict ASCII', () => {
   const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
-  assert.match(readme, /```mermaid\s+flowchart TD/);
+  assert.match(readme, /!\[KidsWiki Workflow Graph\]\(assets\/kidswiki_graph\.svg\)/);
+
+  const svgPath = path.join(REPO_ROOT, 'assets', 'kidswiki_graph.svg');
+  assert.equal(fs.existsSync(svgPath), true, 'Missing assets/kidswiki_graph.svg');
+  const svgContent = fs.readFileSync(svgPath, 'utf8');
+  assert.equal(checkStrictAscii(svgContent).ok, true, 'assets/kidswiki_graph.svg must be strict ASCII');
+  assert.match(svgContent, /<svg\b/);
 
   const expectedExampleFiles = [
     'examples/kidswiki/orchestrator.md',

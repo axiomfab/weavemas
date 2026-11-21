@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 622" width="720" height="622" role="img" aria-label="KidsWiki induced tripartite workflow graph">
+  <style>
+    .canvas { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1.5; }
+    .edge { fill: none; stroke: #334155; stroke-width: 1.6; }
+    .edge-dashed { fill: none; stroke: #334155; stroke-width: 1.6; stroke-dasharray: 5 4; }
+    .arrow-head { fill: #334155; }
+    .param { fill: #f8fafc; stroke: #1e293b; stroke-width: 1.6; }
+    .agent { fill: #eff6ff; stroke: #1e293b; stroke-width: 1.8; }
+    .file { fill: #ffffff; stroke: #1e293b; stroke-width: 1.6; }
+    .gate { fill: #fefce8; stroke: #1e293b; stroke-width: 1.6; stroke-dasharray: 6 4; }
+    .legend-box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.2; }
+    .title { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .code-title { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .sub { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11px; fill: #475569; text-anchor: middle; }
+    .code-sub { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; fill: #475569; text-anchor: middle; }
+    .legend-text { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11.5px; fill: #334155; text-anchor: middle; }
+
+    @media (prefers-color-scheme: dark) {
+      .canvas { fill: #0d1117; stroke: #30363d; }
+      .edge, .edge-dashed { stroke: #94a3b8; }
+      .arrow-head { fill: #94a3b8; }
+      .param { fill: #161b22; stroke: #cbd5e1; }
+      .agent { fill: #172554; stroke: #93c5fd; }
+      .file { fill: #161b22; stroke: #cbd5e1; }
+      .gate { fill: #272312; stroke: #fde047; }
+      .legend-box { fill: #161b22; stroke: #30363d; }
+      .title, .code-title { fill: #f8fafc; }
+      .sub, .code-sub { fill: #94a3b8; }
+      .legend-text { fill: #cbd5e1; }
+    }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+      <path d="M 0 1.2 L 9.5 5 L 0 8.8 z" class="arrow-head" />
+    </marker>
+  </defs>
+
+  <!-- Outer Card -->
+  <rect class="canvas" x="2" y="2" width="716" height="618" rx="12" />
+
+  <!-- Edges -->
+  <!-- Parameters to Writer -->
+  <path class="edge" d="M 262 66 L 325 101" marker-end="url(#arrow)" />
+  <path class="edge" d="M 458 66 L 395 101" marker-end="url(#arrow)" />
+
+  <!-- Parameters to Checkers -->
+  <path class="edge" d="M 186 66 C 142 120, 138 205, 155 268" marker-end="url(#arrow)" />
+  <path class="edge" d="M 534 66 C 578 120, 582 205, 565 268" marker-end="url(#arrow)" />
+
+  <!-- Writer to 01_draft.md -->
+  <path class="edge" d="M 360 146 L 360 182" marker-end="url(#arrow)" />
+
+  <!-- 01_draft.md to Checkers and Human Review Gate -->
+  <path class="edge" d="M 296 228 L 212 269" marker-end="url(#arrow)" />
+  <path class="edge" d="M 360 228 L 360 354" marker-end="url(#arrow)" />
+  <path class="edge" d="M 424 228 L 508 269" marker-end="url(#arrow)" />
+
+  <!-- Checkers to Audit Files -->
+  <path class="edge" d="M 165 314 L 165 354" marker-end="url(#arrow)" />
+  <path class="edge" d="M 555 314 L 555 354" marker-end="url(#arrow)" />
+
+  <!-- Audit Feedback Loops back to Writer -->
+  <path class="edge" d="M 83 378 C 20 360, 20 124, 278 124" marker-end="url(#arrow)" />
+  <path class="edge" d="M 637 378 C 700 360, 700 124, 442 124" marker-end="url(#arrow)" />
+
+  <!-- Gate to Illustrator to illustration.png -->
+  <path class="edge-dashed" d="M 360 400 L 360 440" marker-end="url(#arrow)" />
+  <path class="edge" d="M 360 486 L 360 522" marker-end="url(#arrow)" />
+
+  <!-- Row 1: Parameters (Hexagons) -->
+  <polygon class="param" points="176,22 284,22 300,44 284,66 176,66 160,44" />
+  <text class="code-title" x="230" y="41">topic</text>
+  <text class="sub" x="230" y="57">"Rocket"</text>
+
+  <polygon class="param" points="436,22 544,22 560,44 544,66 436,66 420,44" />
+  <text class="code-title" x="490" y="41">target_age</text>
+  <text class="sub" x="490" y="57">3-12</text>
+
+  <!-- Row 2: Writer Agent -->
+  <rect class="agent" x="280" y="102" width="160" height="44" rx="9" />
+  <text class="title" x="360" y="121">Writer</text>
+  <text class="code-sub" x="360" y="138">stage1_writer</text>
+
+  <!-- Row 3: 01_draft.md File -->
+  <rect class="file" x="272" y="184" width="176" height="44" />
+  <text class="code-title" x="360" y="203">01_draft.md</text>
+  <text class="sub" x="360" y="220">Prose + placeholder</text>
+
+  <!-- Row 4: Parallel Checkers -->
+  <rect class="agent" x="83" y="270" width="164" height="44" rx="9" />
+  <text class="title" x="165" y="289">Fact Checker</text>
+  <text class="code-sub" x="165" y="306">stage1_fact_checker</text>
+
+  <rect class="agent" x="473" y="270" width="164" height="44" rx="9" />
+  <text class="title" x="555" y="289">Age Checker</text>
+  <text class="code-sub" x="555" y="306">stage1_age_checker</text>
+
+  <!-- Row 5: Audit Files & Human Review Gate -->
+  <rect class="file" x="83" y="356" width="164" height="44" />
+  <text class="code-title" x="165" y="375">fact_audit.md</text>
+  <text class="sub" x="165" y="392">Factual critique</text>
+
+  <rect class="gate" x="268" y="356" width="184" height="44" rx="3" />
+  <text class="title" x="360" y="375">Human Review Gate</text>
+  <text class="sub" x="360" y="392">Editorial approval</text>
+
+  <rect class="file" x="473" y="356" width="164" height="44" />
+  <text class="code-title" x="555" y="375">age_audit.md</text>
+  <text class="sub" x="555" y="392">Readability critique</text>
+
+  <!-- Row 6: Illustrator Agent -->
+  <rect class="agent" x="276" y="442" width="168" height="44" rx="9" />
+  <text class="title" x="360" y="461">Illustrator</text>
+  <text class="code-sub" x="360" y="478">stage2_illustrator</text>
+
+  <!-- Row 7: illustration.png File -->
+  <rect class="file" x="272" y="524" width="176" height="44" />
+  <text class="code-title" x="360" y="543">illustration.png</text>
+  <text class="sub" x="360" y="560">Synthesized image</text>
+
+  <!-- Legend -->
+  <rect class="legend-box" x="130" y="584" width="460" height="24" rx="6" />
+  <text class="legend-text" x="360" y="600">Legend:  &lt;Parameter&gt;  |  (Agent)  |  [File]  |  [Human Review Gate]</text>
+</svg>
