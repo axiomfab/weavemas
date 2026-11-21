@@ -103,6 +103,41 @@ test('Repository Polish (R11) - Failure/Guard Path: checkStrictAscii rejects Uni
   assert.equal(checkStrictAscii('Em-dash — text').ok, false);
 });
 
+test('Repository Polish (R11) - Happy Path: examples/kidswiki markdown specifications exist, are linked from README.md, and are strict ASCII', () => {
+  const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  assert.match(readme, /```mermaid\s+flowchart TD/);
+
+  const expectedExampleFiles = [
+    'examples/kidswiki/orchestrator.md',
+    'examples/kidswiki/orchestrator_trigger.md',
+    'examples/kidswiki/orchestrator/stage1_editorial.md',
+    'examples/kidswiki/orchestrator/stage2_publishing.md',
+    'examples/kidswiki/.agent/agents/stage1_writer.md',
+    'examples/kidswiki/.agent/agents/stage1_fact_checker.md',
+    'examples/kidswiki/.agent/agents/stage1_age_checker.md',
+    'examples/kidswiki/.agent/agents/stage2_illustrator.md'
+  ];
+
+  for (const relPath of expectedExampleFiles) {
+    const absPath = path.join(REPO_ROOT, relPath);
+    assert.equal(fs.existsSync(absPath), true, `Missing KidsWiki example file: ${relPath}`);
+    assert.equal(
+      readme.includes(`(${relPath})`),
+      true,
+      `README.md must link to '${relPath}'`
+    );
+
+    const content = fs.readFileSync(absPath, 'utf8');
+    const asciiCheck = checkStrictAscii(content);
+    assert.equal(
+      asciiCheck.ok,
+      true,
+      `${relPath} contains non-ASCII character at line ${asciiCheck.line}, col ${asciiCheck.col}`
+    );
+    assert.equal(content.includes('TUTORIAL.md'), false, `Stale TUTORIAL.md link in ${relPath}`);
+  }
+});
+
 test('Repository Polish (R11) - Guard Path: docs/TUTORIAL.md is removed and no tracked docs/configs reference it', () => {
   const tutorialPath = path.join(REPO_ROOT, 'docs', 'TUTORIAL.md');
   assert.equal(fs.existsSync(tutorialPath), false, 'docs/TUTORIAL.md must be removed');

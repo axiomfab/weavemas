@@ -2,6 +2,53 @@
 
 **WeaveMAS** is a declarative orchestration framework and Model Context Protocol (MCP) runtime for rapid prototyping of structured multi-agent pipelines in **Google Antigravity (`agy`)** and other MCP-capable agent harnesses.
 
+## Quick Example: KidsWiki
+
+With the `weavemas` plugin enabled in Antigravity, a single prompt to `weave-authoring` synthesizes a complete 2-stage, 4-agent illustrated encyclopedia pipeline in plain Markdown -- zero orchestration code required:
+
+> Use the `weave-authoring` skill to create a 2-stage KidsWiki pipeline for a `topic` and `target_age` (3-12, default 4). Stage 1 (Editorial): a Writer drafts the article with an `![<illustration prompt>](./illustration.png)` placeholder and italicized caption; a Fact Checker and Age Checker audit accuracy and readability in parallel with an in-place revision loop; then a human review gate approves `01_draft.md`. Stage 2 (Publishing): an Illustrator generates `illustration.png` from the alt-text prompt.
+
+### Induced Workflow Graph
+
+```mermaid
+flowchart TD
+    P1{{"Parameter: topic"}} --> W(["Agent: stage1_writer"])
+    P2{{"Parameter: target_age"}} --> W
+    P1 --> FC(["Agent: stage1_fact_checker"])
+    P2 --> AC(["Agent: stage1_age_checker"])
+    W --> D["File: 01_draft.md"]
+    D --> FC
+    D --> AC
+    FC --> FA["File: fact_audit.md"]
+    AC --> AA["File: age_audit.md"]
+    FA -. "FAIL -> send_message" .-> W
+    AA -. "FAIL -> send_message" .-> W
+    FA --> G["Human Review Gate"]
+    AA --> G
+    D --> G
+    G -- "Approved" --> IL(["Agent: stage2_illustrator"])
+    IL --> IMG["File: illustration.png"]
+```
+
+### Generated Markdown Specifications ([`examples/kidswiki/`](examples/kidswiki/))
+
+| File | Role in Pipeline |
+| :--- | :--- |
+| [`orchestrator.md`](examples/kidswiki/orchestrator.md) | Root stage roadmap, inputs (`topic`, `target_age`), and review gate. |
+| [`orchestrator/stage1_editorial.md`](examples/kidswiki/orchestrator/stage1_editorial.md) | Stage 1 port bindings and parallel verification loop (`writer`, `fact_checker`, `age_checker`). |
+| [`orchestrator/stage2_publishing.md`](examples/kidswiki/orchestrator/stage2_publishing.md) | Stage 2 port binding (`draft.md: ${RUN_DIR}/01_draft.md` -> `illustration.png`). |
+| [`.agent/agents/stage1_writer.md`](examples/kidswiki/.agent/agents/stage1_writer.md) | Multi-task writer (`01_concepts` -> `02_draft`) authoring prose and alt-text prompt. |
+| [`.agent/agents/stage1_fact_checker.md`](examples/kidswiki/.agent/agents/stage1_fact_checker.md) | Scientific accuracy auditor (`search_web`, `fact_audit.md`). |
+| [`.agent/agents/stage1_age_checker.md`](examples/kidswiki/.agent/agents/stage1_age_checker.md) | Age-calibrated readability auditor (`age_audit.md`). |
+| [`.agent/agents/stage2_illustrator.md`](examples/kidswiki/.agent/agents/stage2_illustrator.md) | Image synthesis agent extracting the approved alt-text prompt (`illustration.png`). |
+| [`orchestrator_trigger.md`](examples/kidswiki/orchestrator_trigger.md) | Workspace trigger rule (placed in `.agent/rules/orchestrator_trigger.md`). |
+
+### Run and Inspect
+
+1. **Activate trigger**: Move `orchestrator_trigger.md` into `.agent/rules/orchestrator_trigger.md`.
+2. **Execute**: Prompt `"Write a KidsWiki article about 'Rocket' for a 4yo."`
+3. **Observe & Steer**: Click `[WeaveMAS UI](sidecar://weavemas/panel/)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
+
 ## Why WeaveMAS?
 
 Prompting a single LLM in one pass works well for short, self-contained tasks, but breaks down on complex, multi-part digital assets as competing constraints dilute context, subtle factual errors slip past self-critique, and monolithic tool/model assignments waste compute. Existing multi-agent approaches pull in two directions:
@@ -11,11 +58,11 @@ Prompting a single LLM in one pass works well for short, self-contained tasks, b
 
 WeaveMAS brings repeatable pipeline structure to agent harnesses without orchestration code:
 
-- **Declarative Markdown Specifications**: Pipelines are written as readable Markdown agent definitions (`.agent/agents/*.md`) and stage guides (`orchestrator.md`, `orchestrator/*.md`) -- authored by hand or synthesized in one shot from a short natural-language brief via `weave-authoring`.
-- **Sandboxed File & Parameter Port Contracts**: Each worker executes inside an isolated Current Working Directory (`runs/<context_slug>/...`) with explicit input and output port bindings. Cyclic generator-verifier specifications unwind at runtime into acyclic file provenance on disk.
-- **Two-Tier Checking**: Pairs authoring-time data-flow auditing (port matching, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via a zero-dependency Node.js MCP server (`weavemas_weave`).
-- **Interactive Gates & Surgical Asset Edits**: Human review gates pause execution at milestone files before costly downstream synthesis. Persisted worker sessions (`conversation_id`) let an operator request natural-language cross-stage edits in place via `send_message` without re-spawning agents or replaying unaffected steps.
-- **Zero-Token Out-of-Band UI Sidecar**: A local Node.js web panel (`sidecars/panel/`) polls `weave.md` manifests directly from disk to render a live stage stepper, agent cards, resolved/pending input badges, elapsed runtimes, and 1-click deliverable previews with zero LLM calls.
+- **Declarative Markdown Specifications**: Agents and stage guides are plain Markdown -- hand-authored or synthesized from a short brief via `weave-authoring`.
+- **Sandboxed File & Parameter Port Contracts**: Each worker runs inside an isolated Current Working Directory (`runs/<context_slug>/...`) with explicit input/output port bindings whose cyclic specifications unwind at runtime into acyclic file provenance on disk.
+- **Two-Tier Checking**: Pairs authoring-time data-flow auditing (port isomorphism, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via `weavemas_weave`.
+- **Interactive Gates & Surgical Asset Edits**: Human review gates pause execution at verified milestone files, while persisted worker sessions (`conversation_id`) enable natural-language cross-stage surgical edits without re-spawning agents.
+- **Zero-Token Out-of-Band UI Sidecar**: A local Node.js web panel (`sidecars/panel/`) polls `weave.md` manifests directly from disk with zero LLM calls.
 
 ## Installation and Setup
 
@@ -26,7 +73,7 @@ WeaveMAS brings repeatable pipeline structure to agent harnesses without orchest
 
 ### Option 1: Install as an Antigravity Plugin (Recommended)
 
-Clone this repository directly into your Antigravity plugins directory:
+Clone this repository into your Antigravity plugins directory:
 
 ```bash
 # macOS / Linux
@@ -36,12 +83,7 @@ git clone https://github.com/axiomfab/weavemas-agy.git ~/.gemini/config/plugins/
 git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plugins/weavemas"
 ```
 
-When enabled in Antigravity (`customization://weavemas`), the plugin automatically bundles:
-
-- **MCP Server (`weavemas_weave`)**: Registered via `mcp_config.json` (`weave` -> `weavemas_weave`).
-- **Core Skills**: `weave-authoring`, `weave-core-orchestrator`, and `weave-core-agent`.
-- **Control-Plane Subagents**: `provisioner` (Phase 1 workspace scaffolding) and `stage_orchestrator` (isolated per-stage and cluster coordination).
-- **UI Sidecar**: `WeaveMAS UI` (`sidecars/panel/`), accessible via `sidecar://weavemas/panel/`.
+When enabled in Antigravity (`customization://weavemas`), the plugin automatically registers the `weavemas_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-core-orchestrator`, `weave-core-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMAS UI` sidecar (`sidecars/panel/`).
 
 ### Option 2: Standalone `weavemas_weave` MCP Server
 
@@ -103,94 +145,9 @@ updated_at: "2026-11-18T10:12:00.000Z"
 - **`conversation_id`**: Optional persisted subagent session UUID used by orchestrators to resume workers via `send_message` across revision loops, context compaction, and post-run surgical edits.
 - **`updated_at`**: ISO 8601 UTC timestamp updated automatically on each transition.
 
-## Tutorial Examples
+## Stageless Mode (Single-File `orchestrator.md`)
 
-### Example 1: One-Shot Synthesis of a 2-Stage Pipeline (KidsWiki)
-
-Open an empty workspace in Antigravity with the `weavemas` plugin enabled and prompt `weave-authoring` to synthesize a 2-stage illustrated encyclopedia pipeline:
-
-> Use the `weave-authoring` skill to create a 2-stage KidsWiki pipeline for a `topic` and `target_age` (3-12, default 4). Stage 1 (Editorial): a Writer drafts the article with an `![<illustration prompt>](./illustration.png)` placeholder and italicized caption; a Fact Checker and Age Checker audit accuracy and readability in parallel with an in-place revision loop; then a human review gate approves `01_draft.md`. Stage 2 (Publishing): an Illustrator generates `illustration.png` from the alt-text prompt.
-
-`weave-authoring` generates flat subagent definitions in `.agent/agents/`, modular guides in `orchestrator.md` and `orchestrator/stage*.md`, plus `orchestrator_trigger.md`, then runs the Tier 1 static data-flow audit to verify port matching and input availability.
-
-1. **Activate the workspace trigger rule** (Antigravity protects `.agent/rules/` from direct agent writes):
-   ```bash
-   mkdir -p .agent/rules && mv orchestrator_trigger.md .agent/rules/orchestrator_trigger.md
-   ```
-2. **Run the pipeline**:
-   > Write a KidsWiki article about "Rocket" for a 4yo.
-3. **Open the WeaveMAS UI sidecar**: Click the `[WeaveMAS UI](sidecar://weavemas/panel/)` link emitted in chat (or toggle the **WeaveMAS UI** side panel in Antigravity) to watch the 2-stage stepper, live agent status cards, port badges, and deliverables under `runs/kidswiki_rocket_age4/`.
-4. **Steer at the review gate or apply surgical edits**: At the Stage 1 `awaiting_review` gate, inspect `runs/kidswiki_rocket_age4/01_draft.md` (both verified prose and the alt-text image prompt) and reply `"Approved"` to run Stage 2, or request targeted tweaks in natural language -- the orchestrator wakes the existing worker via its persisted `conversation_id` and updates only affected outputs.
-
-### Example 2: Hand-Authoring a Minimal Stageless Pipeline
-
-For compact workflows without stage review gates, define flat agents in `.agent/agents/` and a single `orchestrator.md` at the workspace root.
-
-**1. Writer Agent (`.agent/agents/agent_writer.md`)**
-
-```markdown
----
-name: agent_writer
-description: Drafts short, age-calibrated KidsWiki articles
-model: flash
-subagent: true
-inheritCustomizations: true
-inheritMcp: true
-skills:
-  - weave-core-agent
-tools:
-  - view_file
-  - write_to_file
----
-
-# Writer Agent
-
-You write concise, factual encyclopedia articles calibrated to `target_age`.
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
-
-# Role Specifics
-* **Output Target**: Save your completed article to `draft.md`.
-
-# Tasks
-## Task: 01_outline
-Select 3 core facts for `topic` calibrated to `target_age`.
-
-## Task: 02_draft
-Write the article to `draft.md`. On revision messages, update `draft.md` in place.
-
-# Lifecycle
-1. `01_outline`
-2. `02_draft`
-```
-
-**2. Fact Checker Agent (`.agent/agents/agent_fact_checker.md`)**
-
-```markdown
----
-name: agent_fact_checker
-description: Audits KidsWiki drafts for scientific accuracy
-model: flash
-subagent: true
-inheritCustomizations: true
-inheritMcp: true
-skills:
-  - weave-core-agent
-tools:
-  - view_file
-  - search_web
-  - write_to_file
----
-
-# Fact Checker Agent
-
-You audit `draft.md` for factual accuracy against `topic`.
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
-
-# Role Specifics
-* **Output Target**: Write your audit report starting with `verdict: PASS` or `verdict: FAIL` to `fact_audit.md`.
-```
-
-**3. Stageless Orchestrator (`orchestrator.md`)**
+For compact workflows that do not need intermediate review gates or `orchestrator/stage*.md` files, declare `## Agents` and `## Execution` directly inside a single `orchestrator.md` (with worker sandboxes placed flat under `${RUN_DIR}/agents/<agent_id>/`):
 
 ```markdown
 # KidsWiki Stageless Orchestrator
@@ -207,13 +164,13 @@ Every run is scoped to `runs/kidswiki_<topic_slug>_age<target_age>/`.
 ## Agents
 
 ### Writer: `writer`
-* **Instructions**: [agent_writer.md](.agent/agents/agent_writer.md)
+* **Instructions**: [stage1_writer.md](.agent/agents/stage1_writer.md)
 * **Working Directory**: `${RUN_DIR}/agents/writer/`
 * **Outputs**:
   - `draft.md: ${RUN_DIR}/article.md`
 
 ### Fact Checker: `fact_checker`
-* **Instructions**: [agent_fact_checker.md](.agent/agents/agent_fact_checker.md)
+* **Instructions**: [stage1_fact_checker.md](.agent/agents/stage1_fact_checker.md)
 * **Working Directory**: `${RUN_DIR}/agents/fact_checker/`
 * **Inputs**:
   - `../writer/draft.md`
