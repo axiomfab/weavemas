@@ -1,10 +1,14 @@
 {
   "name": "weavemas",
-  "description": "WeaveMAS: High-observability multi-agent orchestration with sandboxed status machines, native MCP tooling, and real-time dashboard UI.",
+  "displayName": "WeaveMAS",
+  "version": "1.0.0",
+  "description": "Declarative multi-agent orchestration for Google Antigravity with sandboxed weave.md manifests, MCP contract enforcement, and a zero-token UI sidecar.",
+  "author": "Martin Lukasiewycz",
+  "repository": "https://github.com/axiomfab/weavemas-agy",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "Use the weave-authoring skill to create a minimal, single-file (stageless) KidsWiki pipeline that writes short text articles for children aged 3 to 12 (defaulting to age 4). Include two agents: a Writer (responsible for age-appropriate readability) and a Fact Checker (strictly verifying factual accuracy, with an in-place revision loop if any statement is wrong), saving the final verified text article to article.md in output/<topic_slug>_<age>yo/.",
-    "Verify subagent status in the current working directory",
+    "Use the weave-authoring skill to create a minimal, single-file (stageless) KidsWiki pipeline for a topic and target age (3-12, default 4). Include two agents: a Writer and a Fact Checker with an in-place revision loop, saving the verified article to article.md in runs/<topic_slug>_age<age>/.",
+    "Use the weave-authoring skill to create a 2-stage KidsWiki pipeline with Editorial review and Publishing illustration stages.",
     "Inspect the master pipeline weave.md"
   ]
 }

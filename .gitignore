@@ -1,4 +1,5 @@
 node_modules/
+runs/
 output/
 .DS_Store
 Thumbs.db
