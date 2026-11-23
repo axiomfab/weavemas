@@ -281,8 +281,8 @@ describe('Pipeline Panel Stage Evaluation', () => {
     const jsPath = resolve(__dirname, '..', 'sidecars', 'panel', 'app.js');
     const appJs = readFileSync(jsPath, 'utf8');
 
-    // Happy Path: Pipeline view renders st.name cleanly without timerLabel
-    assert.match(appJs, /<span class="text-\[10px\] text-slate-500 text-center truncate max-w-\[70px\]" title="\$\{st\.name\}">\$\{st\.name\}<\/span>/);
+    // Happy Path: Pipeline view renders escaped st.name cleanly without timerLabel
+    assert.match(appJs, /<span class="text-\[10px\] text-slate-500 text-center truncate max-w-\[70px\]" title="\$\{escapeHtml\(st\.name\)\}">\$\{escapeHtml\(st\.name\)\}<\/span>/);
     assert.doesNotMatch(appJs, /timerLabel/);
 
     // Failure Path 1: Pipeline stepper loop must not invoke calculateStageRuntime

@@ -1,8 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Response, SidecarApp } from 'sidecar_sdk';
-import { getMediaMimeType } from './lib/input_verifier.mjs';
+import { getMediaMimeType, isPathWithinRoot, resolveSafeMediaPath } from './lib/input_verifier.mjs';
 import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, resolveEffectiveWorkspace } from './lib/pipeline.mjs';
 import { executeStatusUpdate, readStageAgents, readAllStagesAgents } from './lib/status_tool.mjs';
 
@@ -36,14 +36,20 @@ function resolveWorkspace(data) {
 }
 
 function resolveContextDir(ws, data) {
-  if (data && data.contextDir && existsSync(data.contextDir)) return data.contextDir;
-  if (data && data.showDir && existsSync(data.showDir)) return data.showDir;
+  if (data && typeof data.contextDir === 'string' && isPathWithinRoot(data.contextDir, ws, false) && existsSync(data.contextDir)) {
+    return data.contextDir;
+  }
+  if (data && typeof data.showDir === 'string' && isPathWithinRoot(data.showDir, ws, false) && existsSync(data.showDir)) {
+    return data.showDir;
+  }
   if (data && (data.contextId || data.showId)) {
-    const id = data.contextId || data.showId;
-    const runsCandidate = join(ws, 'runs', id);
-    if (existsSync(runsCandidate)) return runsCandidate;
-    const outputCandidate = join(ws, 'output', id);
-    if (existsSync(outputCandidate)) return outputCandidate;
+    const id = String(data.contextId || data.showId);
+    const runsRoot = join(ws, 'runs');
+    const runsCandidate = join(runsRoot, id);
+    if (isPathWithinRoot(runsCandidate, runsRoot, false) && existsSync(runsCandidate)) return runsCandidate;
+    const outputRoot = join(ws, 'output');
+    const outputCandidate = join(outputRoot, id);
+    if (isPathWithinRoot(outputCandidate, outputRoot, false) && existsSync(outputCandidate)) return outputCandidate;
     const found = getAllShowDirs(ws).find(s => s.id === id);
     if (found) return found.path;
   }
@@ -158,37 +164,21 @@ app.api('/api/media', (data) => {
     });
   }
 
+  const contextDir = resolveContextDir(ws, data);
   let resolvedPath = null;
-  if (isAbsolute(rawPath) && existsSync(rawPath)) {
-    resolvedPath = rawPath;
-  } else {
-    const contextDir = resolveContextDir(ws, data);
-    const effectiveWs = resolveEffectiveWorkspace(ws, contextDir);
-    const candidates = [contextDir ? join(contextDir, rawPath) : null, join(effectiveWs, rawPath), join(ws, rawPath)].filter(Boolean);
-    for (const cand of candidates) {
-      if (existsSync(cand) && statSync(cand).isFile()) {
-        resolvedPath = cand;
-        break;
-      }
+  try {
+    resolvedPath = resolveSafeMediaPath(rawPath, ws, contextDir);
+  } catch (err) {
+    if (err && err.code === 'FORBIDDEN_PATH') {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 403,
+        contentType: 'application/json'
+      });
     }
-    if (!resolvedPath && contextDir && existsSync(contextDir)) {
-      const findInDir = (dir, depth = 0) => {
-        if (depth > 5) return null;
-        const direct = join(dir, rawPath);
-        if (existsSync(direct) && statSync(direct).isFile()) return direct;
-        for (const ent of readdirSync(dir, { withFileTypes: true })) {
-          if (ent.isDirectory()) {
-            const found = findInDir(join(dir, ent.name), depth + 1);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      resolvedPath = findInDir(contextDir);
-    }
+    throw err;
   }
 
-  if (!resolvedPath || !statSync(resolvedPath).isFile()) {
+  if (!resolvedPath) {
     return new Response(JSON.stringify({ error: `CRITICAL: Media file not found: '${rawPath}'` }), {
       status: 404,
       contentType: 'application/json'
@@ -201,7 +191,9 @@ app.api('/api/media', (data) => {
     contentType: mimeType,
     headers: {
       'Content-Length': String(buffer.length),
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
     }
   });
 }, 'GET');

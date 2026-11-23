@@ -78,8 +78,8 @@ test('Repository Polish (R11) - Happy Path: README.md is strict ASCII and docume
     );
   }
 
-  // Relative file links in README.md (excluding code blocks/inline code and URI schemes) must resolve
-  const outsideCode = readme.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]+`/g, '');
+  // Relative file links in README.md (excluding fenced code blocks of 3+ backticks, inline code, and URI schemes) must resolve
+  const outsideCode = readme.replace(/(`{3,})[\s\S]*?\1/g, '').replace(/`[^`\n]+`/g, '');
   const linkRegex = /\[[^\]]+\]\(([^)]+)\)/g;
   let match;
   while ((match = linkRegex.exec(outsideCode)) !== null) {

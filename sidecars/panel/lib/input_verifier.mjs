@@ -109,6 +109,114 @@ export function getMediaMimeType(filePath) {
   return MIME_BY_EXT[ext] || null;
 }
 
+/**
+ * Checks whether candidatePath resolves within (or equal to) rootDir, enforcing symlink-safe containment when paths exist.
+ * @param {string} candidatePath
+ * @param {string} rootDir
+ * @param {boolean} [allowEqual=true]
+ * @returns {boolean}
+ */
+export function isPathWithinRoot(candidatePath, rootDir, allowEqual = true) {
+  if (typeof candidatePath !== 'string' || !candidatePath.trim()) return false;
+  if (typeof rootDir !== 'string' || !rootDir.trim()) return false;
+
+  const normalizeCase = (p) => (process.platform === 'win32' ? p.toLowerCase() : p);
+  const resolvedRoot = path.resolve(rootDir);
+  const resolvedCandidate = path.resolve(resolvedRoot, candidatePath);
+
+  const rel = path.relative(normalizeCase(resolvedRoot), normalizeCase(resolvedCandidate));
+  if (rel === '') {
+    if (!allowEqual) return false;
+  } else if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return false;
+  }
+
+  if (fs.existsSync(resolvedRoot) && fs.existsSync(resolvedCandidate)) {
+    try {
+      const realRoot = fs.realpathSync(resolvedRoot);
+      const realCandidate = fs.realpathSync(resolvedCandidate);
+      const realRel = path.relative(normalizeCase(realRoot), normalizeCase(realCandidate));
+      if (realRel === '') return allowEqual;
+      if (realRel.startsWith('..') || path.isAbsolute(realRel)) return false;
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Resolves a media file request strictly inside workspaceRoot (and optional contextDir under workspaceRoot).
+ * Throws an Error with `code = 'FORBIDDEN_PATH'` if rawPath attempts to escape workspaceRoot.
+ * @param {string} rawPath
+ * @param {string} workspaceRoot
+ * @param {string | null} [contextDir=null]
+ * @returns {string | null}
+ */
+export function resolveSafeMediaPath(rawPath, workspaceRoot, contextDir = null) {
+  if (typeof rawPath !== 'string' || !rawPath.trim()) {
+    throw new TypeError('CRITICAL: rawPath must be a non-empty string');
+  }
+  if (typeof workspaceRoot !== 'string' || !workspaceRoot.trim()) {
+    throw new TypeError('CRITICAL: workspaceRoot must be a non-empty string');
+  }
+
+  const trimmed = rawPath.trim();
+  const wsResolved = path.resolve(workspaceRoot);
+  const safeContextDir = (typeof contextDir === 'string' && contextDir.trim() && isPathWithinRoot(contextDir, wsResolved))
+    ? path.resolve(contextDir)
+    : null;
+
+  const rejectForbidden = () => {
+    const err = new Error(`CRITICAL: Media path '${trimmed}' resolves outside workspace boundary.`);
+    err.code = 'FORBIDDEN_PATH';
+    throw err;
+  };
+
+  if (path.isAbsolute(trimmed)) {
+    if (!isPathWithinRoot(trimmed, wsResolved, false)) {
+      rejectForbidden();
+    }
+    const resolvedAbs = path.resolve(trimmed);
+    return (fs.existsSync(resolvedAbs) && fs.statSync(resolvedAbs).isFile()) ? resolvedAbs : null;
+  }
+
+  const candidateBases = [safeContextDir, wsResolved].filter(Boolean);
+  for (const base of candidateBases) {
+    const cand = path.resolve(base, trimmed);
+    if (!isPathWithinRoot(cand, wsResolved, false)) {
+      rejectForbidden();
+    }
+    if (fs.existsSync(cand) && fs.statSync(cand).isFile()) {
+      return cand;
+    }
+  }
+
+  if (safeContextDir && fs.existsSync(safeContextDir)) {
+    const findInDir = (dir, depth = 0) => {
+      if (depth > 5) return null;
+      const direct = path.resolve(dir, trimmed);
+      if (!isPathWithinRoot(direct, wsResolved, false)) {
+        rejectForbidden();
+      }
+      if (fs.existsSync(direct) && fs.statSync(direct).isFile()) return direct;
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (ent.isDirectory()) {
+          const subDir = path.join(dir, ent.name);
+          if (!isPathWithinRoot(subDir, wsResolved, false)) continue;
+          const found = findInDir(subDir, depth + 1);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findInDir(safeContextDir);
+  }
+
+  return null;
+}
+
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

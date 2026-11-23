@@ -1,5 +1,15 @@
 // Runtime Tracker Module - Calculates Active Execution Time from weave.md Event Logs
 (function() {
+  function escapeHtml(str) {
+    if (str === null || str === undefined || str === '') return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function formatRuntime(totalSeconds) {
     const s = Math.max(0, Math.floor(totalSeconds || 0));
     if (s < 60) return `${s}s`;
@@ -289,10 +299,10 @@
     for (let i = 0; i < parsedEntries.length; i++) {
       const entry = parsedEntries[i];
       if (entry.isPlain) {
-        formatted.push(`<div class="weave-log-plain text-slate-400 font-mono">${entry.rawLine}</div>`);
+        formatted.push(`<div class="weave-log-plain text-slate-400 font-mono">${escapeHtml(entry.rawLine)}</div>`);
         continue;
       }
-      const timeStr = formatHumanLogTime(entry.iso);
+      const timeStr = escapeHtml(formatHumanLogTime(entry.iso));
       let durationHtml = '';
       if (entry.slug && entry.slug.startsWith('in_progress')) {
         let nextTimestamp = null;
@@ -310,9 +320,9 @@
       }
       const colorCls = getStatusColorClass(entry.slug);
       const badgeHtml = entry.slug
-        ? ` <span class="font-mono text-[11px] ${colorCls}">[${entry.slug}]</span>`
+        ? ` <span class="font-mono text-[11px] ${colorCls}">[${escapeHtml(entry.slug)}]</span>`
         : '';
-      const noteHtml = entry.progress ? ` <span class="text-slate-300 font-sans">— ${entry.progress}</span>` : '';
+      const noteHtml = entry.progress ? ` <span class="text-slate-300 font-sans">— ${escapeHtml(entry.progress)}</span>` : '';
       formatted.push(`<div class="weave-log-entry leading-relaxed py-0.5"><span class="text-slate-600 font-mono mr-1.5">•</span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
     }
     return formatted.join('\n');

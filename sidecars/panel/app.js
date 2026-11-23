@@ -5,6 +5,16 @@
   let selectedContextDir = null;
   let pollInterval = null;
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined || str === '') return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   async function getParams() {
     const parts = [];
     if (window.sidecar && window.sidecar.getWorkspaceUris) {
@@ -135,11 +145,12 @@
         else if (st.status === 'blocked') dotClass = 'stage-dot-blocked';
         if (isSelected) dotClass += ' stage-dot-selected';
 
+        const safeNum = Number(st.num);
         stepperHtml += `
-          <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${st.num})">
-            <div class="stage-dot ${dotClass}" title="${st.tag || st.name}"></div>
-            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center">Stage ${st.num}</span>
-            <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${st.name}">${st.name}</span>
+          <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${safeNum})">
+            <div class="stage-dot ${dotClass}" title="${escapeHtml(st.tag || st.name)}"></div>
+            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center">Stage ${safeNum}</span>
+            <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>
           </div>
         `;
       }
