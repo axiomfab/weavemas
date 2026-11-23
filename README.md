@@ -1,6 +1,6 @@
 # WeaveMAS
 
-**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define and rapidly prototype structured multi-agent pipelines in plain Markdown, with zero code. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
+**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-core-orchestrator`, `weave-core-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
 
 ## Quick Example: KidsWiki
 
@@ -317,12 +317,16 @@ Prompting a single LLM in one pass works well for short, self-contained tasks, b
 - **Code-centric state graphs** (e.g., LangGraph, AutoGen, MetaGPT) provide static typing and state checkpointing, but require writing Python or TypeScript glue code, maintaining package environments, and pre-coding skip guards before interactive revisions can avoid full downstream replay.
 - **Open-ended agent harnesses and iterative single-agent ("Ralph") loops** avoid orchestration code, yet drift across folder layouts from run to run, lose constraints across conversational summaries, share correlated blind spots when one persona grades its own work, wander across unrestricted workspace directories, and expose poor visibility into intermediate progress.
 
-WeaveMAS brings repeatable pipeline structure to agent harnesses without orchestration code:
+WeaveMAS brings repeatable multi-agent structure to agent harnesses with zero orchestration code through a three-part causal design:
 
-- **Declarative Markdown Specifications**: Agents and stage guides are plain Markdown -- hand-authored or synthesized from a short brief via `weave-authoring`.
-- **Sandboxed File & Parameter Port Contracts**: Each worker runs inside an isolated Current Working Directory (`runs/<context_slug>/...`) with explicit input/output port bindings whose cyclic specifications unwind at runtime into acyclic file provenance on disk.
-- **Two-Tier Checking**: Pairs authoring-time data-flow auditing (port isomorphism, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via `weavemas_weave`.
-- **Interactive Gates & Surgical Asset Edits**: Human review gates pause execution at verified milestone files, while persisted worker sessions (`conversation_id`) enable natural-language cross-stage surgical edits without re-spawning agents.
+1. **Partially Predefined Markdown Specifications (Zero Code)**: Orchestrators (`orchestrator.md`, `orchestrator/stage*.md`) and specialist worker agents (`.agent/agents/*.md`) are defined in plain Markdown combining structured sections (stages, roles, file/parameter ports, tasks, and review gates) with natural-language instructions, written by hand or synthesized and revised via `weave-authoring`.
+2. **Execution Skills for Predictable Protocols**: Dedicated orchestrator and worker skills (`weave-core-orchestrator` and `weave-core-agent`) govern how the harness interprets those Markdown files at runtime, prescribing two-phase workspace provisioning, subagent dispatch, directory discipline, and structured multi-turn handoffs.
+3. **MCP Contract Enforcement & `weave.md` Lifecycles**: Programmatic MCP tools (`weavemas_weave`) back those skills on disk, isolating each worker inside its own Current Working Directory (`runs/<context_slug>/...`), validating input/output port bindings, and managing orchestrator and worker lifecycles in structured `weave.md` manifests.
+
+Building on this foundation, WeaveMAS provides:
+
+- **Two-Tier Data-Flow Checking**: Pairs authoring-time auditing (port isomorphism, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via `weavemas_weave`.
+- **Interactive Gates & Surgical Asset Edits**: Human review gates pause execution at verified milestone files, while persisted worker sessions (`conversation_id`) enable natural-language cross-stage surgical edits without re-spawning agents or replaying downstream checkpoints.
 - **Zero-Token Out-of-Band UI Sidecar**: A local Node.js web panel (`sidecars/panel/`) polls `weave.md` manifests directly from disk with zero LLM calls.
 
 ## Installation and Setup
