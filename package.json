@@ -1,6 +1,6 @@
 {
   "name": "weavemas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WeaveMAS: Observable Multi-Agent Systems Plugin & MCP Server for Antigravity",
   "type": "module",
   "main": "src/mcp_server.mjs",
