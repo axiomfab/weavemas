@@ -21,9 +21,7 @@ test('Security Hygiene (#18) - .gitignore excludes secrets, local Solony runtime
     'runs/',
     'output/',
     'tmp/',
-    '.solony/sessions/',
-    '.solony/worktrees/',
-    '.solony/issues.json',
+    '.solony/',
     '.env',
     '.env.*',
     '*.pem',
@@ -48,7 +46,7 @@ test('Security Hygiene (#18) - Tracked repository files contain zero secrets, pr
   const trackedFiles = trackedRaw.split(/\r?\n/).filter(Boolean);
   assert.ok(trackedFiles.length > 0, 'Repository must have tracked files');
 
-  const forbiddenPathRegex = /(^|\/)\.env(\.|$)|\.(pem|key|pfx|p12|pyc)$|(^|\/)id_(rsa|ed25519)|^\.solony\/(sessions|worktrees|issues\.json)/i;
+  const forbiddenPathRegex = /(^|\/)\.env(\.|$)|\.(pem|key|pfx|p12|pyc)$|(^|\/)id_(rsa|ed25519)|^\.solony\//i;
   const secretContentRegex = /\b(AIza[0-9A-Za-z\-_]{20,}|gh[pousr]_[0-9A-Za-z]{20,}|github_pat_[0-9A-Za-z_]{20,}|sk-[A-Za-z0-9\-_]{20,}|lin_api_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b|-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/;
   const localUserPathRegex = /(?:[A-Za-z]:[/\\]+Users[/\\]+(?![.\s])|\/Users\/[A-Za-z0-9._-]+|\/home\/[A-Za-z0-9._-]+)/;
 

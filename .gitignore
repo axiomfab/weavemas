@@ -4,11 +4,8 @@ runs/
 output/
 tmp/
 
-# Local Solony session, worktree, and issue-cache state
-.solony/sessions/
-.solony/worktrees/
-.solony/board-order.json
-.solony/issues.json
+# Local Solony workspace, session, worktree, and issue-cache state
+.solony/
 
 # Secrets & credentials
 .env
