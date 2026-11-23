@@ -1,10 +1,6 @@
-<p>
-  <img src="assets/logo.svg" alt="WeaveMAS" width="64" height="64" />
-</p>
-
 # WeaveMAS
 
-**WeaveMAS** is a declarative orchestration framework for Google Antigravity (`agy`) that lets you define and rapidly prototype structured multi-agent pipelines in plain Markdown, with zero code. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
+**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define and rapidly prototype structured multi-agent pipelines in plain Markdown, with zero code. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
 
 ## Quick Example: KidsWiki
 
