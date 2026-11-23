@@ -1,31 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="64" height="64">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#090d16"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e1e1e"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
     </linearGradient>
-    <linearGradient id="cyanLine" x1="12" y1="20" x2="52" y2="44" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#38bdf8"/>
-      <stop offset="1" stop-color="#06b6d4"/>
+    <linearGradient id="gw" x1="15" y1="0" x2="85" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0.00%" stop-color="#f59e0c"/>
+      <stop offset="6.25%" stop-color="#a06604"/>
+      <stop offset="12.50%" stop-color="#724700"/>
+      <stop offset="18.75%" stop-color="#a06604"/>
+      <stop offset="25.00%" stop-color="#f59e0c"/>
+      <stop offset="31.25%" stop-color="#f4c068"/>
+      <stop offset="37.50%" stop-color="#f4cb88"/>
+      <stop offset="43.75%" stop-color="#f4c068"/>
+      <stop offset="50.00%" stop-color="#f59e0c"/>
+      <stop offset="56.25%" stop-color="#a06604"/>
+      <stop offset="62.50%" stop-color="#724700"/>
+      <stop offset="68.75%" stop-color="#a06604"/>
+      <stop offset="75.00%" stop-color="#f59e0c"/>
+      <stop offset="81.25%" stop-color="#f4c068"/>
+      <stop offset="87.50%" stop-color="#f4cb88"/>
+      <stop offset="93.75%" stop-color="#f4c068"/>
+      <stop offset="100.00%" stop-color="#f59e0c"/>
     </linearGradient>
-    <linearGradient id="indigoLine" x1="12" y1="44" x2="52" y2="20" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#818cf8"/>
-      <stop offset="1" stop-color="#6366f1"/>
+    <linearGradient id="gs" x1="15" y1="0" x2="85" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0.00%" stop-color="#b5b5b5"/>
+      <stop offset="6.25%" stop-color="#e2e2e2"/>
+      <stop offset="12.50%" stop-color="#f2f2f2"/>
+      <stop offset="18.75%" stop-color="#e2e2e2"/>
+      <stop offset="25.00%" stop-color="#b5b5b5"/>
+      <stop offset="31.25%" stop-color="#878787"/>
+      <stop offset="37.50%" stop-color="#6e6e6e"/>
+      <stop offset="43.75%" stop-color="#878787"/>
+      <stop offset="50.00%" stop-color="#b5b5b5"/>
+      <stop offset="56.25%" stop-color="#e2e2e2"/>
+      <stop offset="62.50%" stop-color="#f2f2f2"/>
+      <stop offset="68.75%" stop-color="#e2e2e2"/>
+      <stop offset="75.00%" stop-color="#b5b5b5"/>
+      <stop offset="81.25%" stop-color="#878787"/>
+      <stop offset="87.50%" stop-color="#6e6e6e"/>
+      <stop offset="93.75%" stop-color="#878787"/>
+      <stop offset="100.00%" stop-color="#b5b5b5"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    <filter id="blur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.4"/>
     </filter>
+    <mask id="mw" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <path d="M 15 27.5 C 21.37 27.5, 26.13 72.5, 32.5 72.5 C 38.87 72.5, 43.63 27.5, 50 27.5 C 56.37 27.5, 61.13 72.5, 67.5 72.5 C 73.87 72.5, 78.63 27.5, 85 27.5" fill="none" stroke="white" stroke-width="6.9" stroke-linecap="round"/>
+    </mask>
+    <mask id="ms" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <path d="M 15 63.5 C 21.37 63.5, 26.13 36.5, 32.5 36.5 C 38.87 36.5, 43.63 63.5, 50 63.5 C 56.37 63.5, 61.13 36.5, 67.5 36.5 C 73.87 36.5, 78.63 63.5, 85 63.5" fill="none" stroke="white" stroke-width="4.8" stroke-linecap="round"/>
+    </mask>
+    <clipPath id="cs">
+      <rect x="15" y="15" width="17.5" height="70"/>
+      <rect x="50" y="15" width="17.5" height="70"/>
+    </clipPath>
+    <clipPath id="cw">
+      <rect x="32.5" y="15" width="17.5" height="70"/>
+      <rect x="67.5" y="15" width="17.5" height="70"/>
+    </clipPath>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="1.5"/>
-  <path d="M12 22C20 22 24 42 32 42C40 42 44 22 52 22" fill="none" stroke="url(#cyanLine)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
-  <path d="M12 42C20 42 24 22 32 22C40 22 44 42 52 42" fill="none" stroke="url(#indigoLine)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
-  <circle cx="12" cy="22" r="3.5" fill="#38bdf8"/>
-  <circle cx="32" cy="42" r="3.5" fill="#38bdf8"/>
-  <circle cx="52" cy="22" r="3.5" fill="#38bdf8"/>
-  <circle cx="12" cy="42" r="3.5" fill="#a5b4fc"/>
-  <circle cx="32" cy="22" r="3.5" fill="#a5b4fc"/>
-  <circle cx="52" cy="42" r="3.5" fill="#a5b4fc"/>
-  <circle cx="22" cy="32" r="2" fill="#10b981"/>
-  <circle cx="42" cy="32" r="2" fill="#10b981"/>
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#bg)" stroke="#353535" stroke-width="2"/>
+  <path d="M 15 27.5 C 21.37 27.5, 26.13 72.5, 32.5 72.5 C 38.87 72.5, 43.63 27.5, 50 27.5 C 56.37 27.5, 61.13 72.5, 67.5 72.5 C 73.87 72.5, 78.63 27.5, 85 27.5" fill="none" stroke="url(#gw)" stroke-width="6.9" stroke-linecap="round"/>
+  <g mask="url(#mw)" clip-path="url(#cs)">
+    <path d="M 15 63.5 C 21.37 63.5, 26.13 36.5, 32.5 36.5 C 38.87 36.5, 43.63 63.5, 50 63.5 C 56.37 63.5, 61.13 36.5, 67.5 36.5 C 73.87 36.5, 78.63 63.5, 85 63.5" fill="none" stroke="rgba(0,0,0,0.62)" stroke-width="8.4" stroke-linecap="round" filter="url(#blur)"/>
+  </g>
+  <path d="M 15 63.5 C 21.37 63.5, 26.13 36.5, 32.5 36.5 C 38.87 36.5, 43.63 63.5, 50 63.5 C 56.37 63.5, 61.13 36.5, 67.5 36.5 C 73.87 36.5, 78.63 63.5, 85 63.5" fill="none" stroke="url(#gs)" stroke-width="4.8" stroke-linecap="round"/>
+  <g mask="url(#ms)" clip-path="url(#cw)">
+    <path d="M 15 27.5 C 21.37 27.5, 26.13 72.5, 32.5 72.5 C 38.87 72.5, 43.63 27.5, 50 27.5 C 56.37 27.5, 61.13 72.5, 67.5 72.5 C 73.87 72.5, 78.63 27.5, 85 27.5" fill="none" stroke="rgba(0,0,0,0.62)" stroke-width="10.7" stroke-linecap="round" filter="url(#blur)"/>
+  </g>
+  <g clip-path="url(#cw)">
+    <path d="M 15 27.5 C 21.37 27.5, 26.13 72.5, 32.5 72.5 C 38.87 72.5, 43.63 27.5, 50 27.5 C 56.37 27.5, 61.13 72.5, 67.5 72.5 C 73.87 72.5, 78.63 27.5, 85 27.5" fill="none" stroke="url(#gw)" stroke-width="6.9" stroke-linecap="round"/>
+  </g>
 </svg>
