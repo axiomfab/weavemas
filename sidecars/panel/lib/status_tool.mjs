@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { checkAgentInputs, resolveAgentOutputs } from './input_verifier.mjs';
+import { checkAgentInputs, resolveAgentOutputs, isPathWithinRoot } from './input_verifier.mjs';
 
 function parseScalarValue(raw) {
   const val = raw.trim();
@@ -70,8 +70,20 @@ export function executeStatusUpdate(params, workspaceRoot) {
   if (!workspaceRoot || typeof workspaceRoot !== 'string') throw new TypeError('CRITICAL: workspaceRoot parameter is required and must be a string');
 
   const baseDir = fs.existsSync(path.join(workspaceRoot, 'runs')) ? 'runs' : 'output';
-  const agentsDir = path.join(workspaceRoot, baseDir, show, stage, 'agents');
-  const agentDir = path.join(agentsDir, agent);
+  const baseRoot = path.resolve(workspaceRoot, baseDir);
+  const showRoot = path.resolve(baseRoot, show);
+  if (!isPathWithinRoot(showRoot, baseRoot, false)) {
+    throw new Error(`CRITICAL: Path traversal detected in show parameter '${show}'`);
+  }
+  const stageRoot = path.resolve(showRoot, stage);
+  if (!isPathWithinRoot(stageRoot, showRoot, false)) {
+    throw new Error(`CRITICAL: Path traversal detected in stage parameter '${stage}'`);
+  }
+  const agentsDir = path.join(stageRoot, 'agents');
+  const agentDir = path.resolve(agentsDir, agent);
+  if (!isPathWithinRoot(agentDir, agentsDir, false)) {
+    throw new Error(`CRITICAL: Path traversal detected in agent parameter '${agent}'`);
+  }
   if (!fs.existsSync(agentDir)) fs.mkdirSync(agentDir, { recursive: true });
 
   const filePath = path.join(agentDir, 'weave.md');

@@ -1,6 +1,28 @@
+# Dependencies & runtime artifacts
 node_modules/
 runs/
 output/
+tmp/
+
+# Local Solony session, worktree, and issue-cache state
+.solony/sessions/
+.solony/worktrees/
+.solony/board-order.json
+.solony/issues.json
+
+# Secrets & credentials
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# Bytecode, logs & OS metadata
+__pycache__/
+*.py[cod]
 .DS_Store
 Thumbs.db
 *.log
