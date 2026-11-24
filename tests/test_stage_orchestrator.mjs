@@ -43,11 +43,11 @@ function buildValidStageOrchestratorMarkdown(frontmatterOverrides = '', bodyOver
     [
       '# Stage Orchestrator',
       `Do NOT read ${NO_SCHEMA_READ_FRAGMENT} unless an unexpected schema error occurs.`,
-      `- discover_agents: \`${COMPACT_TOOL_SIGNATURES.discover_agents}\``,
+      `- weave_discover_agents: \`${COMPACT_TOOL_SIGNATURES.weave_discover_agents}\``,
       `- weave_update: \`${COMPACT_TOOL_SIGNATURES.weave_update}\``,
       `- weave_read: \`${COMPACT_TOOL_SIGNATURES.weave_read}\``,
       'Phase 1 delegates to provisioner and waits for PROVISIONING_COMPLETE.',
-      'Phase 2 calls discover_agents, dispatches via invoke_subagent, persists conversation_id, routes revisions via send_message, and batch-verifies via weave_read.',
+      'Phase 2 calls weave_discover_agents, dispatches via invoke_subagent, persists conversation_id, routes revisions via send_message, and batch-verifies via weave_read.',
       'NEVER call `manage_subagents` or `kill` any child session.',
       'STAGE_COMPLETED: <stage_slug> | agents: <count> | outputs: []',
       'CLUSTER_COMPLETED: <unit_id> | agents: <count> | outputs: []'
@@ -60,7 +60,7 @@ test('STAGE_ORCHESTRATOR constants - Happy Path: frozen minimal tool surface and
   assert.equal(Object.isFrozen(STAGE_ORCHESTRATOR_TOOLS), true);
   assert.equal(Object.isFrozen(STAGE_ORCHESTRATOR_MCP_TOOLS), true);
   assert.deepEqual(STAGE_ORCHESTRATOR_TOOLS, ['view_file', 'invoke_subagent', 'send_message']);
-  assert.deepEqual(STAGE_ORCHESTRATOR_MCP_TOOLS, ['weave_update', 'weave_read', 'discover_agents']);
+  assert.deepEqual(STAGE_ORCHESTRATOR_MCP_TOOLS, ['weave_update', 'weave_read', 'weave_discover_agents']);
 });
 
 test('verifyStageOrchestratorContract - Happy Path: validates minimal frontmatter, inline signatures, and Two-Phase protocol', () => {
@@ -70,7 +70,7 @@ test('verifyStageOrchestratorContract - Happy Path: validates minimal frontmatte
     verified: true,
     name: 'stage_orchestrator',
     tools: ['view_file', 'invoke_subagent', 'send_message'],
-    mcpTools: ['weave_update', 'weave_read', 'discover_agents']
+    mcpTools: ['weave_update', 'weave_read', 'weave_discover_agents']
   });
 });
 
@@ -124,7 +124,7 @@ test('verifyStageOrchestratorContract - Failure Path 2: rejects inheritCustomiza
 
   const withExternalSkills = buildValidStageOrchestratorMarkdown().replace(
     'commandExecutionPolicy: auto',
-    'commandExecutionPolicy: auto\nskills:\n  - weave-core-orchestrator'
+    'commandExecutionPolicy: auto\nskills:\n  - weave-orchestrator'
   );
   assert.throws(() => verifyStageOrchestratorContract(withExternalSkills), {
     name: 'Error',
@@ -163,12 +163,12 @@ test('verifyStageOrchestratorContract - Failure Path 3: rejects bloated IDE tool
 
 test('verifyStageOrchestratorContract - Failure Path 4: rejects missing inline MCP signatures or missing Two-Phase / idle markers', () => {
   const missingDiscoverSig = buildValidStageOrchestratorMarkdown().replace(
-    COMPACT_TOOL_SIGNATURES.discover_agents,
+    COMPACT_TOOL_SIGNATURES.weave_discover_agents,
     '{"directory": string}'
   );
   assert.throws(() => verifyStageOrchestratorContract(missingDiscoverSig), {
     name: 'Error',
-    message: /CRITICAL: Missing or drifted compact signature for 'discover_agents'/
+    message: /CRITICAL: Missing or drifted compact signature for 'weave_discover_agents'/
   });
 
   const missingProvisionerGate = buildValidStageOrchestratorMarkdown().replace(
@@ -209,7 +209,7 @@ test('R5 Repository Audit - Happy Path: agents/stage_orchestrator.md and skills 
   );
 
   const coreOrch = fs.readFileSync(
-    path.join(REPO_ROOT, 'skills', 'weave-core-orchestrator', 'SKILL.md'),
+    path.join(REPO_ROOT, 'skills', 'weave-orchestrator', 'SKILL.md'),
     'utf-8'
   );
   assert.match(coreOrch, /TypeName:\s*"stage_orchestrator"/);

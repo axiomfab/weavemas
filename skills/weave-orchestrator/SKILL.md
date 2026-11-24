@@ -1,5 +1,5 @@
 ---
-name: weave-core-orchestrator
+name: weave-orchestrator
 description: >-
   Self-contained WeaveMAS orchestrator protocol. Includes inline weavemas_weave MCP
   tool signatures, Step 0 stage directory scaffolding, per-stage stage_orchestrator
@@ -7,7 +7,7 @@ description: >-
   (Protocols A & B), and batch weave_read verification.
 ---
 
-# 👑 WeaveMAS Core Orchestrator Protocol
+# 👑 WeaveMAS Orchestrator Protocol
 
 > **Single Startup Read Mandate**: This skill is self-contained for Step 0, Per-Stage `stage_orchestrator` Delegation, Phase 1, Phase 2 (Protocols A & B), and User Review Gates. Do **NOT** read `orchestrator-agent-instantiation/SKILL.md` or `orchestrator-agent-execution/SKILL.md` on startup, do **NOT** preload `orchestrator/*.md` stage guides into the Root Orchestrator in staged pipelines, and do **NOT** call `read_file` / `view_file` on `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs.
 
@@ -18,7 +18,7 @@ All directory and mirror arguments (`dir`, `dirs`, `stage_dir`, `directory`, `mi
 * `weave_update`: `{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}`
 * `weave_verify`: `{"dir": string, "expected_role"?: string}`
 * `weave_read`: `{"dir"?: string, "dirs"?: string[], "stage_dir"?: string, "expected_outputs"?: string|string[]|null, "expected_status"?: string, "mirror_to"?: string}` *(pass exactly one of `dir`, `dirs`, or `stage_dir`; `mirror_to` is `dir`-only)*
-* `discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
+* `weave_discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
 
 ---
 
@@ -73,7 +73,7 @@ Used directly by the Root Orchestrator **only** in single-file stageless pipelin
    ```
    Wait reactively for `PROVISIONING_COMPLETE` without inspecting `weave.md` or `.agent/agents/provisioner.md`.
 2. **Phase 2 — Agent Discovery & Dispatch (Protocols A & B)**:
-   - Call `discover_agents` (`{"directory": "<workspace_root>/runs/<context_slug>", "filter_status": "initialized", "limit": 10}`; repeat if `remaining_count > 0`). If `## Execution` specifies `sub-orchestrator`, use **Protocol B**; otherwise use **Protocol A**.
+   - Call `weave_discover_agents` (`{"directory": "<workspace_root>/runs/<context_slug>", "filter_status": "initialized", "limit": 10}`; repeat if `remaining_count > 0`). If `## Execution` specifies `sub-orchestrator`, use **Protocol B**; otherwise use **Protocol A**.
    - **Protocol A — Direct Sequential or Parallel Workers**: Dispatch via `invoke_subagent` using `TypeName: "<filename_stem_of_instructions_file>"` and `Role: "<agent_id>"` (omit `Model`; never tell the worker to read its own `instructions_file`), passing `Assigned Working Directory: <dir>/`, `Runtime Parameters:` (including `context_slug`), and local-only `Required Output:` (omit if `outputs` is empty). Immediately persist `conversationId` via `weave_update`: `{"dir": "<dir>", "conversation_id": "<conversationId>"}` (omit `status`).
    - **Protocol B — Ephemeral Sub-Orchestrator Clusters**: Invoke `TypeName: "stage_orchestrator"` (or `"weavemas:stage_orchestrator"`), `Model: "inherit"`, `Role: "suborchestrator_<unit_id>"` (**never** `TypeName: "self"`, avoiding `18K–27K` main-harness prefill bloat; dispatch concurrently only if `execute in parallel` is declared):
      ```markdown
@@ -97,7 +97,7 @@ Used directly by the Root Orchestrator **only** in single-file stageless pipelin
 3. **Zero-Copy User Review Gate** *(when declared)*:
    - Set master `weave_update`: `{"dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<stage_slug>/awaiting_review", "progress": "Awaiting user review of <stage_output_name>"}` (or `"status": "awaiting_review"` if stageless).
    - **NEVER** `read_file` + `write_file` full deliverables through LLM context. Present `[WeaveMAS UI](sidecar://weavemas/panel/)` and a direct clickable `file://` link to `${RUN_DIR}/<stage_output_name>` (use optional `mirror_to` in `weave_update`/`weave_read` only when an external copy is explicitly required).
-   - **Revision Requested**: Set master `weave_update` (`type: "orchestrator"`, `status: "<stage_slug>/in_progress/iteration_<N>"` or `"in_progress/iteration_<N>"`), route feedback via `send_message` to the idle `stage_orchestrator` for `<stage_slug>` (or directly to the worker's persisted `conversation_id` via `weave_read` / `discover_agents` in stageless mode—never spawn duplicates), re-verify via `weave_read`, and return to `awaiting_review`.
+   - **Revision Requested**: Set master `weave_update` (`type: "orchestrator"`, `status: "<stage_slug>/in_progress/iteration_<N>"` or `"in_progress/iteration_<N>"`), route feedback via `send_message` to the idle `stage_orchestrator` for `<stage_slug>` (or directly to the worker's persisted `conversation_id` via `weave_read` / `weave_discover_agents` in stageless mode—never spawn duplicates), re-verify via `weave_read`, and return to `awaiting_review`.
 4. **Stage Advance & Final Completion**:
    - **Next Stage**: Call `weave_update` (`{"dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<next_stage_slug>/in_progress", "progress": "<Handoff summary>"}`), output `[WeaveMAS UI](sidecar://weavemas/panel/)`, and dispatch the next `stage_orchestrator`.
    - **Pipeline Complete**: Call `weave_update` (`{"dir": "<workspace_root>/runs/<context_slug>", "type": "orchestrator", "status": "<last_stage_slug>/completed", "outputs": "<final_pipeline_output_path>", "progress": "<Final summary>"}`, or `"status": "completed"` if stageless).

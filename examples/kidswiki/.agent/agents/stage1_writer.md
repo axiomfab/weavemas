@@ -6,7 +6,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - write_to_file
@@ -16,7 +16,7 @@ tools:
 
 You write concise, scientifically accurate encyclopedia articles calibrated to `target_age` for the assigned `topic`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your completed article to `draft.md`.
@@ -31,7 +31,7 @@ Write `draft.md` containing:
 1. `# <Title>`
 2. An in-place Markdown image tag whose alt-text holds a self-contained 2-3 sentence visual prompt, followed immediately by an italicized caption:
    ```markdown
-   ![<Detailed visual prompt tailored to target_age>](./illustration.png)
+   ![<Detailed visual prompt tailored to target_age>](./02_illustration.png)
    *<Short caption>*
    ```
 3. The age-calibrated article prose.

@@ -15,19 +15,19 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - <builtin_tool> # Built-in tools ONLY: view_file, write_to_file, search_web, run_command
 ---
 ```
 
-* **`tools:` Constraint**: Always include `view_file` (required to load the `weave-core-agent` skill and read declared `inputs`), plus only the additional built-in tools required by the role (omit `run_command` unless shell execution is needed). **NEVER** list `call_mcp_tool` or `weave__*` in `tools:` (`inheritMcp: true` grants MCP access automatically).
+* **`tools:` Constraint**: Always include `view_file` (required to load the `weave-agent` skill and read declared `inputs`), plus only the additional built-in tools required by the role (omit `run_command` unless shell execution is needed). **NEVER** list `call_mcp_tool` or `weave__*` in `tools:` (`inheritMcp: true` grants MCP access automatically).
 * **Mandatory Prompt Binding Statement**: Place this exact line near the top of the prompt body (right after the agent title and 1-sentence role summary):
   ```markdown
-  Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+  Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
   ```
-* **Zero Tool Boilerplate**: Never write `call_mcp_tool` instructions or JSON schemas in agent definitions; `weave-core-agent` handles all status tool calls automatically.
+* **Zero Tool Boilerplate**: Never write `call_mcp_tool` instructions or JSON schemas in agent definitions; `weave-agent` handles all status tool calls automatically.
 
 ---
 
@@ -35,7 +35,7 @@ tools:
 
 1. **`# Role Specifics`**:
    - Always declare `* **Output Target**: Save your finalized <type> to <filename_or_list>.` (supports a single filename, a list of files such as `article.md` and `illustration.png`, or wildcard patterns like `segment_*.md`).
-   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They refer to inputs directly by filename (e.g. `draft.md`, mapped from `- draft.md: 01_draft.md` in the orchestrator) or relative path (`weave-core-agent`'s `weave_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1). Avoid inventing redundant descriptive titles.
+   - **Flexible Input References**: Agents do not require a rigid `# Inputs` section. They refer to inputs directly by filename (e.g. `draft.md`, mapped from `- draft.md: 01_draft.md` in the orchestrator) or relative path (`weave-agent`'s `weave_verify` returns the resolved absolute paths for all declared `inputs` on Turn 1). Avoid inventing redundant descriptive titles.
    - Never mention `weave.md`, `weave_verify`, or "staged copies" in `# Role Specifics`.
 2. **Multi-Task Agents (`# Tasks` & `# Lifecycle`)**:
    - Declare each step as `## Task: <NN>_<short_slug>` (lowercase snake_case, zero-padded `01_`, `02_`, 1–2 words max so UI badges do not truncate).
@@ -43,7 +43,7 @@ tools:
 3. **Single-Purpose Agents**: Omit `# Tasks` and `# Lifecycle` when the role performs a single atomic action.
 4. **Concise 1-Line Chat Acknowledgments (Zero Prose Recap)**:
    - Require workers to write all detailed findings, critiques, and deliverables strictly to their declared output file(s) and `weave.md`. Never instruct an agent to paste, summarize, or recap its report in chat.
-   - `weave-core-agent` enforces a 1-line final chat response (e.g. `COMPLETED: <agent_id> | verdict: PASS | outputs: [audit_report.md]`, or `COMPLETED: <agent_id> | outputs: [draft.md]`). For audit/review agents, instruct the agent to record an explicit `PASS` or `FAIL` verdict in its output file and `weave_update` `progress` (`verdict: PASS` / `verdict: FAIL`).
+   - `weave-agent` enforces a 1-line final chat response (e.g. `COMPLETED: <agent_id> | verdict: PASS | outputs: [audit_report.md]`, or `COMPLETED: <agent_id> | outputs: [draft.md]`). For audit/review agents, instruct the agent to record an explicit `PASS` or `FAIL` verdict in its output file and `weave_update` `progress` (`verdict: PASS` / `verdict: FAIL`).
    - **Exception for Emitted Handoff Parameters ($P_{\text{out}}$)**: Only when a stage explicitly requires an agent to return scalar/structured runtime handoff parameters ($P_{\text{out}}$, such as `track_queries` emitted before pausing for peer sourcing) may the agent instructions specify returning that compact $P_{\text{out}}$ block beneath the 1-line status header.
 
 ---
@@ -60,7 +60,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - write_to_file
@@ -70,7 +70,7 @@ tools:
 
 You write age-calibrated articles within your dedicated working directory.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your completed prose to `draft.md`.
@@ -99,7 +99,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - generate_image
@@ -109,7 +109,7 @@ tools:
 
 You extract the illustration prompt from `draft.md` (bound via `draft.md: 01_draft.md`) and generate `illustration.png`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your visual asset to `illustration.png` (outputs: `["illustration.png"]`).

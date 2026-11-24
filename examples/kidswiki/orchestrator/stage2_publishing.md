@@ -1,7 +1,7 @@
 # Stage 2: Illustration & Publishing
 
 ## Objective
-Extract the approved alt-text visual prompt from `01_draft.md` and generate `illustration.png` to complete the illustrated article in place.
+Extract the approved alt-text visual prompt from `01_draft.md` and generate `02_illustration.png` to complete the illustrated article in place.
 
 ## Agents
 
@@ -11,9 +11,9 @@ Extract the approved alt-text visual prompt from `01_draft.md` and generate `ill
 * **Inputs**:
   - `draft.md: ${RUN_DIR}/01_draft.md`
 * **Outputs**:
-  - `illustration.png: ${RUN_DIR}/illustration.png`
+  - `illustration.png: ${RUN_DIR}/02_illustration.png`
 
 ## Execution
 1. **`illustrator`**:
    - Parameters: `none`
-   - Execution: Read `draft.md`, extract the visual prompt from `![<prompt>](./illustration.png)`, and generate `illustration.png` (promoted automatically to `${RUN_DIR}/illustration.png`).
+   - Execution: Read `draft.md`, extract the visual prompt from `![<prompt>](./02_illustration.png)`, and generate `illustration.png` (promoted automatically to `${RUN_DIR}/02_illustration.png`).

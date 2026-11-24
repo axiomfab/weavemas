@@ -43,14 +43,14 @@ trigger: always_on
 
 * **Mandatory Binding Statement**: Place near the top of `orchestrator.md`:
   ```markdown
-  Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation (or Phase 1 `provisioner` delegation in stageless mode), and pipeline lifecycle tracking.
+  Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation (or Phase 1 `provisioner` delegation in stageless mode), and pipeline lifecycle tracking.
   ```
 * **Lean Root Orchestrator & Per-Stage Sub-Orchestration (Multi-Stage Pipelines)**:
   Keep `orchestrator.md` strictly as a thin stage roadmap (target `~35K–45K` root tokens across 9+ stages). At runtime, the Root Orchestrator reads **only** `orchestrator.md`, manages Step 0 stage directory creation, master `runs/<context_slug>/weave.md`, stage transitions, and User Review Gates, and delegates each stage's execution (`S1..SN`) to an isolated `stage_orchestrator` instance (kept idle upon completion—never `kill`ed—so child worker conversations remain alive for surgical `send_message` edits).
   - Declare any stage-level runtime parameters needed by `stage_orchestrator` explicitly on each stage entry in `orchestrator.md` (beyond top-level `## Inputs`) so the Root Orchestrator never needs to read `orchestrator/*.md` files.
   - **NEVER** inline stage-internal `## Agents` lists or worker step details inside a multi-stage `orchestrator.md`.
 * **Pure Declarative Authoring (Zero Runtime Mechanics)**:
-  Stage files declare **what** (agents, inputs, outputs, and sequence); `weave-core-orchestrator` and `stage_orchestrator` handle **how** (upfront stage folder creation, per-stage `stage_orchestrator` dispatch, Phase 1 `provisioner` delegation, Phase 2 `discover_agents`, black-box prompts, and `weave_read`).
+  Stage files declare **what** (agents, inputs, outputs, and sequence); `weave-orchestrator` and `stage_orchestrator` handle **how** (upfront stage folder creation, per-stage `stage_orchestrator` dispatch, Phase 1 `provisioner` delegation, Phase 2 `weave_discover_agents`, black-box prompts, and `weave_read`).
   - **NEVER** author a `Step 0: Upfront Scaffolding` section in `orchestrator.md`.
   - **NEVER** author `invoke_subagent` prompt templates, `weave_init` calls, or polling reminders in stage files.
 * **Black-Box Execution Abstraction (No Internal Leaks)**:
@@ -100,7 +100,7 @@ trigger: always_on
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...
@@ -128,7 +128,7 @@ Every run is scoped to `runs/<context_slug>/`.
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...

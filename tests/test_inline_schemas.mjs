@@ -125,10 +125,10 @@ test('verifyInlineToolSignatures - Failure Path 2: throws Error on unknown tool,
 });
 
 test('R7 Skill & Agent Audit - Happy Path: core skills inline exact MCP signatures and consolidate startup reads', () => {
-  const allFiveTools = ['weave_init', 'weave_update', 'weave_verify', 'weave_read', 'discover_agents'];
+  const allFiveTools = ['weave_init', 'weave_update', 'weave_verify', 'weave_read', 'weave_discover_agents'];
 
   const coreOrch = fs.readFileSync(
-    path.join(REPO_ROOT, 'skills', 'weave-core-orchestrator', 'SKILL.md'),
+    path.join(REPO_ROOT, 'skills', 'weave-orchestrator', 'SKILL.md'),
     'utf-8'
   );
   verifyInlineToolSignatures(coreOrch, allFiveTools);
@@ -142,17 +142,17 @@ test('R7 Skill & Agent Audit - Happy Path: core skills inline exact MCP signatur
     'utf-8'
   );
   verifyInlineToolSignatures(instSkill, ['weave_init']);
-  assert.match(instSkill, /already inlined in weave-core-orchestrator — do NOT[\s\S]*read this file/);
+  assert.match(instSkill, /already inlined in weave-orchestrator — do NOT[\s\S]*read this file/);
 
   const execSkill = fs.readFileSync(
     path.join(REPO_ROOT, 'skills', 'orchestrator-agent-execution', 'SKILL.md'),
     'utf-8'
   );
   verifyInlineToolSignatures(execSkill, allFiveTools);
-  assert.match(execSkill, /already inlined in weave-core-orchestrator — do NOT[\s\S]*read this file/);
+  assert.match(execSkill, /already inlined in weave-orchestrator — do NOT[\s\S]*read this file/);
 
   const coreAgent = fs.readFileSync(
-    path.join(REPO_ROOT, 'skills', 'weave-core-agent', 'SKILL.md'),
+    path.join(REPO_ROOT, 'skills', 'weave-agent', 'SKILL.md'),
     'utf-8'
   );
   verifyInlineToolSignatures(coreAgent, ['weave_verify', 'weave_update']);
@@ -185,5 +185,5 @@ test('R7 Provisioner & Stage Orchestrator Audit - Happy Path: provisioner sets i
     'agents/stage_orchestrator.md and .agent/agents/stage_orchestrator.md must remain identical'
   );
   assert.match(stageOrch, /^inheritCustomizations:\s*true$/m);
-  verifyInlineToolSignatures(stageOrch, ['weave_update', 'weave_read', 'discover_agents']);
+  verifyInlineToolSignatures(stageOrch, ['weave_update', 'weave_read', 'weave_discover_agents']);
 });

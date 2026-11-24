@@ -50,7 +50,8 @@ test('MCP Discovery - Happy Path: tools/list returns Weave status tools', () => 
   assert.ok(toolNames.includes('weave_update'));
   assert.ok(toolNames.includes('weave_verify'));
   assert.ok(toolNames.includes('weave_read'));
-  assert.ok(toolNames.includes('discover_agents'));
+  assert.ok(toolNames.includes('weave_discover_agents'));
+  assert.equal(toolNames.includes('discover_agents'), false);
 });
 
 test('MCP Tool Call - Happy Path: executes weave_init and weave_update', () => {
@@ -323,7 +324,7 @@ test('MCP Tool Call - Happy Path: weave_init with instructions_file', () => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Tool Call - Happy Path: discover_agents discovers agents with pagination', () => {
+test('MCP Tool Call - Happy Path: weave_discover_agents discovers agents with pagination', () => {
   const tmp = createTempDir();
   const stageDir = path.join(tmp, 'stage01_setup');
   const agent1Dir = path.join(stageDir, 'agents', 'agent_alpha');
@@ -354,7 +355,7 @@ test('MCP Tool Call - Happy Path: discover_agents discovers agents with paginati
     id: 26,
     method: 'tools/call',
     params: {
-      name: 'discover_agents',
+      name: 'weave_discover_agents',
       arguments: {
         directory: stageDir,
         filter_status: 'initialized',
@@ -376,13 +377,13 @@ test('MCP Tool Call - Happy Path: discover_agents discovers agents with paginati
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Failure Path 10: discover_agents without directory returns isError: true', () => {
+test('MCP Failure Path 10: weave_discover_agents without directory returns isError: true', () => {
   const req = {
     jsonrpc: '2.0',
     id: 27,
     method: 'tools/call',
     params: {
-      name: 'discover_agents',
+      name: 'weave_discover_agents',
       arguments: {}
     }
   };
@@ -392,13 +393,13 @@ test('MCP Failure Path 10: discover_agents without directory returns isError: tr
   assert.match(res.result.content[0].text, /CRITICAL: 'directory' argument is required/);
 });
 
-test('MCP Failure Path 11: discover_agents with relative directory returns isError: true', () => {
+test('MCP Failure Path 11: weave_discover_agents with relative directory returns isError: true', () => {
   const req = {
     jsonrpc: '2.0',
     id: 28,
     method: 'tools/call',
     params: {
-      name: 'discover_agents',
+      name: 'weave_discover_agents',
       arguments: {
         directory: 'relative/path/stage'
       }
@@ -755,7 +756,7 @@ test('MCP Failure Paths 17 & 18 (R8): weave_read rejects mutually-exclusive dir/
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('MCP Tool Call - Happy Path (R9): persists conversation_id via weave_init/weave_update and surfaces it in weave_read and discover_agents', () => {
+test('MCP Tool Call - Happy Path (R9): persists conversation_id via weave_init/weave_update and surfaces it in weave_read and weave_discover_agents', () => {
   const listRes = captureResponse({ jsonrpc: '2.0', id: 60, method: 'tools/list', params: {} });
   const initTool = listRes.result.tools.find(t => t.name === 'weave_init');
   const updateTool = listRes.result.tools.find(t => t.name === 'weave_update');
@@ -829,12 +830,12 @@ test('MCP Tool Call - Happy Path (R9): persists conversation_id via weave_init/w
   assert.equal(batchParsed.agents.find(a => a.agent_id === 'critic').conversation_id, criticUuid);
   assert.equal(batchParsed.agents.find(a => a.agent_id === 'writer').conversation_id, writerUuid);
 
-  // discover_agents surfaces conversation_id
+  // weave_discover_agents surfaces conversation_id
   const discRes = captureResponse({
     jsonrpc: '2.0',
     id: 65,
     method: 'tools/call',
-    params: { name: 'discover_agents', arguments: { directory: stageDir, filter_status: null } }
+    params: { name: 'weave_discover_agents', arguments: { directory: stageDir, filter_status: null } }
   });
   assert.equal(discRes.result.isError, undefined);
   const discParsed = JSON.parse(discRes.result.content[0].text);

@@ -145,7 +145,7 @@ export const TOOLS = [
     }
   },
   {
-    name: 'discover_agents',
+    name: 'weave_discover_agents',
     description: 'Discover initialized or matching WeaveMAS subagent workspaces (including persisted conversation_id) in a stage or context directory.',
     inputSchema: {
       type: 'object',
@@ -178,7 +178,7 @@ export const COMPACT_TOOL_SIGNATURES = Object.freeze({
   weave_update: '{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}',
   weave_verify: '{"dir": string, "expected_role"?: string}',
   weave_read: '{"dir"?: string, "dirs"?: string[], "stage_dir"?: string, "expected_outputs"?: string|string[]|null, "expected_status"?: string, "mirror_to"?: string}',
-  discover_agents: '{"directory": string, "filter_status"?: string, "limit"?: number}'
+  weave_discover_agents: '{"directory": string, "filter_status"?: string, "limit"?: number}'
 });
 
 /**
@@ -244,7 +244,7 @@ export const STAGE_ORCHESTRATOR_TOOLS = Object.freeze([
 export const STAGE_ORCHESTRATOR_MCP_TOOLS = Object.freeze([
   'weave_update',
   'weave_read',
-  'discover_agents'
+  'weave_discover_agents'
 ]);
 
 /**
@@ -303,7 +303,7 @@ export function verifyStageOrchestratorContract(content) {
   const requiredBodyMarkers = [
     { pattern: /\bprovisioner\b/, label: 'Phase 1 provisioner delegation' },
     { pattern: /\bPROVISIONING_COMPLETE\b/, label: 'PROVISIONING_COMPLETE gate' },
-    { pattern: /\bdiscover_agents\b/, label: 'Phase 2 discover_agents' },
+    { pattern: /\bweave_discover_agents\b/, label: 'Phase 2 weave_discover_agents' },
     { pattern: /\binvoke_subagent\b/, label: 'Phase 2 invoke_subagent dispatch' },
     { pattern: /\bsend_message\b/, label: 'send_message revision routing' },
     { pattern: /\bconversation_id\b/, label: 'immediate conversation_id persistence' },
