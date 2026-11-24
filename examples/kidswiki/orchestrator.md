@@ -1,6 +1,6 @@
 # Multi-Agent KidsWiki Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: Article subject (e.g., `"Rocket"`). Required.
@@ -22,4 +22,4 @@ Every run is scoped to `runs/kidswiki_<topic_slug>_age<target_age>/`.
 * **Execution Directory**: `stage02_publishing/`
 * **Protocol**: [orchestrator/stage2_publishing.md](orchestrator/stage2_publishing.md)
 * **Parameters**: `none`
-* **Output**: `illustration.png`
+* **Output**: `02_illustration.png`

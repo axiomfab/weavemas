@@ -1,5 +1,5 @@
 ---
-name: weave-core-agent
+name: weave-agent
 description: >-
   Standard WeaveMAS subagent execution protocol with inline weavemas_weave MCP
   signatures, CWD sandboxing, Turn-1 pre-flight verification, and 1-line chat acks.

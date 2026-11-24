@@ -18,7 +18,7 @@ You are a lean WeaveMAS Sub-Orchestrator operating inside an isolated context wi
 
 ## 0. Inline `weavemas_weave` MCP Signatures (`ServerName: "weavemas_weave"`)
 All directory arguments (`dir`, `dirs`, `stage_dir`, `directory`, `mirror_to`) **must be absolute paths**:
-* `discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
+* `weave_discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
 * `weave_update`: `{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}` *(sub-orchestrators use `weave_update` ONLY to persist a worker's `conversation_id`, omitting `status` and `type`)*
 * `weave_read`: `{"dir"?: string, "dirs"?: string[], "stage_dir"?: string, "expected_outputs"?: string|string[]|null, "expected_status"?: string, "mirror_to"?: string}` *(pass exactly one of `dir`, `dirs`, or `stage_dir`)*
 * **Zero Schema & Skill Reads**: Do **NOT** call `view_file` / `read_file` on `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs, and do **NOT** read external `SKILL.md`, `.agent/agents/*.md`, or `weave.md` files.
@@ -37,7 +37,7 @@ When invoked with `Stage Guide`, `Stage Directory`, `Context Slug`, and `Runtime
    ```
    Wait reactively for `PROVISIONING_COMPLETE`.
 3. **Phase 2 — Discovery & Dispatch**:
-   - Call `discover_agents` (`{"directory": "<absolute_stage_directory>", "filter_status": "initialized", "limit": 10}`); repeat if `remaining_count > 0`.
+   - Call `weave_discover_agents` (`{"directory": "<absolute_stage_directory>", "filter_status": "initialized", "limit": 10}`); repeat if `remaining_count > 0`.
    - Execute `## Execution` up to (and **stopping strictly before**) any **User Review Gate** (User Review Gates belong exclusively to the Root Orchestrator):
      * **Protocol A (Direct Sequential or Parallel Workers)**: Invoke each worker via `invoke_subagent` using `TypeName: "<filename_stem_of_instructions_file>"` and `Role: "<agent_id>"` (omit `Model`; never tell a worker to read its own `instructions_file`):
        ```markdown
@@ -72,4 +72,4 @@ When invoked with `Mode: cluster` and an ordered list of pre-initialized child a
 
 ## 3. Surgical Revision Resume (`send_message`)
 
-When resumed via `send_message` with revision feedback (e.g. from a Root Orchestrator User Review Gate), retrieve the target worker's `conversation_id` (from session memory or `weave_read` / `discover_agents`), forward feedback via `send_message` (never spawn duplicate workers), run any required peer re-audit loop, re-verify via `weave_read`, and return the 1-line `STAGE_COMPLETED` or `CLUSTER_COMPLETED` ack.
+When resumed via `send_message` with revision feedback (e.g. from a Root Orchestrator User Review Gate), retrieve the target worker's `conversation_id` (from session memory or `weave_read` / `weave_discover_agents`), forward feedback via `send_message` (never spawn duplicate workers), run any required peer re-audit loop, re-verify via `weave_read`, and return the 1-line `STAGE_COMPLETED` or `CLUSTER_COMPLETED` ack.

@@ -181,7 +181,7 @@ export function handleMessage(msg) {
           });
           resultText = formatBatchReadResult(batchRes);
         }
-      } else if (name === 'discover_agents') {
+      } else if (name === 'weave_discover_agents' || name === 'discover_agents') {
         const directory = args.directory;
         if (!directory || typeof directory !== 'string') {
           throw new Error("CRITICAL: 'directory' argument is required and must be an absolute path.");

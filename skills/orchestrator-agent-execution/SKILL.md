@@ -1,24 +1,24 @@
 ---
 name: orchestrator-agent-execution
 description: >-
-  Standalone Phase 2 reference (already inlined in weave-core-orchestrator — do NOT
-  read this file if weave-core-orchestrator is already loaded).
+  Standalone Phase 2 reference (already inlined in weave-orchestrator — do NOT
+  read this file if weave-orchestrator is already loaded).
 ---
 
 # 🚀 Phase 2: Orchestrator Agent Execution
 
-> **Note**: Already inlined in `weave-core-orchestrator`. Skip reading this skill when `weave-core-orchestrator` is loaded. Do **NOT** call `read_file` / `view_file` on `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs.
+> **Note**: Already inlined in `weave-orchestrator`. Skip reading this skill when `weave-orchestrator` is loaded. Do **NOT** call `read_file` / `view_file` on `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs.
 
 ## Inline `weavemas_weave` MCP Signatures (`ServerName: "weavemas_weave"`)
 * `weave_init`: `{"dir": string, "type"?: "agent"|"orchestrator", "status"?: string, "instructions_file"?: string, "inputs"?: string[], "outputs"?: string|string[], "conversation_id"?: string}`
 * `weave_update`: `{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}`
 * `weave_verify`: `{"dir": string, "expected_role"?: string}`
 * `weave_read`: `{"dir"?: string, "dirs"?: string[], "stage_dir"?: string, "expected_outputs"?: string|string[]|null, "expected_status"?: string, "mirror_to"?: string}` *(exactly one of `dir`, `dirs`, `stage_dir`; `mirror_to` is `dir`-only)*
-* `discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
+* `weave_discover_agents`: `{"directory": string, "filter_status"?: string, "limit"?: number}`
 
 ## 1. Per-Stage Delegation vs. Direct Discovery
 1. **Multi-Stage Pipelines**: The Root Orchestrator stays thin by delegating each stage (`S1..SN`) via `invoke_subagent` to `TypeName: "stage_orchestrator"` (or `"weavemas:stage_orchestrator"`), `Model: "inherit"`, `Role: "stage_orchestrator_<stage_slug>"` (`Mode: stage`, passing `Stage Guide`, `Stage Directory`, `Context Slug`, and `Runtime Parameters`). Keep every completed `stage_orchestrator` session **idle** (never `kill` via `manage_subagents`, preserving child worker conversations for surgical `send_message` edits).
-2. **Stageless Runs / Inside `stage_orchestrator`**: Call `discover_agents` (`{"directory": "<workspace_root>/runs/<context_slug>[/<stage_slug>]", "filter_status": "initialized", "limit": 10}`); repeat if `remaining_count > 0`. If `## Execution` declares `sub-orchestrator`, use **Protocol B**; otherwise use **Protocol A**. Never execute domain work in orchestrator context.
+2. **Stageless Runs / Inside `stage_orchestrator`**: Call `weave_discover_agents` (`{"directory": "<workspace_root>/runs/<context_slug>[/<stage_slug>]", "filter_status": "initialized", "limit": 10}`); repeat if `remaining_count > 0`. If `## Execution` declares `sub-orchestrator`, use **Protocol B**; otherwise use **Protocol A**. Never execute domain work in orchestrator context.
 
 ## 2. Protocol A: Direct Workers
 1. Dispatch via `invoke_subagent` (`TypeName: "<stem_of_instructions_file>"`, `Role: "<agent_id>"`, omit `Model`, pass `Assigned Working Directory: <dir>/`, `Runtime Parameters:` with `context_slug`, and local-only `Required Output:` if `outputs` is non-empty).

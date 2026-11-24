@@ -1,12 +1,12 @@
 # WeaveMAS
 
-**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-core-orchestrator`, `weave-core-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
+**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-orchestrator`, `weave-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
 
 ## Quick Example: KidsWiki
 
 With the `weavemas` plugin enabled in Antigravity, a single prompt to `weave-authoring` synthesizes a complete 2-stage, 4-agent illustrated encyclopedia pipeline in plain Markdown -- zero orchestration code required:
 
-> Use the `weave-authoring` skill to create a 2-stage KidsWiki pipeline for a `topic` and `target_age` (3-12, default 4). Stage 1 (Editorial): a Writer drafts the article with an `![<illustration prompt>](./illustration.png)` placeholder and italicized caption; a Fact Checker and Age Checker audit accuracy and readability in parallel with an in-place revision loop; then a human review gate approves `01_draft.md`. Stage 2 (Publishing): an Illustrator generates `illustration.png` from the alt-text prompt.
+> Use the `weave-authoring` skill to create a 2-stage KidsWiki pipeline for a `topic` and `target_age` (3-12, default 4). Stage 1 (Editorial): a Writer drafts the article with an `![<illustration prompt>](./02_illustration.png)` placeholder and italicized caption; a Fact Checker and Age Checker audit accuracy and readability in parallel with an in-place revision loop; then a human review gate approves `01_draft.md`. Stage 2 (Publishing): an Illustrator generates `02_illustration.png` from the alt-text prompt.
 
 ### Induced Workflow Graph
 
@@ -22,7 +22,7 @@ File: [`orchestrator.md`](examples/kidswiki/orchestrator.md)
 ```markdown
 # Multi-Agent KidsWiki Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: Article subject (e.g., `"Rocket"`). Required.
@@ -44,7 +44,7 @@ Every run is scoped to `runs/kidswiki_<topic_slug>_age<target_age>/`.
 * **Execution Directory**: `stage02_publishing/`
 * **Protocol**: [orchestrator/stage2_publishing.md](orchestrator/stage2_publishing.md)
 * **Parameters**: `none`
-* **Output**: `illustration.png`
+* **Output**: `02_illustration.png`
 ```
 
 </details>
@@ -88,7 +88,7 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
 ## Execution
 1. **`writer`**:
    - Parameters: `topic`, `target_age`
-   - Execution: Draft the article and in-place `![<illustration prompt>](./illustration.png)` placeholder to `draft.md` (promoted automatically to `${RUN_DIR}/01_draft.md`).
+   - Execution: Draft the article and in-place `![<illustration prompt>](./02_illustration.png)` placeholder to `draft.md` (promoted automatically to `${RUN_DIR}/01_draft.md`).
 2. **`fact_checker` & `age_checker` (execute in parallel)**:
    - `fact_checker` Parameters: `topic`
    - `age_checker` Parameters: `target_age`
@@ -100,16 +100,16 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
 </details>
 
 <details>
-<summary><strong>Stage 2: Publishing</strong> -- Generates <code>illustration.png</code> from the approved draft's alt-text prompt.</summary>
+<summary><strong>Stage 2: Publishing</strong> -- Generates <code>02_illustration.png</code> from the approved draft's alt-text prompt.</summary>
 
 File: [`orchestrator/stage2_publishing.md`](examples/kidswiki/orchestrator/stage2_publishing.md)
-Port bindings: `illustrator` maps `${RUN_DIR}/01_draft.md` to local `draft.md` and promotes `illustration.png` to `${RUN_DIR}/illustration.png`.
+Port bindings: `illustrator` maps `${RUN_DIR}/01_draft.md` to local `draft.md` and promotes `illustration.png` to `${RUN_DIR}/02_illustration.png`.
 
 ```markdown
 # Stage 2: Illustration & Publishing
 
 ## Objective
-Extract the approved alt-text visual prompt from `01_draft.md` and generate `illustration.png` to complete the illustrated article in place.
+Extract the approved alt-text visual prompt from `01_draft.md` and generate `02_illustration.png` to complete the illustrated article in place.
 
 ## Agents
 
@@ -119,12 +119,12 @@ Extract the approved alt-text visual prompt from `01_draft.md` and generate `ill
 * **Inputs**:
   - `draft.md: ${RUN_DIR}/01_draft.md`
 * **Outputs**:
-  - `illustration.png: ${RUN_DIR}/illustration.png`
+  - `illustration.png: ${RUN_DIR}/02_illustration.png`
 
 ## Execution
 1. **`illustrator`**:
    - Parameters: `none`
-   - Execution: Read `draft.md`, extract the visual prompt from `![<prompt>](./illustration.png)`, and generate `illustration.png` (promoted automatically to `${RUN_DIR}/illustration.png`).
+   - Execution: Read `draft.md`, extract the visual prompt from `![<prompt>](./02_illustration.png)`, and generate `illustration.png` (promoted automatically to `${RUN_DIR}/02_illustration.png`).
 ```
 
 </details>
@@ -143,7 +143,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - write_to_file
@@ -153,7 +153,7 @@ tools:
 
 You write concise, scientifically accurate encyclopedia articles calibrated to `target_age` for the assigned `topic`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your completed article to `draft.md`.
@@ -168,7 +168,7 @@ Write `draft.md` containing:
 1. `# <Title>`
 2. An in-place Markdown image tag whose alt-text holds a self-contained 2-3 sentence visual prompt, followed immediately by an italicized caption:
    ```markdown
-   ![<Detailed visual prompt tailored to target_age>](./illustration.png)
+   ![<Detailed visual prompt tailored to target_age>](./02_illustration.png)
    *<Short caption>*
    ```
 3. The age-calibrated article prose.
@@ -196,7 +196,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - search_web
@@ -207,7 +207,7 @@ tools:
 
 You audit `draft.md` strictly for scientific and factual accuracy on `topic`, catching oversimplified myths or false claims.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Write your factual audit report starting with `verdict: PASS` or `verdict: FAIL` to `fact_audit.md`.
@@ -229,7 +229,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - write_to_file
@@ -239,7 +239,7 @@ tools:
 
 You audit `draft.md` (including both prose and the italicized image caption) for vocabulary, sentence length, and tone suited to `target_age`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Write your readability audit report starting with `verdict: PASS` or `verdict: FAIL` to `age_audit.md`.
@@ -248,7 +248,7 @@ Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage
 </details>
 
 <details>
-<summary><strong>Illustrator</strong> -- Image synthesis agent extracting the approved alt-text prompt (<code>illustration.png</code>).</summary>
+<summary><strong>Illustrator</strong> -- Image synthesis agent extracting the approved alt-text prompt (<code>02_illustration.png</code>).</summary>
 
 File: [`.agent/agents/stage2_illustrator.md`](examples/kidswiki/.agent/agents/stage2_illustrator.md)
 
@@ -261,7 +261,7 @@ subagent: true
 inheritCustomizations: true
 inheritMcp: true
 skills:
-  - weave-core-agent
+  - weave-agent
 tools:
   - view_file
   - invoke_subagent
@@ -269,9 +269,9 @@ tools:
 
 # KidsWiki Illustrator Agent
 
-You read `draft.md`, extract the visual prompt from `![<prompt>](./illustration.png)`, and generate `illustration.png` in your working directory via the `image-generator` subagent.
+You read `draft.md`, extract the visual prompt from `![<prompt>](./02_illustration.png)`, and generate `illustration.png` in your working directory via the `image-generator` subagent.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-core-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save the generated image to `illustration.png`.
@@ -320,7 +320,7 @@ Prompting a single LLM in one pass works well for short, self-contained tasks, b
 WeaveMAS brings repeatable multi-agent structure to agent harnesses with zero orchestration code through a three-part causal design:
 
 1. **Partially Predefined Markdown Specifications (Zero Code)**: Orchestrators (`orchestrator.md`, `orchestrator/stage*.md`) and specialist worker agents (`.agent/agents/*.md`) are defined in plain Markdown combining structured sections (stages, roles, file/parameter ports, tasks, and review gates) with natural-language instructions, written by hand or synthesized and revised via `weave-authoring`.
-2. **Execution Skills for Predictable Protocols**: Dedicated orchestrator and worker skills (`weave-core-orchestrator` and `weave-core-agent`) govern how the harness interprets those Markdown files at runtime, prescribing two-phase workspace provisioning, subagent dispatch, directory discipline, and structured multi-turn handoffs.
+2. **Execution Skills for Predictable Protocols**: Dedicated orchestrator and worker skills (`weave-orchestrator` and `weave-agent`) govern how the harness interprets those Markdown files at runtime, prescribing two-phase workspace provisioning, subagent dispatch, directory discipline, and structured multi-turn handoffs.
 3. **MCP Contract Enforcement & `weave.md` Lifecycles**: Programmatic MCP tools (`weavemas_weave`) back those skills on disk, isolating each worker inside its own Current Working Directory (`runs/<context_slug>/...`), validating input/output port bindings, and managing orchestrator and worker lifecycles in structured `weave.md` manifests.
 
 Building on this foundation, WeaveMAS provides:
@@ -348,7 +348,7 @@ git clone https://github.com/axiomfab/weavemas-agy.git ~/.gemini/config/plugins/
 git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plugins/weavemas"
 ```
 
-When enabled in Antigravity (`customization://weavemas`), the plugin automatically registers the `weavemas_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-core-orchestrator`, `weave-core-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMAS UI` sidecar (`sidecars/panel/`).
+When enabled in Antigravity (`customization://weavemas`), the plugin automatically registers the `weavemas_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMAS UI` sidecar (`sidecars/panel/`).
 
 ### Option 2: Standalone `weavemas_weave` MCP Server
 
@@ -375,7 +375,7 @@ All directory arguments (`dir`, `dirs`, `stage_dir`, `directory`, `mirror_to`) m
 | `weave_verify` | Worker (Turn 1 & wakeup) | Verifies workspace identity and resolves declared `inputs` into `resolved_inputs` vs. `pending_inputs`. |
 | `weave_update` | Orchestrator / Worker | Updates `status`, appends a timestamped log note, records `conversation_id`, and verifies/promotes `outputs` on `completed`. |
 | `weave_read` | Orchestrator | Verifies single (`dir`) or batch (`dirs`, `stage_dir`) worker status, `outputs` on disk, and `conversation_id`. |
-| `discover_agents` | Orchestrator (Phase 2) | Scans a stage or run directory for provisioned worker `weave.md` manifests matching `filter_status` (default `"initialized"`). |
+| `weave_discover_agents` | Orchestrator (Phase 2) | Scans a stage or run directory for provisioned worker `weave.md` manifests matching `filter_status` (default `"initialized"`). |
 
 ## The `weave.md` Manifest Contract
 
@@ -417,7 +417,7 @@ For compact workflows that do not need intermediate review gates or `orchestrato
 ```markdown
 # KidsWiki Stageless Orchestrator
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-core-orchestrator` skill to manage workspace scaffolding, Phase 1 `provisioner` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 `provisioner` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: Article subject (required).

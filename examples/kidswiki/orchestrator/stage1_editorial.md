@@ -30,7 +30,7 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
 ## Execution
 1. **`writer`**:
    - Parameters: `topic`, `target_age`
-   - Execution: Draft the article and in-place `![<illustration prompt>](./illustration.png)` placeholder to `draft.md` (promoted automatically to `${RUN_DIR}/01_draft.md`).
+   - Execution: Draft the article and in-place `![<illustration prompt>](./02_illustration.png)` placeholder to `draft.md` (promoted automatically to `${RUN_DIR}/01_draft.md`).
 2. **`fact_checker` & `age_checker` (execute in parallel)**:
    - `fact_checker` Parameters: `topic`
    - `age_checker` Parameters: `target_age`

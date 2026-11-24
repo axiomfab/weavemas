@@ -60,7 +60,7 @@
   <path class="edge" d="M 83 378 C 20 360, 20 124, 278 124" marker-end="url(#arrow)" />
   <path class="edge" d="M 637 378 C 700 360, 700 124, 442 124" marker-end="url(#arrow)" />
 
-  <!-- Gate to Illustrator to illustration.png -->
+  <!-- Gate to Illustrator to 02_illustration.png -->
   <path class="edge-dashed" d="M 360 400 L 360 440" marker-end="url(#arrow)" />
   <path class="edge" d="M 360 486 L 360 522" marker-end="url(#arrow)" />
 
@@ -110,8 +110,8 @@
   <text class="title" x="360" y="461">Illustrator</text>
   <text class="code-sub" x="360" y="478">stage2_illustrator</text>
 
-  <!-- Row 7: illustration.png File -->
+  <!-- Row 7: 02_illustration.png File -->
   <rect class="file" x="272" y="524" width="176" height="44" />
-  <text class="code-title" x="360" y="543">illustration.png</text>
+  <text class="code-title" x="360" y="543">02_illustration.png</text>
   <text class="sub" x="360" y="560">Synthesized image</text>
 </svg>
