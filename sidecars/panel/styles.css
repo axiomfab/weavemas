@@ -26,32 +26,41 @@
   --agy-font: var(--font-family, "Google Sans Flex", "Google Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   --agy-mono: var(--editor-font-family, "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
 
-  /* WeaveMAS semantic panel tokens (Dark default) */
+  /* WeaveMAS semantic panel tokens (Dark default - neutral charcoal-zinc) */
   --weave-fg-strong: #ffffff;
-  --weave-fg-primary: #e2e8f0;
+  --weave-fg-primary: #e5e7eb;
   --weave-fg-secondary: #cbd5e1;
-  --weave-fg-muted: #94a3b8;
-  --weave-fg-subtle: #64748b;
-  --weave-card-bg: rgba(15, 23, 42, 0.6);
-  --weave-card-border: #1e293b;
-  --weave-card-header-bg: rgba(15, 23, 42, 0.8);
-  --weave-card-header-hover: rgba(30, 41, 59, 0.5);
-  --weave-card-expanded-bg: rgba(2, 6, 23, 0.4);
-  --weave-code-bg: #020617;
-  --weave-code-border: rgba(30, 41, 59, 0.8);
-  --weave-group-bg: rgba(15, 23, 42, 0.3);
-  --weave-group-border: rgba(30, 41, 59, 0.8);
-  --weave-divider: #1e293b;
-  --weave-stepper-line: #ffffff;
-  --weave-stepper-glow: 0 0 8px rgba(255, 255, 255, 0.4);
-  --weave-dot-pending-bg: #374151;
-  --weave-dot-pending-border: #4b5563;
+  --weave-fg-muted: #9ca3af;
+  --weave-fg-subtle: #71717a;
+  --weave-card-bg: #1a1b20;
+  --weave-card-border: rgba(255, 255, 255, 0.09);
+  --weave-card-header-bg: #1a1b20;
+  --weave-card-header-hover: rgba(255, 255, 255, 0.04);
+  --weave-card-expanded-bg: #15161a;
+  --weave-code-bg: #111114;
+  --weave-code-border: rgba(255, 255, 255, 0.08);
+  --weave-group-bg: rgba(26, 27, 32, 0.55);
+  --weave-group-border: rgba(255, 255, 255, 0.08);
+  --weave-divider: rgba(255, 255, 255, 0.09);
+  --weave-stepper-line: rgba(255, 255, 255, 0.16);
+  --weave-stepper-glow: none;
+  --weave-dot-pending-bg: #27272a;
+  --weave-dot-pending-border: #3f3f46;
   --weave-dot-selected-outline: #ffffff;
+  --weave-chip-bg: rgba(255, 255, 255, 0.06);
+  --weave-chip-fg: #cbd5e1;
+  --weave-chip-border: rgba(255, 255, 255, 0.1);
+  --weave-chip-hover-bg: rgba(255, 255, 255, 0.1);
+  --weave-chip-hover-fg: #f8fafc;
+  --weave-chip-hover-border: rgba(255, 255, 255, 0.22);
+  --weave-chip-active-bg: rgba(255, 255, 255, 0.14);
+  --weave-chip-active-fg: #ffffff;
+  --weave-chip-active-border: rgba(255, 255, 255, 0.32);
   --weave-worktree-fg: #fcd34d;
   --weave-worktree-bg: rgba(245, 158, 11, 0.12);
   --weave-worktree-border: rgba(245, 158, 11, 0.28);
-  --weave-scrollbar-track: rgba(15, 23, 42, 0.6);
-  --weave-scrollbar-thumb: rgba(148, 163, 184, 0.3);
+  --weave-scrollbar-track: rgba(26, 27, 32, 0.6);
+  --weave-scrollbar-thumb: rgba(255, 255, 255, 0.18);
 }
 
 [data-theme="dark"] {
@@ -68,30 +77,39 @@
   --agy-success: #7aae66;
 
   --weave-fg-strong: #ffffff;
-  --weave-fg-primary: #e2e8f0;
+  --weave-fg-primary: #e5e7eb;
   --weave-fg-secondary: #cbd5e1;
-  --weave-fg-muted: #94a3b8;
-  --weave-fg-subtle: #64748b;
-  --weave-card-bg: rgba(15, 23, 42, 0.6);
-  --weave-card-border: #1e293b;
-  --weave-card-header-bg: rgba(15, 23, 42, 0.8);
-  --weave-card-header-hover: rgba(30, 41, 59, 0.5);
-  --weave-card-expanded-bg: rgba(2, 6, 23, 0.4);
-  --weave-code-bg: #020617;
-  --weave-code-border: rgba(30, 41, 59, 0.8);
-  --weave-group-bg: rgba(15, 23, 42, 0.3);
-  --weave-group-border: rgba(30, 41, 59, 0.8);
-  --weave-divider: #1e293b;
-  --weave-stepper-line: #ffffff;
-  --weave-stepper-glow: 0 0 8px rgba(255, 255, 255, 0.4);
-  --weave-dot-pending-bg: #374151;
-  --weave-dot-pending-border: #4b5563;
+  --weave-fg-muted: #9ca3af;
+  --weave-fg-subtle: #71717a;
+  --weave-card-bg: #1a1b20;
+  --weave-card-border: rgba(255, 255, 255, 0.09);
+  --weave-card-header-bg: #1a1b20;
+  --weave-card-header-hover: rgba(255, 255, 255, 0.04);
+  --weave-card-expanded-bg: #15161a;
+  --weave-code-bg: #111114;
+  --weave-code-border: rgba(255, 255, 255, 0.08);
+  --weave-group-bg: rgba(26, 27, 32, 0.55);
+  --weave-group-border: rgba(255, 255, 255, 0.08);
+  --weave-divider: rgba(255, 255, 255, 0.09);
+  --weave-stepper-line: rgba(255, 255, 255, 0.16);
+  --weave-stepper-glow: none;
+  --weave-dot-pending-bg: #27272a;
+  --weave-dot-pending-border: #3f3f46;
   --weave-dot-selected-outline: #ffffff;
+  --weave-chip-bg: rgba(255, 255, 255, 0.06);
+  --weave-chip-fg: #cbd5e1;
+  --weave-chip-border: rgba(255, 255, 255, 0.1);
+  --weave-chip-hover-bg: rgba(255, 255, 255, 0.1);
+  --weave-chip-hover-fg: #f8fafc;
+  --weave-chip-hover-border: rgba(255, 255, 255, 0.22);
+  --weave-chip-active-bg: rgba(255, 255, 255, 0.14);
+  --weave-chip-active-fg: #ffffff;
+  --weave-chip-active-border: rgba(255, 255, 255, 0.32);
   --weave-worktree-fg: #fcd34d;
   --weave-worktree-bg: rgba(245, 158, 11, 0.12);
   --weave-worktree-border: rgba(245, 158, 11, 0.28);
-  --weave-scrollbar-track: rgba(15, 23, 42, 0.6);
-  --weave-scrollbar-thumb: rgba(148, 163, 184, 0.3);
+  --weave-scrollbar-track: rgba(26, 27, 32, 0.6);
+  --weave-scrollbar-thumb: rgba(255, 255, 255, 0.18);
 }
 
 [data-theme="light"] {
@@ -127,6 +145,15 @@
   --weave-dot-pending-bg: #e2e8f0;
   --weave-dot-pending-border: #94a3b8;
   --weave-dot-selected-outline: #0f172a;
+  --weave-chip-bg: rgba(15, 23, 42, 0.05);
+  --weave-chip-fg: #334155;
+  --weave-chip-border: rgba(15, 23, 42, 0.14);
+  --weave-chip-hover-bg: rgba(15, 23, 42, 0.09);
+  --weave-chip-hover-fg: #0f172a;
+  --weave-chip-hover-border: rgba(15, 23, 42, 0.24);
+  --weave-chip-active-bg: rgba(15, 23, 42, 0.12);
+  --weave-chip-active-fg: #0f172a;
+  --weave-chip-active-border: rgba(15, 23, 42, 0.35);
   --weave-worktree-fg: #92400e;
   --weave-worktree-bg: rgba(245, 158, 11, 0.14);
   --weave-worktree-border: rgba(217, 119, 6, 0.35);
@@ -311,15 +338,23 @@ body {
   height: 13px;
 }
 
+.weave-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--weave-scrollbar-track, rgba(15, 23, 42, 0.6));
+  background: var(--weave-scrollbar-track, rgba(26, 27, 32, 0.6));
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--weave-scrollbar-thumb, rgba(148, 163, 184, 0.3));
+  background: var(--weave-scrollbar-thumb, rgba(255, 255, 255, 0.18));
   border-radius: 3px;
 }
 
@@ -330,10 +365,10 @@ body {
   left: calc(100% / 14);
   right: calc(100% / 14);
   height: 2px;
-  background-color: var(--weave-stepper-line, #ffffff);
+  background-color: var(--weave-stepper-line, rgba(255, 255, 255, 0.16));
   transform: translateY(-50%);
   z-index: 0;
-  box-shadow: var(--weave-stepper-glow, 0 0 8px rgba(255, 255, 255, 0.4));
+  box-shadow: var(--weave-stepper-glow, none);
 }
 
 /* Stage Dots */
@@ -508,6 +543,25 @@ body {
   background-color: var(--weave-divider) !important;
 }
 
+.weave-deliverable-chip {
+  background-color: var(--weave-chip-bg);
+  color: var(--weave-chip-fg);
+  border-color: var(--weave-chip-border);
+}
+
+.weave-deliverable-chip:hover {
+  background-color: var(--weave-chip-hover-bg);
+  color: var(--weave-chip-hover-fg);
+  border-color: var(--weave-chip-hover-border);
+}
+
+.weave-deliverable-chip-active {
+  background-color: var(--weave-chip-active-bg);
+  color: var(--weave-chip-active-fg);
+  border-color: var(--weave-chip-active-border);
+  box-shadow: 0 0 0 1px var(--weave-chip-active-border);
+}
+
 [data-theme="light"] .weave-card {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
@@ -596,23 +650,6 @@ body {
   background-color: rgba(244, 63, 94, 0.14) !important;
   color: #be123c !important;
   border-color: rgba(225, 29, 72, 0.35) !important;
-}
-
-[data-theme="light"] .weave-deliverable-chip {
-  background-color: rgba(99, 102, 241, 0.1) !important;
-  color: #4338ca !important;
-  border-color: rgba(99, 102, 241, 0.3) !important;
-}
-
-[data-theme="light"] .weave-deliverable-chip:hover {
-  background-color: rgba(99, 102, 241, 0.18) !important;
-  color: #312e81 !important;
-}
-
-[data-theme="light"] .weave-deliverable-chip-active {
-  background-color: rgba(79, 70, 229, 0.18) !important;
-  color: #312e81 !important;
-  border-color: #6366f1 !important;
 }
 
 [data-theme="light"] .weave-chat-btn {

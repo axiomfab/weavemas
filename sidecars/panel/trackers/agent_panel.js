@@ -2,6 +2,11 @@
 (function() {
   const expandedCards = new Set(), expandedGroups = new Set(), collapsedStages = new Set();
   const cardViewModes = new Map(), pendingScrollBottom = new Set();
+  const ICON_CHEVRON = '<svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON_CLOCK = '<svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON_FILE = '<svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON_COPY = '<svg class="weave-icon weave-copy-icon" data-weave-icon="copy" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="7.75" height="8.25" rx="1.25" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 5.5V3.5a1.25 1.25 0 0 0-1.25-1.25H4A1.25 1.25 0 0 0 2.75 3.5v6.25A1.25 1.25 0 0 0 4 11h1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON_CHAT = '<svg class="weave-icon weave-chat-icon" data-weave-icon="chat" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
   function escapeHtml(str) {
     return str ? String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
   }
@@ -34,8 +39,10 @@
     const outs = getOutputsList(fm, outputItems);
     if (outs.length > 0) {
       const chipLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
-      const activeCls = isDeliverableActive ? 'weave-deliverable-chip weave-deliverable-chip-active bg-indigo-500/30 text-white border-indigo-400 ring-1 ring-indigo-400' : 'weave-deliverable-chip bg-indigo-500/10 text-indigo-300 border-indigo-500/20 hover:bg-indigo-500/25 hover:text-white';
-      return `<button type="button" class="font-mono text-[11px] border px-1.5 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">📄 ${escapeHtml(chipLabel)}</button>`;
+      const activeCls = isDeliverableActive
+        ? 'weave-deliverable-chip weave-deliverable-chip-active'
+        : 'weave-deliverable-chip';
+      return `<button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">${ICON_FILE}<span>${escapeHtml(chipLabel)}</span></button>`;
     }
     if (fm?.progress) return `${escapeHtml(fm.progress)} Verified`;
     if (fm?.total_acts != null && fm?.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
@@ -170,7 +177,7 @@
       const item = itemMap.get(escapedName);
       const mType = (item && item.exists === false) ? null : detectMediaType(escapedName, item?.mediaType);
       const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName)}` : '';
-      return `<span class="text-indigo-300 font-bold">── 📄 ${escapedName} ──</span>${preview}`;
+      return `<span class="inline-flex items-center gap-1.5 text-slate-300 font-bold">── ${ICON_FILE} ${escapedName} ──</span>${preview}`;
     });
   }
 
@@ -185,14 +192,14 @@
       const rel = rtTracker?.formatRelativeTime ? rtTracker.formatRelativeTime(fm.updated_at) : new Date(fm.updated_at).toLocaleTimeString();
       updatedLabelHtml = `<span title="${escapeHtml(new Date(fm.updated_at).toLocaleTimeString())}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
     }
-    const chatBtn = convId ? `<button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">💬 Open Subagent Chat</button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
+    const chatBtn = convId ? `<button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">${ICON_CHAT}<span>Open Subagent Chat</span></button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
     const outs = getOutputsList(fm, agentData?.outputItems);
     const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
     const delivLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
-      const copyBtn = `<button type="button" class="weave-copy-btn text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">📋 Copy</button>`;
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="text-indigo-300 text-[11px] font-semibold">📄 ${escapeHtml(delivLabel)}</span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-indigo-300 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      const copyBtn = `<button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">${ICON_COPY}<span>Copy</span></button>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="inline-flex items-center gap-1.5 text-slate-200 text-[11px] font-semibold">${ICON_FILE}<span>${escapeHtml(delivLabel)}</span></span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-slate-200 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
@@ -206,7 +213,7 @@
         mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono select-text">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
       }
     }
-    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">▶</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="text-slate-400 mr-1">${customChip} &bull;</span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
+    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="inline-flex items-center gap-2 text-slate-400 mr-1">${customChip}<span>&bull;</span></span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
   function getNodeCreationTime(node) {
@@ -224,7 +231,7 @@
         const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
         return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
       });
-      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-group-title font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
+      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-group-title font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const chip = getAgentValueChip(node.frontmatter, cardId, cardViewModes.get(cardId) === 'deliverable', node.outputItems);
@@ -252,13 +259,13 @@
         const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || null;
         const stageRt = rtTracker?.calculateStageRuntime ? rtTracker.calculateStageRuntime(nodeList) : null;
         const timerHtml = (stageRt && (stageRt.seconds > 0 || stageRt.isRunning))
-          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}"><span class="text-[10px]">⏱️</span> ${stageRt.isRunning ? `<span data-running-timer data-start-ms="${stageRt.lastStartMs || 0}" data-prior-ms="${stageRt.priorActiveMs || 0}" data-base-seconds="${stageRt.seconds || 0}" data-calc-time="${Date.now()}">${escapeHtml(stageRt.formatted)}</span>` : escapeHtml(stageRt.formatted)}</span>`
+          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}">${ICON_CLOCK}${stageRt.isRunning ? `<span data-running-timer data-start-ms="${stageRt.lastStartMs || 0}" data-prior-ms="${stageRt.priorActiveMs || 0}" data-base-seconds="${stageRt.seconds || 0}" data-calc-time="${Date.now()}">${escapeHtml(stageRt.formatted)}</span>` : escapeHtml(stageRt.formatted)}</span>`
           : '';
         const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
         const isExpanded = !collapsedStages.has(stageId);
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="text-slate-400 text-xs transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">▶</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
         return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }

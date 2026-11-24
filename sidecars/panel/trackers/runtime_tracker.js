@@ -89,12 +89,14 @@
     return days === 1 ? '1 day ago' : `${days} days ago`;
   }
 
+  const ICON_CLOCK = '<svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   function getRuntimeBadgeHtml(body, currentStatus, nowMs = Date.now()) {
     const res = calculateActiveRuntime(body, currentStatus, nowMs);
     if (res.isRunning) {
-      return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><span class="text-[10px]">⏱️</span> <span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
+      return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)">${ICON_CLOCK}<span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
     }
-    return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time"><span class="text-[10px]">⏱️</span> ${res.formatted}</span>`;
+    return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time">${ICON_CLOCK}${res.formatted}</span>`;
   }
 
   function tickTimers(root = (typeof document !== 'undefined' ? document : null), now = Date.now()) {
