@@ -360,16 +360,21 @@ test('Happy Path: Group Summary Chip renders grey when incomplete and no agent i
   assert.doesNotMatch(chip, /bg-emerald-500/);
 });
 
-test('Happy Path: Deliverable Chip renders interactive button with data-deliverable-toggle', () => {
+test('Happy Path: Deliverable Chip renders neutral interactive button with 12px SVG icon and data-deliverable-toggle', () => {
   const normalChip = getAgentValueChip({ deliverable: 'setup.md' }, 'card_s1_director', false);
   assert.match(normalChip, /data-deliverable-toggle="card_s1_director"/);
+  assert.match(normalChip, /weave-deliverable-chip/);
+  assert.match(normalChip, /data-weave-icon="file"/);
+  assert.match(normalChip, /width="12" height="12"/);
   assert.match(normalChip, /setup\.md/);
   assert.match(normalChip, /cursor-pointer/);
-  assert.doesNotMatch(normalChip, /ring-1 ring-indigo-400/);
+  assert.doesNotMatch(normalChip, /weave-deliverable-chip-active/);
+  assert.doesNotMatch(normalChip, /indigo/);
+  assert.doesNotMatch(normalChip, /📄/);
 
   const activeChip = getAgentValueChip({ deliverable: 'setup.md' }, 'card_s1_director', true);
-  assert.match(activeChip, /ring-1 ring-indigo-400/);
-  assert.match(activeChip, /bg-indigo-500\/30/);
+  assert.match(activeChip, /weave-deliverable-chip-active/);
+  assert.doesNotMatch(activeChip, /indigo/);
 });
 
 test('Happy Path: Renders deliverable content when card is in deliverable view mode', () => {
@@ -803,7 +808,9 @@ test('Happy Path: Multi-output chip displays "<N> outputs" and stacks all file c
   const chip10 = getAgentValueChip({
     outputs: ['f1.md', 'f2.md', 'f3.md', 'f4.md', 'f5.md', 'f6.md', 'f7.md', 'f8.md', 'f9.md', 'f10.md']
   }, 'card_s1_multi', false);
-  assert.match(chip10, /📄 10 outputs/);
+  assert.match(chip10, /data-weave-icon="file"/);
+  assert.match(chip10, /10 outputs/);
+  assert.doesNotMatch(chip10, /📄/);
   assert.doesNotMatch(chip10, /f1\.md, f2\.md/);
 
   const container = { innerHTML: '', querySelectorAll: () => [] };
@@ -832,11 +839,13 @@ test('Happy Path: Multi-output chip displays "<N> outputs" and stacks all file c
   cardViewModes.set('card_s1_multi_writer', 'deliverable');
   render(container, mockData);
 
-  assert.match(container.innerHTML, /📄 2 outputs/);
-  assert.match(container.innerHTML, /── 📄 part1\.md ──/);
+  assert.match(container.innerHTML, /2 outputs/);
+  assert.match(container.innerHTML, /data-weave-icon="file"/);
+  assert.match(container.innerHTML, /part1\.md ──/);
   assert.match(container.innerHTML, /Part 1 text/);
-  assert.match(container.innerHTML, /── 📄 part2\.md ──/);
+  assert.match(container.innerHTML, /part2\.md ──/);
   assert.match(container.innerHTML, /Part 2 text/);
+  assert.doesNotMatch(container.innerHTML, /📄/);
 
   expandedCards.clear();
   cardViewModes.clear();
@@ -981,7 +990,8 @@ test('Happy Path: Stage header renders data-running-timer attributes for live ti
   assert.match(container.innerHTML, /data-running-timer/);
   assert.match(container.innerHTML, /data-start-ms=/);
   assert.match(container.innerHTML, /data-prior-ms=/);
-  assert.match(container.innerHTML, /⏱️/);
+  assert.match(container.innerHTML, /data-weave-icon="clock"/);
+  assert.doesNotMatch(container.innerHTML, /⏱️/);
   assert.match(container.innerHTML, /Stage 1/);
 });
 
@@ -1005,7 +1015,8 @@ test('Failure Path 1: Stage header renders static timing label without data-runn
   };
 
   render(container, mockCompletedData);
-  assert.match(container.innerHTML, /⏱️/);
+  assert.match(container.innerHTML, /data-weave-icon="clock"/);
+  assert.doesNotMatch(container.innerHTML, /⏱️/);
   assert.match(container.innerHTML, /2m 0s/);
   assert.doesNotMatch(container.innerHTML, /data-running-timer/);
 });
@@ -1030,6 +1041,7 @@ test('Failure Path 2: Stage header omits timer when stage has 0 runtime and is n
   };
 
   render(container, mockIdleData);
+  assert.doesNotMatch(container.innerHTML, /data-weave-icon="clock"/);
   assert.doesNotMatch(container.innerHTML, /⏱️/);
 });
 
@@ -1186,4 +1198,48 @@ test('Failure Paths: getStatusBadge does not apply lime styling to unmapped, nul
   }
   const waitingBadge = getStatusBadge('waiting/sourcer');
   assert.match(waitingBadge, /bg-amber-500\/10/);
+});
+
+test('UI Polish (Issue #20): dark charcoal surfaces, muted stepper rail, neutral file chips, preserved glow, and crisp 12px SVGs', () => {
+  const stylesPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css');
+  const css = fs.readFileSync(stylesPath, 'utf-8');
+
+  // 1. Neutral charcoal card surfaces in dark theme
+  assert.match(css, /--weave-card-bg:\s*#1a1b20;/);
+  assert.match(css, /--weave-card-header-bg:\s*#1a1b20;/);
+  assert.match(css, /--weave-card-border:\s*rgba\(255,\s*255,\s*255,\s*0\.09\);/);
+  assert.match(css, /--weave-divider:\s*rgba\(255,\s*255,\s*255,\s*0\.09\);/);
+
+  // 2. Muted stepper rail with no rail glow
+  assert.match(css, /--weave-stepper-line:\s*rgba\(255,\s*255,\s*255,\s*0\.16\);/);
+  assert.match(css, /--weave-stepper-glow:\s*none;/);
+
+  // 3. Neutral deliverable chip tokens
+  assert.match(css, /--weave-chip-bg:\s*rgba\(255,\s*255,\s*255,\s*0\.06\);/);
+  assert.match(css, /--weave-chip-fg:\s*#cbd5e1;/);
+  assert.match(css, /\.weave-deliverable-chip\s*\{[\s\S]*?var\(--weave-chip-bg\)/);
+
+  // 4. Full stage-dot and vivid-pulse glow preserved
+  assert.match(css, /\.stage-dot-completed\s*\{[\s\S]*?box-shadow:\s*0 0 10px rgba\(16, 185, 129, 0\.6\)/);
+  assert.match(css, /@keyframes stage-yellow-flash[\s\S]*?box-shadow:\s*0 0 14px rgba\(245, 158, 11, 0\.95\)/);
+  assert.match(css, /@keyframes vivid-blink[\s\S]*?box-shadow:\s*0 0 10px rgba\(245, 158, 11, 0\.85\)/);
+
+  // 5. Crisp monochrome 12px SVGs replace body emojis
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  render(container, {
+    stages: [{
+      num: 1,
+      name: 'Editorial',
+      nodes: [{
+        type: 'agent',
+        id: 'writer',
+        frontmatter: { status: 'completed', outputs: ['draft.md'] },
+        body: '- 2026-10-15T10:00:00.000Z: `in_progress/01_draft` - Drafting\n- 2026-10-15T10:00:35.000Z: `completed` - Done'
+      }]
+    }]
+  });
+  assert.match(container.innerHTML, /data-weave-icon="chevron"/);
+  assert.match(container.innerHTML, /data-weave-icon="clock"/);
+  assert.match(container.innerHTML, /data-weave-icon="file"/);
+  assert.doesNotMatch(container.innerHTML, /[▶▼]|⏱️|📄/);
 });
