@@ -109,6 +109,15 @@ export const PROTOCOL_SPECS = Object.freeze([
     requiredMcpTools: ['weave_verify', 'weave_update']
   },
   {
+    name: 'weave-authoring',
+    templateFile: 'protocols/weave-authoring.md.tmpl',
+    frontmatterToken: 'PROTOCOL_WEAVE_AUTHORING_FRONTMATTER',
+    foldedDescription: [
+      'Authoring guide for WeaveMAS: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.'
+    ],
+    requiredMcpTools: []
+  },
+  {
     name: 'orchestrator-agent-instantiation',
     templateFile: 'protocols/orchestrator-agent-instantiation.md.tmpl',
     frontmatterToken: 'PROTOCOL_INSTANTIATION_FRONTMATTER',
@@ -456,12 +465,25 @@ export function buildTemplateContext(config) {
         ? 'orchestrator-agent-execution.mdc'
         : 'orchestrator-agent-execution.md';
 
+  const weaveMdLink = '[weave.md](file://<workspace_root>/runs/<context_slug>/weave.md)';
   const uiTrackerSurface = config.uiTrackerLink
     ? `\`${config.uiTrackerLink}\``
-    : '`runs/<context_slug>/weave.md`';
+    : `\`${weaveMdLink}\``;
+  const uiTrackerGateSurface = config.uiTrackerLink
+    ? `\`${config.uiTrackerLink}\`, \`${weaveMdLink}\`,`
+    : `\`${weaveMdLink}\``;
+  const uiTrackerNextStageSurface = config.uiTrackerLink
+    ? `\`${config.uiTrackerLink}\` and \`${weaveMdLink}\``
+    : `\`${weaveMdLink}\``;
+  const uiTrackerExecSurface = config.uiTrackerLink
+    ? `\`${config.uiTrackerLink}\` + \`${weaveMdLink}\``
+    : `\`${weaveMdLink}\``;
   const orchAnnounceTracker = config.uiTrackerLink
-    ? `Output \`${config.uiTrackerLink}\` at pipeline start and at the start of every stage.`
-    : 'Surface the active run manifest `runs/<context_slug>/weave.md` at pipeline start and at the start of every stage.';
+    ? `Output \`${config.uiTrackerLink}\` and \`${weaveMdLink}\` (using forward slashes in the \`file://\` URI) at pipeline start and at the start of every stage.`
+    : `Output \`${weaveMdLink}\` (using forward slashes in the \`file://\` URI) at pipeline start and at the start of every stage.`;
+  const authoringModelGuidance = isAgy
+    ? 'Configure subagents with `flash` (recommended default), `pro`, or `inherit`. **NEVER use `flash_lite`** (fails to invoke `call_mcp_tool` reliably).'
+    : `Configure subagents with \`${models.fast}\` (recommended default for lightweight roles) or \`${models.inherit}\` so every worker reliably invokes \`${mcp.serverName}\` MCP tools.`;
 
   // Provisioner & Stage Orchestrator invocation strings
   const provisionerInvokeCall = isAgy
@@ -676,7 +698,11 @@ export function buildTemplateContext(config) {
     INSTANTIATION_REF_PATH: instantiationRefPath,
     EXECUTION_REF_PATH: executionRefPath,
     UI_TRACKER_SURFACE: uiTrackerSurface,
+    UI_TRACKER_GATE_SURFACE: uiTrackerGateSurface,
+    UI_TRACKER_NEXT_STAGE_SURFACE: uiTrackerNextStageSurface,
+    UI_TRACKER_EXEC_SURFACE: uiTrackerExecSurface,
     ORCH_ANNOUNCE_TRACKER: orchAnnounceTracker,
+    AUTHORING_MODEL_GUIDANCE: authoringModelGuidance,
 
     // Agent & Orchestrator protocol clauses
     PROVISIONER_INVOKE_CALL: provisionerInvokeCall,
@@ -975,7 +1001,9 @@ export function verifyGeneratedAdapter(config, renderedFiles) {
 
     // Run full Antigravity validators on agy; run leak-prevention guards on all other harnesses
     if (config.id === 'agy') {
-      verifyInlineToolSignatures(file.content, file.requiredMcpTools);
+      if (file.requiredMcpTools.length > 0) {
+        verifyInlineToolSignatures(file.content, file.requiredMcpTools);
+      }
       if (file.kind === 'agent' && file.name === 'stage_orchestrator') {
         verifyStageOrchestratorContract(file.content);
       }

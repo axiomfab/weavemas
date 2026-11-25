@@ -54,10 +54,10 @@ test('Antigravity Parity (#24) - Happy Path: agy adapter output is byte-for-byte
   const repoEol = sampleExisting.includes('\r\n') ? '\r\n' : '\n';
 
   const rendered = renderHarnessFiles(agyConfig, { templatesDir: TEMPLATES_DIR, eol: repoEol });
-  assert.equal(rendered.length, 8);
+  assert.equal(rendered.length, 9);
 
   const checkRes = verifyGeneratedAdapter(agyConfig, rendered);
-  assert.deepEqual(checkRes, { verified: true, harnessId: 'agy', fileCount: 8 });
+  assert.deepEqual(checkRes, { verified: true, harnessId: 'agy', fileCount: 9 });
 
   for (const file of rendered) {
     const absPath = path.join(REPO_ROOT, file.relativePath);
@@ -79,7 +79,7 @@ test('Multi-Platform Contracts (#24) - Happy Path: Claude Code, Codex, and Curso
   for (const harnessId of ['claude-code', 'codex', 'cursor']) {
     const [config] = loadHarnessConfigs(HARNESSES_DIR, harnessId);
     const rendered = renderHarnessFiles(config, { templatesDir: TEMPLATES_DIR, eol: '\n' });
-    assert.equal(rendered.length, 6, `${harnessId} must emit 4 protocol files + 2 control-plane agents`);
+    assert.equal(rendered.length, 7, `${harnessId} must emit 5 protocol files + 2 control-plane agents`);
 
     const verification = verifyGeneratedAdapter(config, rendered);
     assert.equal(verification.verified, true);
