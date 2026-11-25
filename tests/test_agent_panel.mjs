@@ -403,7 +403,9 @@ test('Happy Path: Renders deliverable content when card is in deliverable view m
   assert.match(container.innerHTML, /# Setup Title/);
   assert.match(container.innerHTML, /Guideline content here\./);
   assert.match(container.innerHTML, /\(Deliverable\)/);
-  assert.match(container.innerHTML, /View Updates &darr;/);
+  assert.match(container.innerHTML, /View Updates/);
+  assert.match(container.innerHTML, /data-weave-icon="arrow-down"/);
+  assert.doesNotMatch(container.innerHTML, /&darr;/);
   assert.doesNotMatch(container.innerHTML, /### Update 1/);
 
   // Switch back to updates
@@ -1048,7 +1050,8 @@ test('Failure Path 2: Stage header omits timer when stage has 0 runtime and is n
 test('Happy Path: Output view enables text selection (select-text) and renders Copy button for copy/paste', () => {
   const copyListeners = [];
   const fakeCopyBtn = {
-    textContent: '📋 Copy',
+    innerHTML: '',
+    textContent: 'Copy',
     getAttribute(attr) { return attr === 'data-copy-deliverable' ? 'card_s1_writer' : null; },
     addEventListener(ev, fn) { if (ev === 'click') copyListeners.push(fn); }
   };
@@ -1086,7 +1089,9 @@ test('Happy Path: Output view enables text selection (select-text) and renders C
   assert.match(container.innerHTML, /data-copy-deliverable="card_s1_writer"/);
   assert.equal(copyListeners.length, 1);
   copyListeners[0]({ stopPropagation() {} });
-  assert.equal(fakeCopyBtn.textContent, '✓ Copied');
+  assert.match(fakeCopyBtn.innerHTML, /data-weave-icon="check"/);
+  assert.match(fakeCopyBtn.innerHTML, /<span>Copied<\/span>/);
+  assert.doesNotMatch(fakeCopyBtn.innerHTML, /✓/);
 
   expandedCards.clear();
   cardViewModes.clear();
@@ -1200,31 +1205,33 @@ test('Failure Paths: getStatusBadge does not apply lime styling to unmapped, nul
   assert.match(waitingBadge, /bg-amber-500\/10/);
 });
 
-test('UI Polish (Issue #20): dark charcoal surfaces, muted stepper rail, neutral file chips, preserved glow, and crisp 12px SVGs', () => {
+test('UI Polish (Issue #27): agy host variable bindings, muted stepper rail, neutral file chips, restrained non-glow badges/dots, and crisp 12px SVGs', () => {
   const stylesPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css');
   const css = fs.readFileSync(stylesPath, 'utf-8');
 
-  // 1. Neutral charcoal card surfaces in dark theme
-  assert.match(css, /--weave-card-bg:\s*#1a1b20;/);
-  assert.match(css, /--weave-card-header-bg:\s*#1a1b20;/);
-  assert.match(css, /--weave-card-border:\s*rgba\(255,\s*255,\s*255,\s*0\.09\);/);
-  assert.match(css, /--weave-divider:\s*rgba\(255,\s*255,\s*255,\s*0\.09\);/);
+  // 1. Surfaces bind directly to agy host variables with safe fallbacks
+  assert.match(css, /--agy-card:\s*var\(--card,\s*#1a1b20\);/);
+  assert.match(css, /--weave-card-bg:\s*var\(--agy-card\);/);
+  assert.match(css, /--weave-card-header-bg:\s*var\(--agy-card\);/);
+  assert.match(css, /--weave-card-border:\s*var\(--agy-card-line\);/);
+  assert.match(css, /--weave-divider:\s*var\(--agy-line\);/);
 
   // 2. Muted stepper rail with no rail glow
-  assert.match(css, /--weave-stepper-line:\s*rgba\(255,\s*255,\s*255,\s*0\.16\);/);
+  assert.match(css, /--weave-stepper-line:\s*color-mix\(in srgb,\s*var\(--agy-fg\)\s*16%,\s*transparent\);/);
   assert.match(css, /--weave-stepper-glow:\s*none;/);
 
-  // 3. Neutral deliverable chip tokens
-  assert.match(css, /--weave-chip-bg:\s*rgba\(255,\s*255,\s*255,\s*0\.06\);/);
-  assert.match(css, /--weave-chip-fg:\s*#cbd5e1;/);
+  // 3. Host-bound deliverable chip tokens
+  assert.match(css, /--weave-chip-bg:\s*var\(--agy-field\);/);
+  assert.match(css, /--weave-chip-fg:\s*var\(--agy-fg-secondary\);/);
   assert.match(css, /\.weave-deliverable-chip\s*\{[\s\S]*?var\(--weave-chip-bg\)/);
 
-  // 4. Full stage-dot and vivid-pulse glow preserved
-  assert.match(css, /\.stage-dot-completed\s*\{[\s\S]*?box-shadow:\s*0 0 10px rgba\(16, 185, 129, 0\.6\)/);
-  assert.match(css, /@keyframes stage-yellow-flash[\s\S]*?box-shadow:\s*0 0 14px rgba\(245, 158, 11, 0\.95\)/);
-  assert.match(css, /@keyframes vivid-blink[\s\S]*?box-shadow:\s*0 0 10px rgba\(245, 158, 11, 0\.85\)/);
+  // 4. Restrained stage-dot and vivid-pulse (no heavy 10px-14px neon blur)
+  assert.doesNotMatch(css, /0 0 10px/);
+  assert.doesNotMatch(css, /0 0 14px/);
+  assert.match(css, /@keyframes stage-yellow-flash[\s\S]*?0 0 0 3px/);
+  assert.match(css, /\.vivid-pulse\s*\{[\s\S]*?color-mix\(in srgb,\s*var\(--agy-warn\)\s*15%,\s*transparent\)/);
 
-  // 5. Crisp monochrome 12px SVGs replace body emojis
+  // 5. Crisp monochrome 12px SVGs replace all emojis and Unicode symbols
   const container = { innerHTML: '', querySelectorAll: () => [] };
   render(container, {
     stages: [{
@@ -1241,5 +1248,5 @@ test('UI Polish (Issue #20): dark charcoal surfaces, muted stepper rail, neutral
   assert.match(container.innerHTML, /data-weave-icon="chevron"/);
   assert.match(container.innerHTML, /data-weave-icon="clock"/);
   assert.match(container.innerHTML, /data-weave-icon="file"/);
-  assert.doesNotMatch(container.innerHTML, /[▶▼]|⏱️|📄/);
+  assert.doesNotMatch(container.innerHTML, /[▶▼]|⏱️|📄|&bull;|•/);
 });

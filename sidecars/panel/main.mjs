@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Response, SidecarApp } from 'sidecar_sdk';
+import { resolveHostTheme, serializeHostCssVariables } from './lib/host_theme.mjs';
 import { getMediaMimeType, isPathWithinRoot, resolveSafeMediaPath } from './lib/input_verifier.mjs';
 import { evaluatePipelineStages, getActiveShowDir, getAllShowDirs, resolveEffectiveWorkspace } from './lib/pipeline.mjs';
 import { executeStatusUpdate, readStageAgents, readAllStagesAgents } from './lib/status_tool.mjs';
@@ -13,7 +14,19 @@ const app = new SidecarApp();
 const readLocal = (rel) => readFileSync(join(HERE, rel), 'utf8');
 
 // Static Pages & Tracker Scripts
-app.page('/', () => readLocal('index.html'));
+app.page('/', () => {
+  const rawHtml = readLocal('index.html');
+  const hostTheme = resolveHostTheme();
+  const inlineCss = serializeHostCssVariables(hostTheme.cssVariables);
+  const metaJson = JSON.stringify({
+    mode: hostTheme.mode,
+    contrast: hostTheme.contrast,
+    theme: hostTheme.theme
+  }).replace(/</g, '\\u003c');
+  const seedBlock = `<style id="agy-host-theme-seed">:root { ${inlineCss} }</style>\n  <script id="agy-host-theme-meta">window.__WEAVEMAS_HOST_THEME__ = ${metaJson};</script>\n  `;
+  return rawHtml.replace('<script>', `${seedBlock}<script>`);
+});
+app.api('/api/theme', () => resolveHostTheme(), 'GET');
 app.page('/app.js', () => readLocal('app.js'));
 app.page('/trackers/header_bar.js', () => readLocal('trackers/header_bar.js'));
 app.page('/trackers/runtime_tracker.js', () => readLocal('trackers/runtime_tracker.js'));

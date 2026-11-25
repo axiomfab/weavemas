@@ -3,6 +3,7 @@
   const THEME_STORAGE_KEY = 'weavemas-ui-theme';
   const VALID_THEMES = ['dark', 'light'];
   const containerStates = new WeakMap();
+  const mountedContainers = new Set();
 
   /**
    * Escapes special HTML characters in a string or primitive value.
@@ -193,7 +194,101 @@
       || 'dark';
     const nextTheme = current === 'dark' ? 'light' : 'dark';
     applyTheme(nextTheme, target);
+    if (target && typeof target.setAttribute === 'function') {
+      target.setAttribute('data-theme-override', nextTheme);
+    }
     setStoredTheme(nextTheme, options.storage);
+    return nextTheme;
+  }
+
+  const DERIVED_HOST_CSS_VARS = [
+    '--shell',
+    '--onyx-well',
+    '--secondary',
+    '--secondary-foreground',
+    '--muted',
+    '--muted-foreground',
+    '--placeholder',
+    '--card',
+    '--card-border',
+    '--border',
+    '--success',
+    '--warning',
+    '--error',
+    '--link'
+  ];
+
+  /**
+   * Handles incoming host postMessage events (e.g. `{ type: 'theme-change', theme: 'light'|'dark', cssVariables }`)
+   * and updates document.documentElement.dataset.theme + mounted HeaderBar buttons without reload.
+   * @param {object} event - MessageEvent-like object containing `data`.
+   * @param {{ rootEl?: object|null }} [options={}] - Optional target root override for testing.
+   * @returns {'light'|'dark'|null} Applied theme when handled, or null when ignored.
+   */
+  function handleThemeMessage(event, options = {}) {
+    const msg = event && typeof event === 'object' ? event.data : null;
+    if (!msg || typeof msg !== 'object' || msg.type !== 'theme-change') {
+      return null;
+    }
+    const target = options && options.rootEl !== undefined
+      ? options.rootEl
+      : (typeof document !== 'undefined' && document.documentElement ? document.documentElement : null);
+
+    const raw = String(msg.theme ?? msg.mode ?? '').trim().toLowerCase();
+    let nextTheme = null;
+    if (raw === 'light' || raw === 'hclight' || raw === '1' || raw === 'theme_mode_light') {
+      nextTheme = 'light';
+    } else if (raw === 'dark' || raw === 'hcdark' || raw === '0' || raw === '2' || raw === 'theme_mode_dark') {
+      nextTheme = 'dark';
+    }
+
+    const seedEl = (typeof document !== 'undefined' && typeof document.getElementById === 'function')
+      ? document.getElementById('agy-host-theme-seed')
+      : null;
+
+    if (msg.cssVariables && typeof msg.cssVariables === 'object' && target && target.style) {
+      if (seedEl && typeof seedEl.remove === 'function') {
+        seedEl.remove();
+      }
+      if (typeof target.style.removeProperty === 'function') {
+        for (const k of DERIVED_HOST_CSS_VARS) {
+          if (!(k in msg.cssVariables)) {
+            target.style.removeProperty(k);
+          }
+        }
+      }
+      if (typeof target.style.setProperty === 'function') {
+        for (const [k, v] of Object.entries(msg.cssVariables)) {
+          if (/^--[a-z0-9-]+$/i.test(k) && v !== undefined && v !== null) {
+            target.style.setProperty(k, String(v));
+          }
+        }
+      }
+    } else if (
+      nextTheme &&
+      seedEl &&
+      typeof seedEl.remove === 'function' &&
+      typeof window !== 'undefined' &&
+      window.__WEAVEMAS_HOST_THEME__ &&
+      window.__WEAVEMAS_HOST_THEME__.mode &&
+      window.__WEAVEMAS_HOST_THEME__.mode !== nextTheme
+    ) {
+      seedEl.remove();
+    }
+
+    if (!nextTheme) return null;
+
+    if (target && typeof target.removeAttribute === 'function') {
+      target.removeAttribute('data-theme-override');
+    }
+    applyTheme(nextTheme, target);
+
+    mountedContainers.forEach((c) => {
+      const st = containerStates.get(c);
+      if (st) st.currentTheme = nextTheme;
+      const btn = c && typeof c.querySelector === 'function' ? c.querySelector('#theme-toggle-btn') : null;
+      syncThemeButtonState(btn, nextTheme);
+    });
     return nextTheme;
   }
 
@@ -341,6 +436,7 @@
       state = { currentTheme: null };
       containerStates.set(container, state);
     }
+    mountedContainers.add(container);
     state.onSelect = (typeof onSelectContext === 'function') ? onSelectContext : onSelectShow;
     state.onSync = onSync;
     state.onViewRawMarkdown = onViewRawMarkdown;
@@ -489,6 +585,9 @@
   if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
     applyTheme(resolveInitialTheme());
   }
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function' && !window.WeaveHostBridge) {
+    window.addEventListener('message', (ev) => handleThemeMessage(ev));
+  }
 
   const HeaderBar = {
     THEME_STORAGE_KEY,
@@ -501,6 +600,7 @@
     applyTheme,
     resolveInitialTheme,
     toggleTheme,
+    handleThemeMessage,
     buildThemeToggleInnerHtml
   };
 
