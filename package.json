@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/mcp_server.mjs",
   "scripts": {
+    "build:adapters": "node scripts/build-adapters.mjs",
     "test": "node --test tests/*.mjs",
     "start": "node src/mcp_server.mjs"
   },
