@@ -325,7 +325,7 @@
         ? ` <span class="font-mono text-[11px] ${colorCls}">[${escapeHtml(entry.slug)}]</span>`
         : '';
       const noteHtml = entry.progress ? ` <span class="text-slate-300 font-sans">— ${escapeHtml(entry.progress)}</span>` : '';
-      formatted.push(`<div class="weave-log-entry leading-relaxed py-0.5"><span class="text-slate-600 font-mono mr-1.5">•</span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
+      formatted.push(`<div class="weave-log-entry leading-relaxed py-0.5"><span class="weave-log-bullet" aria-hidden="true"></span><strong class="text-slate-200 font-bold font-mono">${timeStr}</strong>${durationHtml} ${badgeHtml}${noteHtml}</div>`);
     }
     return formatted.join('\n');
   }

@@ -526,10 +526,10 @@ describe('Pipeline Panel Stage Evaluation', () => {
     const runtimeJs = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'runtime_tracker.js'), 'utf8');
     const stagePanelJs = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'trackers', 'stage_panel.js'), 'utf8');
 
-    // Happy Path 1: styles.css defines [data-theme="dark"] and [data-theme="light"] blocks and .agy-theme-btn
-    assert.match(css, /\[data-theme="dark"\]\s*\{[\s\S]*?--agy-bg:\s*#131316;/);
-    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--agy-bg:\s*#f8fafc;/);
-    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--weave-card-bg:\s*#ffffff;/);
+    // Happy Path 1: styles.css binds [data-theme="dark"] and [data-theme="light"] directly to agy host variables with safe fallbacks
+    assert.match(css, /\[data-theme="dark"\]\s*\{[\s\S]*?--agy-bg:\s*var\(--background,[\s\S]*?#131316\)\);/);
+    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--agy-bg:\s*var\(--background,[\s\S]*?#f8fafc\)\);/);
+    assert.match(css, /\[data-theme="light"\]\s*\{[\s\S]*?--agy-card:\s*var\(--card,\s*#ffffff\);/);
     assert.match(css, /\.agy-theme-btn/);
     assert.match(css, /\[data-theme="light"\]\s+\.vivid-pulse/);
     assert.match(css, /html,\s*\r?\nbody\s*\{[\s\S]*?background-color:\s*var\(--agy-bg\)\s*!important;/);

@@ -12,9 +12,48 @@
       } catch (err) {
         saved = null;
       }
-      const theme = saved === 'light' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.style.colorScheme = theme;
+      const hostMode = (window.__WEAVEMAS_HOST_THEME__ && (window.__WEAVEMAS_HOST_THEME__.mode === 'light' || window.__WEAVEMAS_HOST_THEME__.mode === 'dark'))
+        ? window.__WEAVEMAS_HOST_THEME__.mode
+        : null;
+      const theme = (saved === 'light' || saved === 'dark') ? saved : (hostMode || 'dark');
+      const root = document.documentElement;
+      root.setAttribute('data-theme', theme);
+      root.style.colorScheme = theme;
+      if ((saved === 'light' || saved === 'dark') && hostMode && saved !== hostMode) {
+        root.setAttribute('data-theme-override', saved);
+      }
+      if (typeof window.addEventListener === 'function') {
+        window.addEventListener('message', function(ev) {
+          const msg = ev && ev.data;
+          if (!msg || typeof msg !== 'object') return;
+          if (msg.type === 'theme-change') {
+            const raw = String(msg.theme || msg.mode || '').toLowerCase();
+            const next = (raw === 'light' || raw === 'hclight' || raw === '1' || raw === 'theme_mode_light') ? 'light' : (raw ? 'dark' : null);
+            const seedEl = document.getElementById ? document.getElementById('agy-host-theme-seed') : null;
+            if (msg.cssVariables && typeof msg.cssVariables === 'object') {
+              if (seedEl && typeof seedEl.remove === 'function') seedEl.remove();
+              if (root.style && typeof root.style.removeProperty === 'function') {
+                ['--shell', '--onyx-well', '--secondary', '--secondary-foreground', '--muted', '--muted-foreground', '--placeholder', '--card', '--card-border', '--border', '--success', '--warning', '--error', '--link'].forEach(function(k) {
+                  if (!(k in msg.cssVariables)) root.style.removeProperty(k);
+                });
+              }
+              if (root.style && typeof root.style.setProperty === 'function') {
+                Object.keys(msg.cssVariables).forEach(function(k) {
+                  if (/^--[a-z0-9-]+$/i.test(k)) root.style.setProperty(k, String(msg.cssVariables[k]));
+                });
+              }
+            } else if (next && seedEl && window.__WEAVEMAS_HOST_THEME__ && window.__WEAVEMAS_HOST_THEME__.mode && window.__WEAVEMAS_HOST_THEME__.mode !== next) {
+              if (typeof seedEl.remove === 'function') seedEl.remove();
+            }
+            if (next) {
+              if (typeof root.removeAttribute === 'function') root.removeAttribute('data-theme-override');
+              root.setAttribute('data-theme', next);
+              if (root.dataset) root.dataset.theme = next;
+              root.style.colorScheme = next;
+            }
+          }
+        });
+      }
     })();
   </script>
   <script src="/preload.js"></script>
@@ -26,6 +65,7 @@
   <header id="header-root"></header>
 
   <div class="max-w-4xl mx-auto p-3 space-y-4">
+    <div id="error-banner-root" style="display: none;"></div>
 
     <!-- Horizontal Pipeline Stepper (Seamless / No Card) -->
     <section id="stepper-root" class="py-2.5 px-1">

@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 432" width="920" height="432"><rect x="0.5" y="0.5" width="919" height="431" rx="10" fill="#090a0d" stroke="rgba(255,255,255,0.1)"/>
+  <text x="20" y="28" font-family="system-ui,sans-serif" font-size="13.5" font-weight="700" fill="#f4f4f6">WeaveMAS Complete SVG Icon Set (11 Existing Codebase Icons + 2 Unicode Replacements)</text><rect x="20.5" y="46.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="30.5" y="56.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(40.5, 64.5)" fill="none" style="color:#e5e7eb"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M12.42 3.58l-1.06 1.06M4.64 11.36l-1.06 1.06" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></g>
+    <rect x="72.5" y="56.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(82.5, 64.5)" fill="none" style="color:#0f172a"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M12.42 3.58l-1.06 1.06M4.64 11.36l-1.06 1.06" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></g>
+    <text x="118" y="72" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">sun</text>
+    <text x="118" y="86" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">13x13px</text>
+    <text x="30" y="106" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L208</text>
+    <text x="30" y="120" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Theme toggle (dark -> light)</text><rect x="244.5" y="46.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="254.5" y="56.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(264.5, 64.5)" fill="none" style="color:#e5e7eb"><path d="M13.25 9.85A5.5 5.5 0 0 1 6.15 2.75a5.5 5.5 0 1 0 7.1 7.1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="296.5" y="56.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(306.5, 64.5)" fill="none" style="color:#0f172a"><path d="M13.25 9.85A5.5 5.5 0 0 1 6.15 2.75a5.5 5.5 0 1 0 7.1 7.1Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="342" y="72" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">moon</text>
+    <text x="342" y="86" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">13x13px</text>
+    <text x="254" y="106" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L210</text>
+    <text x="254" y="120" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Theme toggle (light -> dark)</text><rect x="468.5" y="46.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="478.5" y="56.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(488.5, 64.5)" fill="currentColor" style="color:#e5e7eb"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"/></g>
+    <rect x="520.5" y="56.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(530.5, 64.5)" fill="currentColor" style="color:#0f172a"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"/></g>
+    <text x="566" y="72" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">git-branch</text>
+    <text x="566" y="86" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="478" y="106" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L260</text>
+    <text x="478" y="120" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Git worktree badge (#worktree-badge)</text><rect x="692.5" y="46.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="702.5" y="56.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(712.5, 64.5)" fill="none" style="color:#e5e7eb"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="744.5" y="56.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(754.5, 64.5)" fill="none" style="color:#0f172a"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="790" y="72" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">code</text>
+    <text x="790" y="86" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="702" y="106" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L367</text>
+    <text x="702" y="120" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">View Raw Markdown (#raw-markdown-btn)</text><rect x="20.5" y="140.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="30.5" y="150.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(40.5, 158.5)" fill="none" style="color:#e5e7eb"><path d="M4.5 6.25L8 9.75l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="72.5" y="150.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(82.5, 158.5)" fill="none" style="color:#0f172a"><path d="M4.5 6.25L8 9.75l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="118" y="166" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">select-chevron</text>
+    <text x="118" y="180" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="30" y="200" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L379</text>
+    <text x="30" y="214" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Run selector caret (#show-select)</text><rect x="244.5" y="140.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="254.5" y="150.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(264.5, 158.5)" fill="none" style="color:#e5e7eb"><path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="296.5" y="150.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(306.5, 158.5)" fill="none" style="color:#0f172a"><path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="342" y="166" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">sync</text>
+    <text x="342" y="180" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="254" y="200" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">header_bar.js L395</text>
+    <text x="254" y="214" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Manual Sync (#sync-btn) & Retry</text><rect x="468.5" y="140.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="478.5" y="150.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(488.5, 158.5)" fill="none" style="color:#e5e7eb"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="520.5" y="150.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(530.5, 158.5)" fill="none" style="color:#0f172a"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="566" y="166" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">chevron</text>
+    <text x="566" y="180" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="478" y="200" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">agent_panel.js L5</text>
+    <text x="478" y="214" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Stage, Group & Card disclosure</text><rect x="692.5" y="140.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="702.5" y="150.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(712.5, 158.5)" fill="none" style="color:#e5e7eb"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="744.5" y="150.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(754.5, 158.5)" fill="none" style="color:#0f172a"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="790" y="166" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">clock</text>
+    <text x="790" y="180" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="702" y="200" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">runtime_tracker.js L92</text>
+    <text x="702" y="214" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Stage & Agent runtime badge</text><rect x="20.5" y="234.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="30.5" y="244.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(40.5, 252.5)" fill="none" style="color:#e5e7eb"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="72.5" y="244.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(82.5, 252.5)" fill="none" style="color:#0f172a"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="118" y="260" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">file</text>
+    <text x="118" y="274" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="30" y="294" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">agent_panel.js L7</text>
+    <text x="30" y="308" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Deliverable chip & output header</text><rect x="244.5" y="234.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="254.5" y="244.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(264.5, 252.5)" fill="none" style="color:#e5e7eb"><rect x="5.5" y="5.5" width="7.75" height="8.25" rx="1.25" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 5.5V3.5a1.25 1.25 0 0 0-1.25-1.25H4A1.25 1.25 0 0 0 2.75 3.5v6.25A1.25 1.25 0 0 0 4 11h1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="296.5" y="244.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(306.5, 252.5)" fill="none" style="color:#0f172a"><rect x="5.5" y="5.5" width="7.75" height="8.25" rx="1.25" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 5.5V3.5a1.25 1.25 0 0 0-1.25-1.25H4A1.25 1.25 0 0 0 2.75 3.5v6.25A1.25 1.25 0 0 0 4 11h1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="342" y="260" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">copy</text>
+    <text x="342" y="274" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="254" y="294" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">agent_panel.js L8</text>
+    <text x="254" y="308" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Copy deliverable button</text><rect x="468.5" y="234.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="478.5" y="244.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(488.5, 252.5)" fill="none" style="color:#e5e7eb"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></g>
+    <rect x="520.5" y="244.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(530.5, 252.5)" fill="none" style="color:#0f172a"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></g>
+    <text x="566" y="260" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">chat</text>
+    <text x="566" y="274" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="478" y="294" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">agent_panel.js L9</text>
+    <text x="478" y="308" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Open Subagent Chat button</text><rect x="692.5" y="234.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="702.5" y="244.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(712.5, 252.5)" fill="none" style="color:#e5e7eb"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="744.5" y="244.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(754.5, 252.5)" fill="none" style="color:#0f172a"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="790" y="260" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">check</text>
+    <text x="790" y="274" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="702" y="294" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">Replaces Unicode check (L327)</text>
+    <text x="702" y="308" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">Copied confirmation state</text><rect x="20.5" y="328.5" width="212" height="82" rx="7" fill="#14151a" stroke="rgba(255,255,255,0.09)"/>
+    <rect x="30.5" y="338.5" width="36" height="32" rx="5" fill="#090a0d" stroke="rgba(255,255,255,0.09)"/>
+    <g transform="translate(40.5, 346.5)" fill="none" style="color:#e5e7eb"><path d="M8 3.25v9.5M4.5 9.25L8 12.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect x="72.5" y="338.5" width="36" height="32" rx="5" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <g transform="translate(82.5, 346.5)" fill="none" style="color:#0f172a"><path d="M8 3.25v9.5M4.5 9.25L8 12.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="118" y="354" font-family="ui-monospace,monospace" font-size="10.5" font-weight="600" fill="#f4f4f6">arrow-down</text>
+    <text x="118" y="368" font-family="ui-monospace,monospace" font-size="9.5" fill="#94a3b8">12x12px</text>
+    <text x="30" y="388" font-family="system-ui,sans-serif" font-size="9.5" fill="#94a3b8">Replaces &darr; (L203)</text>
+    <text x="30" y="402" font-family="system-ui,sans-serif" font-size="9.5" fill="#cbd5e1">View Updates link in Deliverable</text></svg>

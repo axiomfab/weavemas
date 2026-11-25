@@ -68,6 +68,25 @@
             console.error('[weavemas-viewer] listener error:', err);
           }
         });
+      } else if (msg.type === 'theme-change') {
+        if (typeof window !== 'undefined' && window.HeaderBar && typeof window.HeaderBar.handleThemeMessage === 'function') {
+          window.HeaderBar.handleThemeMessage(event);
+        } else if (msg.theme === 'light' || msg.theme === 'dark') {
+          if (typeof document !== 'undefined' && document.documentElement) {
+            if (typeof document.documentElement.removeAttribute === 'function') {
+              document.documentElement.removeAttribute('data-theme-override');
+            }
+            if (typeof document.documentElement.setAttribute === 'function') {
+              document.documentElement.setAttribute('data-theme', msg.theme);
+            }
+            if (document.documentElement.dataset) {
+              document.documentElement.dataset.theme = msg.theme;
+            }
+            if (document.documentElement.style) {
+              document.documentElement.style.colorScheme = msg.theme;
+            }
+          }
+        }
       }
     }
 

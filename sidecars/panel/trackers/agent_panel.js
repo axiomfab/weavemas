@@ -7,6 +7,8 @@
   const ICON_FILE = '<svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICON_COPY = '<svg class="weave-icon weave-copy-icon" data-weave-icon="copy" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="7.75" height="8.25" rx="1.25" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 5.5V3.5a1.25 1.25 0 0 0-1.25-1.25H4A1.25 1.25 0 0 0 2.75 3.5v6.25A1.25 1.25 0 0 0 4 11h1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICON_CHAT = '<svg class="weave-icon weave-chat-icon" data-weave-icon="chat" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+  const ICON_CHECK = '<svg class="weave-icon weave-check-icon" data-weave-icon="check" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON_ARROW_DOWN = '<svg class="weave-icon weave-arrow-icon" data-weave-icon="arrow-down" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.25v9.5M4.5 9.25L8 12.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function escapeHtml(str) {
     return str ? String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') : '';
   }
@@ -173,8 +175,8 @@
       const escapedText = hasText ? escapeHtml(rawDeliv) : '';
       return preview ? (escapedText ? `${preview}\n${escapedText}` : preview) : escapedText;
     }
-    const baseText = hasText ? rawDeliv : outputItems.map(it => `── 📄 ${it.name} ──\n${it.exists ? (it.content || '') : `Output (${it.name}) has not been generated yet.`}`).join('\n\n');
-    return escapeHtml(baseText).replace(/^── 📄 (.+?) ──$/gm, (_, escapedName) => {
+    const baseText = hasText ? rawDeliv : outputItems.map(it => `── ${it.name} ──\n${it.exists ? (it.content || '') : `Output (${it.name}) has not been generated yet.`}`).join('\n\n');
+    return escapeHtml(baseText).replace(/^── (?:\uD83D\uDCC4 )?(.+?) ──$/gm, (_, escapedName) => {
       const item = itemMap.get(escapedName);
       const mType = (item && item.exists === false) ? null : detectMediaType(escapedName, item?.mediaType);
       const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName, item?.webviewUri || null)}` : '';
@@ -200,7 +202,7 @@
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
       const copyBtn = `<button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">${ICON_COPY}<span>Copy</span></button>`;
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="inline-flex items-center gap-1.5 text-slate-200 text-[11px] font-semibold">${ICON_FILE}<span>${escapeHtml(delivLabel)}</span></span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="text-[11px] text-slate-400 hover:text-slate-200 font-mono underline" data-status-toggle="${escapeHtml(cardId)}">View Updates &darr;</button>`;
+      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="inline-flex items-center gap-1.5 text-slate-200 text-[11px] font-semibold">${ICON_FILE}<span>${escapeHtml(delivLabel)}</span></span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="weave-view-updates-btn inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 font-mono underline" data-status-toggle="${escapeHtml(cardId)}"><span>View Updates</span>${ICON_ARROW_DOWN}</button>`;
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
     } else {
       headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
@@ -214,7 +216,7 @@
         mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono select-text">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
       }
     }
-    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="inline-flex items-center gap-2 text-slate-400 mr-1">${customChip}<span>&bull;</span></span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
+    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="inline-flex items-center gap-2 text-slate-400 mr-1">${customChip}<span class="weave-sep-dot" aria-hidden="true"></span></span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
   function getNodeCreationTime(node) {
@@ -265,8 +267,8 @@
         const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
         const isExpanded = !collapsedStages.has(stageId);
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="text-slate-600">•</span>${timerHtml}` : ''}</div>` : '');
+          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>` : '');
         return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
@@ -290,12 +292,22 @@
       if (typeof el.addEventListener !== 'function') return;
       el.addEventListener('error', async () => {
         const rawSrc = el.getAttribute('data-media-src');
-        if (!rawSrc || el.getAttribute('data-blob-loaded') === '1' || typeof window === 'undefined' || !window.sidecar?.fetch) return;
-        el.setAttribute('data-blob-loaded', '1');
-        try {
-          const res = await window.sidecar.fetch(rawSrc);
-          if (res.ok && typeof URL !== 'undefined' && URL.createObjectURL) el.src = URL.createObjectURL(await res.blob());
-        } catch {}
+        if (rawSrc && el.getAttribute('data-blob-loaded') !== '1' && typeof window !== 'undefined' && window.sidecar?.fetch) {
+          el.setAttribute('data-blob-loaded', '1');
+          try {
+            const res = await window.sidecar.fetch(rawSrc);
+            if (res.ok && typeof URL !== 'undefined' && URL.createObjectURL) {
+              el.src = URL.createObjectURL(await res.blob());
+              return;
+            }
+          } catch {}
+        }
+        if (typeof document !== 'undefined' && typeof document.createElement === 'function' && typeof el.replaceWith === 'function') {
+          const fb = document.createElement('div');
+          fb.className = 'weave-media-fallback';
+          fb.textContent = `Preview unavailable: ${el.getAttribute('alt') || 'media output'}`;
+          el.replaceWith(fb);
+        }
       }, { once: true });
     });
     container.querySelectorAll('[data-stage-toggle]').forEach(el => el.addEventListener('click', () => {
@@ -324,7 +336,15 @@
       let textToCopy = '';
       container.querySelectorAll('[data-agent-body]').forEach(el => { if (el.getAttribute('data-agent-body') === id) textToCopy = el.textContent || ''; });
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) navigator.clipboard.writeText(textToCopy);
-      btn.textContent = '✓ Copied';
+      if ('innerHTML' in btn) btn.innerHTML = `${ICON_CHECK}<span>Copied</span>`;
+      else btn.textContent = 'Copied';
+      if (typeof setTimeout === 'function') {
+        const t = setTimeout(() => {
+          if ('innerHTML' in btn) btn.innerHTML = `${ICON_COPY}<span>Copy</span>`;
+          else btn.textContent = 'Copy';
+        }, 1800);
+        if (t && typeof t.unref === 'function') t.unref();
+      }
     }));
     container.querySelectorAll('[data-status-toggle]').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation(); const id = btn.getAttribute('data-status-toggle');

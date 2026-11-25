@@ -1,0 +1,192 @@
+/**
+ * @fileoverview OS-aware Antigravity paths and UTF-8 BOM-safe JSON config helpers.
+ */
+
+import {
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    realpathSync,
+    renameSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join } from 'node:path';
+
+export const GLOBAL_CONFIG_DIR = join(homedir(), '.gemini', 'config');
+export const GLOBAL_SIDECARS_DIR = join(GLOBAL_CONFIG_DIR, 'sidecars');
+export const CONFIG_JSON_PATH = join(GLOBAL_CONFIG_DIR, 'config.json');
+export const DEFAULT_CONFIG_PATH = CONFIG_JSON_PATH;
+
+export const APP_STORAGE_PATH =
+    process.platform === 'win32'
+        ? join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Antigravity', 'app_storage.json')
+        : process.platform === 'darwin'
+            ? join(homedir(), 'Library', 'Application Support', 'Antigravity', 'app_storage.json')
+            : join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'Antigravity', 'app_storage.json');
+
+export const HANGAR_DATA_DIR =
+    process.env.HANGAR_DATA_DIR ||
+    process.env.SIDECAR_HUB_DATA_DIR ||
+    join(homedir(), '.gemini', 'hangar');
+export const HANGAR_PACKAGES_DIR = join(HANGAR_DATA_DIR, 'packages');
+export function resolveSidecarDataRoot(env = process.env) {
+    const appDataDir = env?.ANTIGRAVITY_APP_DATA_DIR
+        ? String(env.ANTIGRAVITY_APP_DATA_DIR).trim()
+        : '';
+    if (appDataDir) return join(appDataDir, 'sidecar_data');
+    const execDataDir = env?.ANTIGRAVITY_EXECUTABLE_DATA_DIR
+        ? String(env.ANTIGRAVITY_EXECUTABLE_DATA_DIR).trim()
+        : '';
+    if (execDataDir) {
+        const markerMatch = execDataDir.match(/^(.*?[\\/]sidecar_data)(?:[\\/]|$)/);
+        if (markerMatch) return join(markerMatch[1]);
+        return join(execDataDir, 'sidecar_data');
+    }
+    const homeBase = env?.USERPROFILE || env?.HOME || homedir();
+    return join(homeBase, '.gemini', 'antigravity', 'sidecar_data');
+}
+
+export const SIDECAR_DATA_ROOT = resolveSidecarDataRoot();
+
+export function readJsonSafe(filePath, fallback = {}, options = {}) {
+    const strict = Boolean(options?.strict);
+    if (!filePath || !existsSync(filePath)) return structuredClone(fallback);
+    try {
+        const raw = readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '').trim();
+        if (!raw) return structuredClone(fallback);
+        const parsed = JSON.parse(raw);
+        if (strict && (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))) {
+            throw new Error(`Invalid JSON object in ${filePath}`);
+        }
+        return parsed;
+    } catch (err) {
+        if (strict) throw err;
+        return structuredClone(fallback);
+    }
+}
+
+export function readJsonFile(filePath, { strict = false, fallback = {} } = {}) {
+    const res = readJsonSafe(filePath, fallback, { strict });
+    return res && typeof res === 'object' ? res : structuredClone(fallback);
+}
+
+const RENAME_RETRY_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
+const SLEEP_BUF = new Int32Array(new SharedArrayBuffer(4));
+
+export function writeJsonAtomic(filePath, data, mode) {
+    mkdirSync(dirname(filePath), { recursive: true });
+    const rand = Math.random().toString(36).slice(2);
+    const tmp = `${filePath}.tmp.${process.pid}.${Date.now()}.${rand}`;
+    const raw = JSON.stringify(data, null, 2) + '\n';
+    const fileMode = typeof mode === 'object' && mode !== null ? mode.mode : mode;
+    const writeOpts = fileMode !== undefined ? { encoding: 'utf8', mode: fileMode } : 'utf8';
+    writeFileSync(tmp, raw, writeOpts);
+    try {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                renameSync(tmp, filePath);
+                return raw;
+            } catch (err) {
+                if (!RENAME_RETRY_CODES.has(err?.code) || attempt >= 2) break;
+                Atomics.wait(SLEEP_BUF, 0, 0, 15);
+            }
+        }
+        writeFileSync(filePath, raw, writeOpts);
+        return raw;
+    } finally {
+        rmSync(tmp, { force: true });
+    }
+}
+
+/**
+ * Writes JSON without a BOM via temp file + rename, so readers (including Antigravity
+ * itself for config.json) never observe a truncated or half-written file.
+ */
+export function writeJsonNoBom(filePath, data, mode) {
+    let target = filePath;
+    try {
+        // Write through symlinked files instead of replacing the link
+        target = realpathSync(filePath);
+    } catch {
+        // does not exist yet
+    }
+    return writeJsonAtomic(target, data, mode);
+}
+
+export const writeJsonFile = writeJsonNoBom;
+
+export function writeServerInfo(dirOrOpts, opts = {}) {
+    const isObjArg = dirOrOpts && typeof dirOrOpts === 'object';
+    const cfg = isObjArg ? dirOrOpts : opts;
+    const sidecarId = cfg.sidecarId || '';
+    const dataDir = isObjArg
+        ? cfg.dataDir || (cfg.dataRoot && sidecarId ? join(cfg.dataRoot, sidecarId) : sidecarId ? join(SIDECAR_DATA_ROOT, sidecarId) : '')
+        : dirOrOpts;
+    const { host = '127.0.0.1', port, token = null, pid = process.pid, startedAt = Date.now() } = cfg;
+    if (!dataDir || !port) return null;
+    const infoPath = join(dataDir, 'server_info.json');
+    writeJsonAtomic(infoPath, { host, port, token, pid, startedAt }, 0o600);
+    return infoPath;
+}
+
+export function removeServerInfo(dirOrOpts) {
+    const isObjArg = dirOrOpts && typeof dirOrOpts === 'object';
+    const dataDir = isObjArg
+        ? dirOrOpts.dataDir || (dirOrOpts.dataRoot && dirOrOpts.sidecarId ? join(dirOrOpts.dataRoot, dirOrOpts.sidecarId) : dirOrOpts.sidecarId ? join(SIDECAR_DATA_ROOT, dirOrOpts.sidecarId) : '')
+        : dirOrOpts;
+    if (!dataDir) return;
+    try {
+        rmSync(join(dataDir, 'server_info.json'), { force: true });
+    } catch {
+    }
+}
+
+/**
+ * Safely updates a sidecar entry in ~/.gemini/config/config.json without clobbering
+ * malformed JSON files and always preserving sidecars[sidecarId].projectId.
+ */
+export function updateAgySidecarConfig(
+    sidecarId,
+    patchOrEnabled = true,
+    configPath = CONFIG_JSON_PATH,
+    { createIfMissing = false } = {}
+) {
+    if (!sidecarId || !configPath) return false;
+    const fileExists = existsSync(configPath);
+    if (!fileExists && !createIfMissing) return false;
+
+    let cfg = {};
+    if (fileExists) {
+        try {
+            cfg = readJsonSafe(configPath, {}, { strict: true });
+        } catch {
+            // Never clobber a malformed config.json
+            return false;
+        }
+    }
+
+    if (!cfg.sidecars || typeof cfg.sidecars !== 'object' || Array.isArray(cfg.sidecars)) {
+        cfg.sidecars = {};
+    }
+
+    const patch =
+        typeof patchOrEnabled === 'boolean'
+            ? { enabled: patchOrEnabled }
+            : patchOrEnabled && typeof patchOrEnabled === 'object'
+                ? patchOrEnabled
+                : { enabled: Boolean(patchOrEnabled) };
+
+    const existing =
+        cfg.sidecars[sidecarId] && typeof cfg.sidecars[sidecarId] === 'object'
+            ? cfg.sidecars[sidecarId]
+            : {};
+
+    cfg.sidecars[sidecarId] = {
+        ...existing,
+        ...patch,
+    };
+    writeJsonNoBom(configPath, cfg);
+    return true;
+}

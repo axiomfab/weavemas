@@ -50,6 +50,11 @@
   function applyPipelinePayload(nextPayload) {
     if (!nextPayload || typeof nextPayload !== 'object') return;
     pipelineData = nextPayload;
+    const errRoot = typeof document !== 'undefined' ? document.getElementById('error-banner-root') : null;
+    if (errRoot) {
+      errRoot.style.display = 'none';
+      errRoot.innerHTML = '';
+    }
     if (typeof nextPayload.selectedContextDir === 'string' && nextPayload.selectedContextDir) {
       selectedContextDir = nextPayload.selectedContextDir;
     } else {
@@ -78,6 +83,12 @@
       applyPipelinePayload(nextPayload);
     } catch (err) {
       console.error('Error refreshing pipeline panel:', err);
+      const errRoot = typeof document !== 'undefined' ? document.getElementById('error-banner-root') : null;
+      if (errRoot) {
+        const msg = err && err.message ? err.message : 'Connection failed';
+        errRoot.style.display = 'block';
+        errRoot.innerHTML = `<div class="weave-error-banner" role="alert"><span>Unable to sync pipeline (${escapeHtml(msg)}).</span><button type="button" class="agy-sync-btn" onclick="App.retrySync()"><span>Retry</span></button></div>`;
+      }
     }
   }
 
@@ -190,7 +201,7 @@
 
         const safeNum = Number(st.num);
         stepperHtml += `
-          <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" onclick="App.selectStage(${safeNum})">
+          <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" role="button" tabindex="0" aria-pressed="${isSelected ? 'true' : 'false'}" onclick="App.selectStage(${safeNum})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.selectStage(${safeNum});}">
             <div class="stage-dot ${dotClass}" title="${escapeHtml(st.tag || st.name)}"></div>
             <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center">Stage ${safeNum}</span>
             <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>
@@ -224,6 +235,9 @@
     refresh() {
       renderUI();
     },
+    retrySync() {
+      refreshData();
+    },
     applyPayload: applyPipelinePayload,
     isPollingActive() {
       return pollInterval !== null;
@@ -252,6 +266,10 @@
     }
 
     renderHeader();
+    const agentsContainer = document.getElementById('agents-root');
+    if (agentsContainer && !pipelineData) {
+      agentsContainer.innerHTML = '<div class="weave-empty-state p-6 rounded-xl border border-slate-800 bg-slate-900/30 text-center text-xs text-slate-500 font-mono">Loading pipeline status...</div>';
+    }
     refreshData();
     pollInterval = setInterval(() => {
       if (typeof window.getSelection === 'function' && window.getSelection().toString().trim().length > 0) {

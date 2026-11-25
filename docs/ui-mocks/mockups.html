@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-style-option="a" style="color-scheme: dark;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WeaveMAS Proposed Minor-Styling Mockups (Actual DOM + Host Theme Binding)</title>
+  <style>
+  *, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; }
+  button, select { font-family: inherit; font-size: 100%; margin: 0; }
+  button { background-color: transparent; background-image: none; color: inherit; cursor: pointer; padding: 0; }
+  h3, p, pre { margin: 0; }
+  .min-h-screen { min-height: 100vh; }
+  .max-w-4xl { max-width: 56rem; }
+  .max-w-\[70px\] { max-width: 70px; }
+  .max-w-full { max-width: 100%; }
+  .max-h-80 { max-height: 20rem; }
+  .max-h-96 { max-height: 24rem; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  .my-1\.5 { margin-top: 0.375rem; margin-bottom: 0.375rem; }
+  .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+  .mt-1 { margin-top: 0.25rem; }
+  .mt-1\.5 { margin-top: 0.375rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .mt-4 { margin-top: 1rem; }
+  .mr-1 { margin-right: 0.25rem; }
+  .mr-1\.5 { margin-right: 0.375rem; }
+  .p-1 { padding: 0.25rem; }
+  .p-2\.5 { padding: 0.625rem; }
+  .p-3 { padding: 0.75rem; }
+  .p-4 { padding: 1rem; }
+  .p-6 { padding: 1.5rem; }
+  .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .px-1\.5 { padding-left: 0.375rem; padding-right: 0.375rem; }
+  .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .py-0\.2 { padding-top: 1px; padding-bottom: 1px; }
+  .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .pt-3 { padding-top: 0.75rem; }
+  .pt-4 { padding-top: 1rem; }
+  .pb-2 { padding-bottom: 0.5rem; }
+  .pl-0\.5 { padding-left: 0.125rem; }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+  .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  .block { display: block; }
+  .flex-1 { flex: 1 1 0%; }
+  .flex-col { flex-direction: column; }
+  .shrink-0 { flex-shrink: 0; }
+  .items-start { align-items: flex-start; }
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-1 { gap: 0.25rem; }
+  .gap-1\.5 { gap: 0.375rem; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-2\.5 { gap: 0.625rem; }
+  .gap-3 { gap: 0.75rem; }
+  .relative { position: relative; }
+  .z-10 { z-index: 10; }
+  .w-3 { width: 0.75rem; }
+  .h-3 { height: 0.75rem; }
+  .w-full { width: 100%; }
+  .h-9 { height: 2.25rem; }
+  .h-px { height: 1px; }
+  .overflow-hidden { overflow: hidden; }
+  .overflow-y-auto { overflow-y: auto; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .whitespace-pre-wrap { white-space: pre-wrap; }
+  .rounded { border-radius: 0.25rem; }
+  .rounded-lg { border-radius: 0.5rem; }
+  .rounded-xl { border-radius: 0.75rem; }
+  .border { border-width: 1px; }
+  .border-t { border-top-width: 1px; }
+  .border-b { border-bottom-width: 1px; }
+  .font-sans { font-family: var(--agy-font); }
+  .font-mono { font-family: var(--agy-mono); }
+  .text-\[10px\] { font-size: 10px; line-height: 1.35; }
+  .text-\[11px\] { font-size: 11px; line-height: 1.4; }
+  .text-xs { font-size: 0.75rem; line-height: 1rem; }
+  .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+  .font-normal { font-weight: 400; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .italic { font-style: italic; }
+  .underline { text-decoration: underline; }
+  .tracking-wide { letter-spacing: 0.025em; }
+  .leading-relaxed { line-height: 1.625; }
+  .text-center { text-align: center; }
+  .select-none { user-select: none; }
+  .select-text { user-select: text; }
+  .cursor-pointer { cursor: pointer; }
+  .object-contain { object-fit: contain; }
+  .fill-current { fill: currentColor; }
+  .rotate-90 { transform: rotate(90deg); }
+  .transition-all { transition: all 0.15s ease; }
+  .transition-colors { transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease; }
+  .transition-opacity { transition: opacity 0.15s ease; }
+  .transition-transform { transition: transform 0.15s ease; }
+  .duration-150 { transition-duration: 150ms; }
+  .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+  .text-white { color: #ffffff; }
+  .text-slate-200 { color: #e2e8f0; }
+  .text-slate-300 { color: #cbd5e1; }
+  .text-slate-400 { color: #94a3b8; }
+  .text-slate-500 { color: #64748b; }
+  .text-slate-600 { color: #475569; }
+  .text-indigo-300 { color: #a5b4fc; }
+  .text-emerald-300 { color: #6ee7b7; }
+  .text-emerald-400 { color: #34d399; }
+  .text-lime-300 { color: #bef264; }
+  .text-lime-400 { color: #a3e635; }
+  .text-amber-200 { color: #fde68a; }
+  .text-amber-300 { color: #fcd34d; }
+  .text-amber-400 { color: #fbbf24; }
+  .text-cyan-300 { color: #67e8f9; }
+  .text-rose-300 { color: #fda4af; }
+  .text-rose-400 { color: #fb7185; }
+  .bg-black { background-color: #000000; }
+  .bg-slate-800 { background-color: #1e293b; }
+  .bg-slate-900\/30 { background-color: rgba(15, 23, 42, 0.3); }
+  .bg-slate-900\/60 { background-color: rgba(15, 23, 42, 0.6); }
+  .bg-slate-900\/80 { background-color: rgba(15, 23, 42, 0.8); }
+  .bg-slate-950 { background-color: #020617; }
+  .bg-slate-950\/40 { background-color: rgba(2, 6, 23, 0.4); }
+  .bg-indigo-600\/20 { background-color: rgba(79, 70, 229, 0.2); }
+  .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1); }
+  .bg-emerald-500\/20 { background-color: rgba(16, 185, 129, 0.2); }
+  .bg-lime-500\/15 { background-color: rgba(132, 204, 22, 0.15); }
+  .bg-lime-500\/20 { background-color: rgba(132, 204, 22, 0.2); }
+  .bg-amber-500\/10 { background-color: rgba(245, 158, 11, 0.1); }
+  .bg-rose-500\/10 { background-color: rgba(244, 63, 94, 0.1); }
+  .bg-rose-500\/15 { background-color: rgba(244, 63, 94, 0.15); }
+  .bg-rose-500\/20 { background-color: rgba(244, 63, 94, 0.2); }
+  .border-slate-700 { border-color: #334155; }
+  .border-slate-700\/50 { border-color: rgba(51, 65, 85, 0.5); }
+  .border-slate-800 { border-color: #1e293b; }
+  .border-slate-800\/60 { border-color: rgba(30, 41, 59, 0.6); }
+  .border-slate-800\/70 { border-color: rgba(30, 41, 59, 0.7); }
+  .border-slate-800\/80 { border-color: rgba(30, 41, 59, 0.8); }
+  .border-indigo-500\/30 { border-color: rgba(99, 102, 241, 0.3); }
+  .border-emerald-500\/20 { border-color: rgba(16, 185, 129, 0.2); }
+  .border-emerald-500\/30 { border-color: rgba(16, 185, 129, 0.3); }
+  .border-emerald-500\/40 { border-color: rgba(16, 185, 129, 0.4); }
+  .border-lime-500\/30 { border-color: rgba(132, 204, 22, 0.3); }
+  .border-lime-500\/40 { border-color: rgba(132, 204, 22, 0.4); }
+  .border-amber-500\/30 { border-color: rgba(245, 158, 11, 0.3); }
+  .border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.3); }
+  .border-rose-500\/40 { border-color: rgba(244, 63, 94, 0.4); }
+</style>
+  <style>
+  :root {
+    /* Injected Antigravity Host CSS Variables (with safe Onyx Dark fallbacks only when undefined) */
+    --agy-bg: var(--background, #090a0d);
+    --agy-fg: var(--foreground, #e5e7eb);
+    --agy-fg-secondary: var(--secondary-foreground, color-mix(in srgb, var(--agy-fg) 78%, var(--agy-bg)));
+    --agy-fg-muted: var(--muted-foreground, color-mix(in srgb, var(--agy-fg) 56%, var(--agy-bg)));
+    --agy-fg-subtle: var(--placeholder, color-mix(in srgb, var(--agy-fg) 38%, var(--agy-bg)));
+    --agy-card: var(--card, #14151a);
+    --agy-surface: var(--shell, color-mix(in srgb, var(--agy-fg) 3%, var(--agy-bg)));
+    --agy-well: var(--onyx-well, color-mix(in srgb, var(--agy-fg) 4%, var(--agy-bg)));
+    --agy-line: var(--border, color-mix(in srgb, var(--agy-fg) 9%, transparent));
+    --agy-card-line: var(--card-border, var(--agy-line));
+    --agy-field: var(--secondary, color-mix(in srgb, var(--agy-fg) 6%, transparent));
+    --agy-hover: color-mix(in srgb, var(--agy-fg) 8%, transparent);
+    --agy-press: color-mix(in srgb, var(--agy-fg) 13%, transparent);
+    --agy-accent: var(--primary, #3b82f6);
+    --agy-ring: color-mix(in srgb, var(--agy-accent) 65%, transparent);
+    --agy-ok: var(--success, #34d399);
+    --agy-rev: #a3e635;
+    --agy-warn: var(--warning, #f59e0b);
+    --agy-err: var(--error, #f43f5e);
+    --agy-font: var(--vscode-font-family, var(--font-family, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif));
+    --agy-mono: var(--editor-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+
+    /* Option A defaults: Flat Native Fit (matches existing geometry cleanly) */
+    --weave-ctrl-radius: 6px;
+    --weave-card-radius: 10px;
+    --weave-badge-radius: 4px;
+    --weave-canvas-bg: var(--agy-bg);
+  }
+
+  [data-theme="light"] {
+    --agy-rev: #4d7c0f;
+  }
+
+  /* Option B: Soft Onyx Contrast (minor styling variant — recessed canvas + pill controls/badges) */
+  [data-style-option="b"] {
+    --weave-ctrl-radius: 9999px;
+    --weave-card-radius: 12px;
+    --weave-badge-radius: 9999px;
+    --weave-canvas-bg: var(--agy-surface);
+  }
+
+  html, body {
+    background-color: var(--weave-canvas-bg) !important;
+    color: var(--agy-fg) !important;
+    font-family: var(--agy-font);
+    margin: 0; padding: 0; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header Bar (identical layout, bound to host vars) */
+  .agy-header {
+    position: sticky; top: 0; z-index: 20; width: 100%;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 7px 12px; min-height: 40px;
+    background-color: var(--agy-bg);
+    border-bottom: 1px solid var(--agy-line);
+  }
+  .agy-header-left { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 auto; flex-wrap: wrap; }
+  .agy-header-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  .agy-select-wrap { position: relative; display: inline-flex; align-items: center; min-width: 0; max-width: min(100%, 280px); }
+  .agy-select {
+    appearance: none; -webkit-appearance: none;
+    height: 26px; width: 100%; max-width: 280px; padding: 0 24px 0 10px;
+    border-radius: var(--weave-ctrl-radius);
+    border: 1px solid var(--agy-card-line);
+    background-color: var(--agy-field); color: var(--agy-fg);
+    font-family: var(--agy-mono); font-size: 11.5px; line-height: 24px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; outline: none;
+  }
+  .agy-select:hover { background-color: var(--agy-hover); }
+  .agy-select:focus-visible { border-color: var(--agy-ring); box-shadow: 0 0 0 1px var(--agy-ring); }
+  .agy-select option, .agy-select optgroup { background-color: var(--agy-card); color: var(--agy-fg); font-family: var(--agy-mono); }
+  .agy-select-chevron { position: absolute; right: 8px; width: 12px; height: 12px; color: var(--agy-fg-muted); pointer-events: none; }
+
+  .agy-worktree-badge {
+    display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px;
+    border-radius: var(--weave-badge-radius); font-family: var(--agy-mono); font-size: 10.5px; font-weight: 500;
+    color: color-mix(in srgb, var(--agy-warn) 82%, var(--agy-fg));
+    background-color: color-mix(in srgb, var(--agy-warn) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--agy-warn) 28%, transparent);
+    flex-shrink: 0;
+  }
+  .agy-live { display: inline-flex; align-items: center; gap: 5px; height: 22px; font-size: 11px; color: var(--agy-fg-muted); flex-shrink: 0; }
+  .pulsing-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--agy-ok); display: inline-block; flex-shrink: 0; }
+
+  .agy-theme-btn, .agy-sync-btn, .agy-raw-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    height: 26px; padding: 0 8px; border-radius: var(--weave-ctrl-radius);
+    border: 1px solid transparent; background-color: transparent;
+    color: var(--agy-fg-muted); font-size: 11.5px; font-weight: 500; cursor: pointer;
+  }
+  .agy-theme-btn { width: 26px; padding: 0; }
+  [data-style-option="b"] .agy-sync-btn { background-color: var(--agy-field); border-color: var(--agy-card-line); color: var(--agy-fg-secondary); }
+  .agy-theme-btn:hover, .agy-sync-btn:hover, .agy-raw-btn:hover { background-color: var(--agy-hover); color: var(--agy-fg); }
+  .agy-theme-btn:focus-visible, .agy-sync-btn:focus-visible, .agy-raw-btn:focus-visible { outline: 2px solid var(--agy-ring); outline-offset: 1px; }
+  .agy-theme-icon { width: 13px; height: 13px; flex-shrink: 0; }
+  .agy-sync-icon, .weave-icon { width: 12px; height: 12px; flex-shrink: 0; display: inline-block; vertical-align: middle; }
+
+  /* Stepper (exact same 20px circle layout — neon box-shadows removed!) */
+  .stepper-line {
+    position: absolute; top: 10px; height: 2px;
+    background-color: var(--agy-card-line);
+    transform: translateY(-50%); z-index: 0;
+  }
+  .stage-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; z-index: 10; transition: transform 0.15s ease; }
+  .stage-dot-completed { background-color: var(--agy-ok); }
+  .stage-dot-awaiting-review { background-color: var(--agy-rev); }
+  .stage-dot-in-progress { background-color: var(--agy-warn); }
+  .stage-dot-blocked { background-color: var(--agy-err); }
+  .stage-dot-flashing {
+    background-color: var(--agy-warn);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--agy-warn) 24%, transparent);
+    animation: calm-dot-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes calm-dot-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--agy-warn) 26%, transparent); }
+    50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--agy-warn) 10%, transparent); }
+  }
+  .stage-dot-pending { background-color: var(--agy-well); border: 1.5px solid var(--agy-card-line); }
+  .stage-dot-selected { transform: scale(1.18); outline: 2px solid var(--agy-accent); outline-offset: 2px; }
+  .weave-stepper-title { color: var(--agy-fg-secondary) !important; }
+  .weave-stepper-title-active { color: var(--agy-fg) !important; }
+  .weave-stepper-item .text-slate-500 { color: var(--agy-fg-muted) !important; }
+
+  /* Stage Row, Group, and Agent Cards (exact same structure, bound to host tokens) */
+  .weave-stage-title, .weave-group-title, .text-slate-200, .text-white, .weave-stage-panel h3 { color: var(--agy-fg) !important; }
+  .weave-stage-row:hover .weave-stage-title { color: var(--agy-accent) !important; }
+  .weave-stage-divider { background-color: var(--agy-line) !important; }
+  .weave-sep-dot { width: 3px; height: 3px; border-radius: 50%; background-color: var(--agy-fg-subtle); display: inline-block; vertical-align: middle; }
+  .weave-log-bullet { width: 4px; height: 4px; border-radius: 50%; background-color: var(--agy-fg-subtle); display: inline-block; vertical-align: middle; margin-right: 6px; }
+
+  .weave-card, .weave-stage-panel {
+    background-color: var(--agy-card) !important;
+    border-color: var(--agy-card-line) !important;
+    border-radius: var(--weave-card-radius) !important;
+    box-shadow: none !important;
+  }
+  [data-theme="light"][data-style-option="b"] .weave-card {
+    box-shadow: 0 1px 2px rgba(10, 12, 18, 0.05) !important;
+  }
+  .weave-card-header { background-color: transparent !important; }
+  .weave-card-header:hover, .weave-group-header:hover { background-color: var(--agy-hover) !important; }
+  .weave-card-expanded {
+    background-color: color-mix(in srgb, var(--agy-fg) 2%, var(--agy-bg)) !important;
+    border-color: var(--agy-line) !important;
+  }
+  .weave-card-toolbar, .weave-stage-panel-wrap { border-color: var(--agy-line) !important; }
+  .weave-code-box {
+    background-color: var(--agy-well) !important;
+    border-color: var(--agy-card-line) !important;
+    color: var(--agy-fg-secondary) !important;
+  }
+  .weave-group, .weave-empty-state {
+    background-color: var(--agy-surface) !important;
+    border-color: var(--agy-card-line) !important;
+    border-radius: var(--weave-card-radius) !important;
+    color: var(--agy-fg-muted) !important;
+  }
+
+  /* Deliverable Chip */
+  .weave-deliverable-chip {
+    background-color: var(--agy-field) !important;
+    color: var(--agy-fg-secondary) !important;
+    border-color: var(--agy-card-line) !important;
+    border-radius: var(--weave-badge-radius) !important;
+  }
+  .weave-deliverable-chip:hover {
+    background-color: var(--agy-hover) !important;
+    color: var(--agy-fg) !important;
+  }
+  .weave-deliverable-chip-active {
+    background-color: color-mix(in srgb, var(--agy-accent) 13%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-accent) 88%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-accent) 38%, transparent) !important;
+    box-shadow: none !important;
+  }
+
+  /* Harmonized Semantic Status Badges (replaces blinding solid vivid-pulse!) */
+  .weave-badge {
+    border-radius: var(--weave-badge-radius) !important;
+    font-weight: 600 !important;
+  }
+  .weave-badge-completed {
+    background-color: color-mix(in srgb, var(--agy-ok) 14%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-ok) 85%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-ok) 32%, transparent) !important;
+  }
+  .weave-badge-review {
+    background-color: color-mix(in srgb, var(--agy-rev) 15%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-rev) 85%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-rev) 34%, transparent) !important;
+  }
+  /* Active in_progress badge now matches the restrained translucent badge family */
+  .vivid-pulse {
+    animation: calm-badge-pulse 2s ease-in-out infinite !important;
+    background-color: color-mix(in srgb, var(--agy-warn) 15%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-warn) 88%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-warn) 38%, transparent) !important;
+    box-shadow: none !important;
+  }
+  @keyframes calm-badge-pulse {
+    0%, 100% { border-color: color-mix(in srgb, var(--agy-warn) 44%, transparent); }
+    50% { border-color: color-mix(in srgb, var(--agy-warn) 18%, transparent); }
+  }
+  .weave-badge-waiting {
+    background-color: color-mix(in srgb, var(--agy-warn) 11%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-warn) 82%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-warn) 26%, transparent) !important;
+  }
+  .weave-badge-blocked {
+    background-color: color-mix(in srgb, var(--agy-err) 14%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-err) 86%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-err) 34%, transparent) !important;
+  }
+  .weave-badge-neutral {
+    background-color: var(--agy-field) !important;
+    color: var(--agy-fg-muted) !important;
+    border-color: var(--agy-card-line) !important;
+  }
+
+  /* Toolbar Actions & Frontmatter / Log Contrast */
+  .weave-chat-btn {
+    background-color: color-mix(in srgb, var(--agy-accent) 13%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-accent) 86%, var(--agy-fg)) !important;
+    border-color: color-mix(in srgb, var(--agy-accent) 32%, transparent) !important;
+    border-radius: var(--weave-badge-radius) !important;
+  }
+  .weave-copy-btn {
+    background-color: var(--agy-field) !important;
+    color: var(--agy-fg-secondary) !important;
+    border-color: var(--agy-card-line) !important;
+    border-radius: var(--weave-badge-radius) !important;
+  }
+  .weave-fm-key, .weave-code-box .text-indigo-300 { color: color-mix(in srgb, var(--agy-accent) 85%, var(--agy-fg)) !important; }
+  .weave-fm-str, .weave-code-box .text-amber-200 { color: color-mix(in srgb, var(--agy-warn) 82%, var(--agy-fg)) !important; }
+  .weave-fm-num, .weave-code-box .text-cyan-300 { color: var(--link, var(--agy-accent)) !important; }
+  .weave-input-ok {
+    background-color: color-mix(in srgb, var(--agy-ok) 13%, transparent) !important;
+    border-color: color-mix(in srgb, var(--agy-ok) 32%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-ok) 86%, var(--agy-fg)) !important;
+  }
+  .weave-input-warn {
+    background-color: color-mix(in srgb, var(--agy-warn) 13%, transparent) !important;
+    border-color: color-mix(in srgb, var(--agy-warn) 32%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-warn) 86%, var(--agy-fg)) !important;
+  }
+  .weave-input-missing {
+    background-color: color-mix(in srgb, var(--agy-err) 13%, transparent) !important;
+    border-color: color-mix(in srgb, var(--agy-err) 32%, transparent) !important;
+    color: color-mix(in srgb, var(--agy-err) 86%, var(--agy-fg)) !important;
+  }
+  .weave-log-entry strong { color: var(--agy-fg) !important; }
+  .weave-log-entry .text-slate-300, .weave-code-box .text-slate-300 { color: var(--agy-fg-secondary) !important; }
+  .text-slate-400, .text-slate-500, .text-slate-600 { color: var(--agy-fg-muted) !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+  <style>
+    .mock-ctrl-bar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 8px 16px; background: var(--agy-card); border-bottom: 1px solid var(--agy-card-line); font-size: 12px;
+    }
+    .mock-pill-btn {
+      height: 26px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--agy-card-line);
+      background: var(--agy-field); color: var(--agy-fg-secondary); cursor: pointer; font-size: 11.5px; font-weight: 500;
+    }
+    .mock-pill-btn[aria-pressed="true"] {
+      background: var(--agy-accent); color: #ffffff; border-color: var(--agy-accent);
+    }
+    .mock-section-label {
+      font-family: var(--agy-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--agy-fg-muted);
+      max-width: 56rem; margin: 16px auto 6px; padding: 0 4px;
+    }
+    .mock-frame {
+      max-width: 56rem; margin: 0 auto 20px; border: 1px solid var(--agy-card-line);
+      border-radius: 10px; overflow: hidden; background: var(--weave-canvas-bg);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-xs select-none" style="padding-bottom: 32px;">
+  <div class="mock-ctrl-bar" id="mock-toolbar">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <strong>Minor Styling Option:</strong>
+      <button id="btn-a" class="mock-pill-btn" aria-pressed="true" onclick="setOpt('a')">Option A: Flat Native Fit</button>
+      <button id="btn-b" class="mock-pill-btn" aria-pressed="false" onclick="setOpt('b')">Option B: Soft Onyx Pill Contrast</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <label>Antigravity Host Preset:
+        <select id="preset-sel" class="agy-select" style="width:auto;max-width:none;" onchange="setPreset(this.value)">
+          <option value="onyx-dark">Onyx Dark</option>
+          <option value="onyx-light">Onyx Light</option>
+          <option value="catppuccin-dark">Catppuccin Mocha</option>
+          <option value="solarized-light">Solarized Light</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="mock-main">
+    <div class="mock-section-label">1. Main Pipeline View (Same DOM &amp; Layout as Inventory — Host-Themed, Restrained Status Badges)</div>
+    <div class="mock-frame">
+      
+        <header class="agy-header" data-weave-header="true">
+          <div class="agy-header-left">
+            <span class="agy-select-wrap">
+              <select id="show-select" class="agy-select" aria-label="Select pipeline run"><option value="runs/kidswiki_rocket_age4" selected>runs/kidswiki_rocket_age4</option></select>
+              <svg class="agy-select-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4.5 6.25L8 9.75l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span id="worktree-badge-root"></span>
+          </div>
+          <div class="agy-header-right">
+            <span class="agy-live" role="status" title="Live Auto-Sync Active">
+              <span class="pulsing-dot" aria-hidden="true"></span>
+              <span class="agy-live-label">Live</span>
+            </span>
+            <button id="theme-toggle-btn" type="button" class="agy-theme-btn" data-theme-state="dark" aria-pressed="false" aria-label="Switch to light layout" title="Switch to light layout">
+              <svg class="agy-theme-icon" data-theme-icon="sun" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M12.42 3.58l-1.06 1.06M4.64 11.36l-1.06 1.06" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            
+            <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
+              <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Sync</span>
+            </button>
+          </div>
+        </header>
+      
+      <div class="max-w-4xl mx-auto p-3 space-y-4">
+        <section class="py-2.5 px-1"><div class="relative my-2"><div class="stepper-line" style="display: block; left: 25.00%; right: 25.00%;"></div><div class="relative z-10 flex justify-between items-start">
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-flashing" title="STAGE 1"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 1</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Editorial">Editorial</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-pending" title="STAGE 2"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 2</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Publishing">Publishing</span>
+      </div></div></div></section>
+        <main><div class="space-y-4"><div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="stage_1"><div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 rotate-90"><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage 1</span><span class="text-xs font-normal text-slate-400">- Editorial</span><span class="weave-sep-dot" aria-hidden="true"></span><span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400"><svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-running-timer data-start-ms="1795647000000" data-prior-ms="0" data-base-seconds="39" data-calc-time="1795647039000">39s</span></span></div><div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">3 Agents</span></div><div class="space-y-2 pl-0.5"><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s1_writer"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Writer</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1"><button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all weave-deliverable-chip" data-deliverable-toggle="card_s1_writer"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>draft.md</span></button><span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s1_writer">completed</span></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s1_fact_checker"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Fact Checker</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1"><button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all weave-deliverable-chip" data-deliverable-toggle="card_s1_fact_checker"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>fact_audit.md</span></button><span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge vivid-pulse text-[10px] font-bold border font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s1_fact_checker">in progress: 01 verify</span></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s1_age_checker"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Age Checker</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1"><button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all weave-deliverable-chip" data-deliverable-toggle="card_s1_age_checker"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>age_audit.md</span></button><span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge vivid-pulse text-[10px] font-bold border font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s1_age_checker">in progress: 01 readability</span></div></div></div></div></div></div></main>
+      </div>
+    </div>
+  </div>
+
+  <div id="mock-all-components">
+    <div class="mock-section-label">2. Header Variants, All 6 Stepper States, Expanded Drawers, Nested Group &amp; StagePanel</div>
+    <div class="mock-frame">
+      
+        <header class="agy-header" data-weave-header="true">
+          <div class="agy-header-left">
+            <span class="agy-select-wrap">
+              <select id="show-select" class="agy-select" aria-label="Select pipeline run"><optgroup label="Main Workspace"><option value="runs/kidswiki_rocket_age4" >runs/kidswiki_rocket_age4</option></optgroup><optgroup label="Worktree: issue-27-update-ui"><option value=".solony/worktrees/issue-27-update-ui/runs/kidswiki_ui_audit" selected>runs/kidswiki_ui_audit</option></optgroup></select>
+              <svg class="agy-select-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4.5 6.25L8 9.75l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span id="worktree-badge-root"><span id="worktree-badge" class="agy-worktree-badge" title="Executing in Git Worktree: issue-27-update-ui"><svg class="w-3 h-3 fill-current shrink-0" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path></svg><span>issue-27-update-ui</span></span></span>
+          </div>
+          <div class="agy-header-right">
+            <span class="agy-live" role="status" title="Live Auto-Sync Active">
+              <span class="pulsing-dot" aria-hidden="true"></span>
+              <span class="agy-live-label">Live</span>
+            </span>
+            <button id="theme-toggle-btn" type="button" class="agy-theme-btn" data-theme-state="dark" aria-pressed="false" aria-label="Switch to light layout" title="Switch to light layout">
+              <svg class="agy-theme-icon" data-theme-icon="sun" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.58 3.58l1.06 1.06M11.36 11.36l1.06 1.06M12.42 3.58l-1.06 1.06M4.64 11.36l-1.06 1.06" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            </button>
+            <button id="raw-markdown-btn" type="button" class="agy-raw-btn" title="View Raw Markdown"><svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>View Raw Markdown</span></button>
+            <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
+              <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Sync</span>
+            </button>
+          </div>
+        </header>
+      
+      <div class="max-w-4xl mx-auto p-3 space-y-4">
+        <section class="py-2.5 px-1"><div class="relative my-2"><div class="stepper-line" style="display: block; left: 8.33%; right: 8.33%;"></div><div class="relative z-10 flex justify-between items-start">
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-completed" title="STAGE 1"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 1</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Completed">Completed</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-flashing" title="STAGE 2"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 2</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Active Flash">Active Flash</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-awaiting-review" title="STAGE 3"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 3</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Awaiting Rev">Awaiting Rev</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-in-progress" title="STAGE 4"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 4</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="In Progress">In Progress</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-blocked" title="STAGE 5"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title text-slate-300 text-center">Stage 5</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Blocked">Blocked</span>
+      </div>
+      <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center">
+        <div class="stage-dot stage-dot-pending stage-dot-selected" title="STAGE 6"></div>
+        <span class="mt-2 text-[11px] font-bold weave-stepper-title-active text-white text-center">Stage 6</span>
+        <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="Selected">Selected</span>
+      </div></div></div></section>
+        <div class="space-y-4"><div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="stage_2"><div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 rotate-90"><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage 2</span><span class="text-xs font-normal text-slate-400">- Review &amp; Media</span><span class="weave-sep-dot" aria-hidden="true"></span><span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400"><svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-running-timer data-start-ms="1795646994000" data-prior-ms="0" data-base-seconds="45" data-calc-time="1795647039000">45s</span></span></div><div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">6 Agents</span></div><div class="space-y-2 pl-0.5"><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_illustrator"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 rotate-90"><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Illustrator</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1"><button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all weave-deliverable-chip weave-deliverable-chip-active" data-deliverable-toggle="card_s2_illustrator"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>2 outputs</span></button><span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge weave-badge-review bg-lime-500/20 text-lime-300 border border-lime-500/40 font-semibold font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_illustrator">awaiting review</span></div></div><div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2"><div class="flex items-center gap-2 font-mono"><span class="inline-flex items-center gap-1.5 text-slate-200 text-[11px] font-semibold"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>2 outputs</span></span><span class="text-slate-500 text-[11px]">(Deliverable)</span><button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="card_s2_illustrator"><svg class="weave-icon weave-copy-icon" data-weave-icon="copy" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="5.5" width="7.75" height="8.25" rx="1.25" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 5.5V3.5a1.25 1.25 0 0 0-1.25-1.25H4A1.25 1.25 0 0 0 2.75 3.5v6.25A1.25 1.25 0 0 0 4 11h1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Copy</span></button><span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time"><svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>41s</span></div><button type="button" class="text-[11px] text-slate-400 hover:text-slate-200 font-mono underline" data-status-toggle="card_s2_illustrator"><span class="inline-flex items-center gap-1"><span>View Updates</span><svg class="weave-icon" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.25v9.5M4.5 9.25L8 12.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div><div data-agent-body="card_s2_illustrator" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30"><span class="inline-flex items-center gap-1.5 text-slate-300 font-bold"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>kidswiki_graph.svg</span></span>
+<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MjAgNTkwIiB3aWR0aD0iNzIwIiBoZWlnaHQ9IjU5MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJLaWRzV2lraSBpbmR1Y2VkIHRyaXBhcnRpdGUgd29ya2Zsb3cgZ3JhcGgiPg0KICA8c3R5bGU+DQogICAgLmNhbnZhcyB7IGZpbGw6ICNmZmZmZmY7IHN0cm9rZTogI2UyZThmMDsgc3Ryb2tlLXdpZHRoOiAxLjU7IH0NCiAgICAuZWRnZSB7IGZpbGw6IG5vbmU7IHN0cm9rZTogIzMzNDE1NTsgc3Ryb2tlLXdpZHRoOiAxLjY7IH0NCiAgICAuZWRnZS1kYXNoZWQgeyBmaWxsOiBub25lOyBzdHJva2U6ICMzMzQxNTU7IHN0cm9rZS13aWR0aDogMS42OyBzdHJva2UtZGFzaGFycmF5OiA1IDQ7IH0NCiAgICAuYXJyb3ctaGVhZCB7IGZpbGw6ICMzMzQxNTU7IH0NCiAgICAucGFyYW0geyBmaWxsOiAjZjhmYWZjOyBzdHJva2U6ICMxZTI5M2I7IHN0cm9rZS13aWR0aDogMS42OyB9DQogICAgLmFnZW50IHsgZmlsbDogI2VmZjZmZjsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuODsgfQ0KICAgIC5maWxlIHsgZmlsbDogI2ZmZmZmZjsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuNjsgfQ0KICAgIC5nYXRlIHsgZmlsbDogI2ZlZmNlODsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuNjsgc3Ryb2tlLWRhc2hhcnJheTogNiA0OyB9DQogICAgLnRpdGxlIHsgZm9udC1mYW1pbHk6IHVpLXNhbnMtc2VyaWYsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZjsgZm9udC1zaXplOiAxMy41cHg7IGZvbnQtd2VpZ2h0OiA3MDA7IGZpbGw6ICMwZjE3MmE7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0NCiAgICAuY29kZS10aXRsZSB7IGZvbnQtZmFtaWx5OiB1aS1tb25vc3BhY2UsIFNGTW9uby1SZWd1bGFyLCBNZW5sbywgQ29uc29sYXMsIG1vbm9zcGFjZTsgZm9udC1zaXplOiAxM3B4OyBmb250LXdlaWdodDogNzAwOyBmaWxsOiAjMGYxNzJhOyB0ZXh0LWFuY2hvcjogbWlkZGxlOyB9DQogICAgLnN1YiB7IGZvbnQtZmFtaWx5OiB1aS1zYW5zLXNlcmlmLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7IGZvbnQtc2l6ZTogMTFweDsgZmlsbDogIzQ3NTU2OTsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQ0KICAgIC5jb2RlLXN1YiB7IGZvbnQtZmFtaWx5OiB1aS1tb25vc3BhY2UsIFNGTW9uby1SZWd1bGFyLCBNZW5sbywgQ29uc29sYXMsIG1vbm9zcGFjZTsgZm9udC1zaXplOiAxMC41cHg7IGZpbGw6ICM0NzU1Njk7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0NCg0KICAgIEBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6IGRhcmspIHsNCiAgICAgIC5jYW52YXMgeyBmaWxsOiAjMGQxMTE3OyBzdHJva2U6ICMzMDM2M2Q7IH0NCiAgICAgIC5lZGdlLCAuZWRnZS1kYXNoZWQgeyBzdHJva2U6ICM5NGEzYjg7IH0NCiAgICAgIC5hcnJvdy1oZWFkIHsgZmlsbDogIzk0YTNiODsgfQ0KICAgICAgLnBhcmFtIHsgZmlsbDogIzE2MWIyMjsgc3Ryb2tlOiAjY2JkNWUxOyB9DQogICAgICAuYWdlbnQgeyBmaWxsOiAjMTcyNTU0OyBzdHJva2U6ICM5M2M1ZmQ7IH0NCiAgICAgIC5maWxlIHsgZmlsbDogIzE2MWIyMjsgc3Ryb2tlOiAjY2JkNWUxOyB9DQogICAgICAuZ2F0ZSB7IGZpbGw6ICMyNzIzMTI7IHN0cm9rZTogI2ZkZTA0NzsgfQ0KICAgICAgLnRpdGxlLCAuY29kZS10aXRsZSB7IGZpbGw6ICNmOGZhZmM7IH0NCiAgICAgIC5zdWIsIC5jb2RlLXN1YiB7IGZpbGw6ICM5NGEzYjg7IH0NCiAgICB9DQogIDwvc3R5bGU+DQoNCiAgPGRlZnM+DQogICAgPG1hcmtlciBpZD0iYXJyb3ciIHZpZXdCb3g9IjAgMCAxMCAxMCIgcmVmWD0iOC41IiByZWZZPSI1IiBtYXJrZXJXaWR0aD0iNi41IiBtYXJrZXJIZWlnaHQ9IjYuNSIgb3JpZW50PSJhdXRvIj4NCiAgICAgIDxwYXRoIGQ9Ik0gMCAxLjIgTCA5LjUgNSBMIDAgOC44IHoiIGNsYXNzPSJhcnJvdy1oZWFkIiAvPg0KICAgIDwvbWFya2VyPg0KICA8L2RlZnM+DQoNCiAgPCEtLSBPdXRlciBDYXJkIC0tPg0KICA8cmVjdCBjbGFzcz0iY2FudmFzIiB4PSIyIiB5PSIyIiB3aWR0aD0iNzE2IiBoZWlnaHQ9IjU4NiIgcng9IjEyIiAvPg0KDQogIDwhLS0gRWRnZXMgLS0+DQogIDwhLS0gUGFyYW1ldGVycyB0byBXcml0ZXIgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDI2MiA2NiBMIDMyNSAxMDEiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSA0NTggNjYgTCAzOTUgMTAxIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCg0KICA8IS0tIFBhcmFtZXRlcnMgdG8gQ2hlY2tlcnMgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDE4NiA2NiBDIDE0MiAxMjAsIDEzOCAyMDUsIDE1NSAyNjgiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSA1MzQgNjYgQyA1NzggMTIwLCA1ODIgMjA1LCA1NjUgMjY4IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCg0KICA8IS0tIFdyaXRlciB0byAwMV9kcmFmdC5tZCAtLT4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gMzYwIDE0NiBMIDM2MCAxODIiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gMDFfZHJhZnQubWQgdG8gQ2hlY2tlcnMgYW5kIEh1bWFuIFJldmlldyBHYXRlIC0tPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSAyOTYgMjI4IEwgMjEyIDI2OSIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiIC8+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDM2MCAyMjggTCAzNjAgMzU0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNDI0IDIyOCBMIDUwOCAyNjkiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gQ2hlY2tlcnMgdG8gQXVkaXQgRmlsZXMgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDE2NSAzMTQgTCAxNjUgMzU0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNTU1IDMxNCBMIDU1NSAzNTQiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gQXVkaXQgRmVlZGJhY2sgTG9vcHMgYmFjayB0byBXcml0ZXIgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDgzIDM3OCBDIDIwIDM2MCwgMjAgMTI0LCAyNzggMTI0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNjM3IDM3OCBDIDcwMCAzNjAsIDcwMCAxMjQsIDQ0MiAxMjQiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gR2F0ZSB0byBJbGx1c3RyYXRvciB0byAwMl9pbGx1c3RyYXRpb24ucG5nIC0tPg0KICA8cGF0aCBjbGFzcz0iZWRnZS1kYXNoZWQiIGQ9Ik0gMzYwIDQwMCBMIDM2MCA0NDAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSAzNjAgNDg2IEwgMzYwIDUyMiIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiIC8+DQoNCiAgPCEtLSBSb3cgMTogUGFyYW1ldGVycyAoSGV4YWdvbnMpIC0tPg0KICA8cG9seWdvbiBjbGFzcz0icGFyYW0iIHBvaW50cz0iMTc2LDIyIDI4NCwyMiAzMDAsNDQgMjg0LDY2IDE3Niw2NiAxNjAsNDQiIC8+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXRpdGxlIiB4PSIyMzAiIHk9IjQxIj50b3BpYzwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iMjMwIiB5PSI1NyI+IlJvY2tldCI8L3RleHQ+DQoNCiAgPHBvbHlnb24gY2xhc3M9InBhcmFtIiBwb2ludHM9IjQzNiwyMiA1NDQsMjIgNTYwLDQ0IDU0NCw2NiA0MzYsNjYgNDIwLDQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iNDkwIiB5PSI0MSI+dGFyZ2V0X2FnZTwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iNDkwIiB5PSI1NyI+My0xMjwvdGV4dD4NCg0KICA8IS0tIFJvdyAyOiBXcml0ZXIgQWdlbnQgLS0+DQogIDxyZWN0IGNsYXNzPSJhZ2VudCIgeD0iMjgwIiB5PSIxMDIiIHdpZHRoPSIxNjAiIGhlaWdodD0iNDQiIHJ4PSI5IiAvPg0KICA8dGV4dCBjbGFzcz0idGl0bGUiIHg9IjM2MCIgeT0iMTIxIj5Xcml0ZXI8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXN1YiIgeD0iMzYwIiB5PSIxMzgiPnN0YWdlMV93cml0ZXI8L3RleHQ+DQoNCiAgPCEtLSBSb3cgMzogMDFfZHJhZnQubWQgRmlsZSAtLT4NCiAgPHJlY3QgY2xhc3M9ImZpbGUiIHg9IjI3MiIgeT0iMTg0IiB3aWR0aD0iMTc2IiBoZWlnaHQ9IjQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iMzYwIiB5PSIyMDMiPjAxX2RyYWZ0Lm1kPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0ic3ViIiB4PSIzNjAiIHk9IjIyMCI+UHJvc2UgKyBwbGFjZWhvbGRlcjwvdGV4dD4NCg0KICA8IS0tIFJvdyA0OiBQYXJhbGxlbCBDaGVja2VycyAtLT4NCiAgPHJlY3QgY2xhc3M9ImFnZW50IiB4PSI4MyIgeT0iMjcwIiB3aWR0aD0iMTY0IiBoZWlnaHQ9IjQ0IiByeD0iOSIgLz4NCiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSIxNjUiIHk9IjI4OSI+RmFjdCBDaGVja2VyPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0iY29kZS1zdWIiIHg9IjE2NSIgeT0iMzA2Ij5zdGFnZTFfZmFjdF9jaGVja2VyPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJhZ2VudCIgeD0iNDczIiB5PSIyNzAiIHdpZHRoPSIxNjQiIGhlaWdodD0iNDQiIHJ4PSI5IiAvPg0KICA8dGV4dCBjbGFzcz0idGl0bGUiIHg9IjU1NSIgeT0iMjg5Ij5BZ2UgQ2hlY2tlcjwvdGV4dD4NCiAgPHRleHQgY2xhc3M9ImNvZGUtc3ViIiB4PSI1NTUiIHk9IjMwNiI+c3RhZ2UxX2FnZV9jaGVja2VyPC90ZXh0Pg0KDQogIDwhLS0gUm93IDU6IEF1ZGl0IEZpbGVzICYgSHVtYW4gUmV2aWV3IEdhdGUgLS0+DQogIDxyZWN0IGNsYXNzPSJmaWxlIiB4PSI4MyIgeT0iMzU2IiB3aWR0aD0iMTY0IiBoZWlnaHQ9IjQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iMTY1IiB5PSIzNzUiPmZhY3RfYXVkaXQubWQ8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJzdWIiIHg9IjE2NSIgeT0iMzkyIj5GYWN0dWFsIGNyaXRpcXVlPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJnYXRlIiB4PSIyNjgiIHk9IjM1NiIgd2lkdGg9IjE4NCIgaGVpZ2h0PSI0NCIgcng9IjMiIC8+DQogIDx0ZXh0IGNsYXNzPSJ0aXRsZSIgeD0iMzYwIiB5PSIzNzUiPkh1bWFuIFJldmlldyBHYXRlPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0ic3ViIiB4PSIzNjAiIHk9IjM5MiI+RWRpdG9yaWFsIGFwcHJvdmFsPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJmaWxlIiB4PSI0NzMiIHk9IjM1NiIgd2lkdGg9IjE2NCIgaGVpZ2h0PSI0NCIgLz4NCiAgPHRleHQgY2xhc3M9ImNvZGUtdGl0bGUiIHg9IjU1NSIgeT0iMzc1Ij5hZ2VfYXVkaXQubWQ8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJzdWIiIHg9IjU1NSIgeT0iMzkyIj5SZWFkYWJpbGl0eSBjcml0aXF1ZTwvdGV4dD4NCg0KICA8IS0tIFJvdyA2OiBJbGx1c3RyYXRvciBBZ2VudCAtLT4NCiAgPHJlY3QgY2xhc3M9ImFnZW50IiB4PSIyNzYiIHk9IjQ0MiIgd2lkdGg9IjE2OCIgaGVpZ2h0PSI0NCIgcng9IjkiIC8+DQogIDx0ZXh0IGNsYXNzPSJ0aXRsZSIgeD0iMzYwIiB5PSI0NjEiPklsbHVzdHJhdG9yPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0iY29kZS1zdWIiIHg9IjM2MCIgeT0iNDc4Ij5zdGFnZTJfaWxsdXN0cmF0b3I8L3RleHQ+DQoNCiAgPCEtLSBSb3cgNzogMDJfaWxsdXN0cmF0aW9uLnBuZyBGaWxlIC0tPg0KICA8cmVjdCBjbGFzcz0iZmlsZSIgeD0iMjcyIiB5PSI1MjQiIHdpZHRoPSIxNzYiIGhlaWdodD0iNDQiIC8+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXRpdGxlIiB4PSIzNjAiIHk9IjU0MyI+MDJfaWxsdXN0cmF0aW9uLnBuZzwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iMzYwIiB5PSI1NjAiPlN5bnRoZXNpemVkIGltYWdlPC90ZXh0Pg0KPC9zdmc+DQo=" alt="kidswiki_graph.svg" data-media-preview="image" data-media-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MjAgNTkwIiB3aWR0aD0iNzIwIiBoZWlnaHQ9IjU5MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJLaWRzV2lraSBpbmR1Y2VkIHRyaXBhcnRpdGUgd29ya2Zsb3cgZ3JhcGgiPg0KICA8c3R5bGU+DQogICAgLmNhbnZhcyB7IGZpbGw6ICNmZmZmZmY7IHN0cm9rZTogI2UyZThmMDsgc3Ryb2tlLXdpZHRoOiAxLjU7IH0NCiAgICAuZWRnZSB7IGZpbGw6IG5vbmU7IHN0cm9rZTogIzMzNDE1NTsgc3Ryb2tlLXdpZHRoOiAxLjY7IH0NCiAgICAuZWRnZS1kYXNoZWQgeyBmaWxsOiBub25lOyBzdHJva2U6ICMzMzQxNTU7IHN0cm9rZS13aWR0aDogMS42OyBzdHJva2UtZGFzaGFycmF5OiA1IDQ7IH0NCiAgICAuYXJyb3ctaGVhZCB7IGZpbGw6ICMzMzQxNTU7IH0NCiAgICAucGFyYW0geyBmaWxsOiAjZjhmYWZjOyBzdHJva2U6ICMxZTI5M2I7IHN0cm9rZS13aWR0aDogMS42OyB9DQogICAgLmFnZW50IHsgZmlsbDogI2VmZjZmZjsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuODsgfQ0KICAgIC5maWxlIHsgZmlsbDogI2ZmZmZmZjsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuNjsgfQ0KICAgIC5nYXRlIHsgZmlsbDogI2ZlZmNlODsgc3Ryb2tlOiAjMWUyOTNiOyBzdHJva2Utd2lkdGg6IDEuNjsgc3Ryb2tlLWRhc2hhcnJheTogNiA0OyB9DQogICAgLnRpdGxlIHsgZm9udC1mYW1pbHk6IHVpLXNhbnMtc2VyaWYsIC1hcHBsZS1zeXN0ZW0sIEJsaW5rTWFjU3lzdGVtRm9udCwgIlNlZ29lIFVJIiwgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZjsgZm9udC1zaXplOiAxMy41cHg7IGZvbnQtd2VpZ2h0OiA3MDA7IGZpbGw6ICMwZjE3MmE7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0NCiAgICAuY29kZS10aXRsZSB7IGZvbnQtZmFtaWx5OiB1aS1tb25vc3BhY2UsIFNGTW9uby1SZWd1bGFyLCBNZW5sbywgQ29uc29sYXMsIG1vbm9zcGFjZTsgZm9udC1zaXplOiAxM3B4OyBmb250LXdlaWdodDogNzAwOyBmaWxsOiAjMGYxNzJhOyB0ZXh0LWFuY2hvcjogbWlkZGxlOyB9DQogICAgLnN1YiB7IGZvbnQtZmFtaWx5OiB1aS1zYW5zLXNlcmlmLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICJTZWdvZSBVSSIsIEhlbHZldGljYSwgQXJpYWwsIHNhbnMtc2VyaWY7IGZvbnQtc2l6ZTogMTFweDsgZmlsbDogIzQ3NTU2OTsgdGV4dC1hbmNob3I6IG1pZGRsZTsgfQ0KICAgIC5jb2RlLXN1YiB7IGZvbnQtZmFtaWx5OiB1aS1tb25vc3BhY2UsIFNGTW9uby1SZWd1bGFyLCBNZW5sbywgQ29uc29sYXMsIG1vbm9zcGFjZTsgZm9udC1zaXplOiAxMC41cHg7IGZpbGw6ICM0NzU1Njk7IHRleHQtYW5jaG9yOiBtaWRkbGU7IH0NCg0KICAgIEBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6IGRhcmspIHsNCiAgICAgIC5jYW52YXMgeyBmaWxsOiAjMGQxMTE3OyBzdHJva2U6ICMzMDM2M2Q7IH0NCiAgICAgIC5lZGdlLCAuZWRnZS1kYXNoZWQgeyBzdHJva2U6ICM5NGEzYjg7IH0NCiAgICAgIC5hcnJvdy1oZWFkIHsgZmlsbDogIzk0YTNiODsgfQ0KICAgICAgLnBhcmFtIHsgZmlsbDogIzE2MWIyMjsgc3Ryb2tlOiAjY2JkNWUxOyB9DQogICAgICAuYWdlbnQgeyBmaWxsOiAjMTcyNTU0OyBzdHJva2U6ICM5M2M1ZmQ7IH0NCiAgICAgIC5maWxlIHsgZmlsbDogIzE2MWIyMjsgc3Ryb2tlOiAjY2JkNWUxOyB9DQogICAgICAuZ2F0ZSB7IGZpbGw6ICMyNzIzMTI7IHN0cm9rZTogI2ZkZTA0NzsgfQ0KICAgICAgLnRpdGxlLCAuY29kZS10aXRsZSB7IGZpbGw6ICNmOGZhZmM7IH0NCiAgICAgIC5zdWIsIC5jb2RlLXN1YiB7IGZpbGw6ICM5NGEzYjg7IH0NCiAgICB9DQogIDwvc3R5bGU+DQoNCiAgPGRlZnM+DQogICAgPG1hcmtlciBpZD0iYXJyb3ciIHZpZXdCb3g9IjAgMCAxMCAxMCIgcmVmWD0iOC41IiByZWZZPSI1IiBtYXJrZXJXaWR0aD0iNi41IiBtYXJrZXJIZWlnaHQ9IjYuNSIgb3JpZW50PSJhdXRvIj4NCiAgICAgIDxwYXRoIGQ9Ik0gMCAxLjIgTCA5LjUgNSBMIDAgOC44IHoiIGNsYXNzPSJhcnJvdy1oZWFkIiAvPg0KICAgIDwvbWFya2VyPg0KICA8L2RlZnM+DQoNCiAgPCEtLSBPdXRlciBDYXJkIC0tPg0KICA8cmVjdCBjbGFzcz0iY2FudmFzIiB4PSIyIiB5PSIyIiB3aWR0aD0iNzE2IiBoZWlnaHQ9IjU4NiIgcng9IjEyIiAvPg0KDQogIDwhLS0gRWRnZXMgLS0+DQogIDwhLS0gUGFyYW1ldGVycyB0byBXcml0ZXIgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDI2MiA2NiBMIDMyNSAxMDEiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSA0NTggNjYgTCAzOTUgMTAxIiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCg0KICA8IS0tIFBhcmFtZXRlcnMgdG8gQ2hlY2tlcnMgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDE4NiA2NiBDIDE0MiAxMjAsIDEzOCAyMDUsIDE1NSAyNjgiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSA1MzQgNjYgQyA1NzggMTIwLCA1ODIgMjA1LCA1NjUgMjY4IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCg0KICA8IS0tIFdyaXRlciB0byAwMV9kcmFmdC5tZCAtLT4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gMzYwIDE0NiBMIDM2MCAxODIiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gMDFfZHJhZnQubWQgdG8gQ2hlY2tlcnMgYW5kIEh1bWFuIFJldmlldyBHYXRlIC0tPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSAyOTYgMjI4IEwgMjEyIDI2OSIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiIC8+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDM2MCAyMjggTCAzNjAgMzU0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNDI0IDIyOCBMIDUwOCAyNjkiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gQ2hlY2tlcnMgdG8gQXVkaXQgRmlsZXMgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDE2NSAzMTQgTCAxNjUgMzU0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNTU1IDMxNCBMIDU1NSAzNTQiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gQXVkaXQgRmVlZGJhY2sgTG9vcHMgYmFjayB0byBXcml0ZXIgLS0+DQogIDxwYXRoIGNsYXNzPSJlZGdlIiBkPSJNIDgzIDM3OCBDIDIwIDM2MCwgMjAgMTI0LCAyNzggMTI0IiBtYXJrZXItZW5kPSJ1cmwoI2Fycm93KSIgLz4NCiAgPHBhdGggY2xhc3M9ImVkZ2UiIGQ9Ik0gNjM3IDM3OCBDIDcwMCAzNjAsIDcwMCAxMjQsIDQ0MiAxMjQiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KDQogIDwhLS0gR2F0ZSB0byBJbGx1c3RyYXRvciB0byAwMl9pbGx1c3RyYXRpb24ucG5nIC0tPg0KICA8cGF0aCBjbGFzcz0iZWRnZS1kYXNoZWQiIGQ9Ik0gMzYwIDQwMCBMIDM2MCA0NDAiIG1hcmtlci1lbmQ9InVybCgjYXJyb3cpIiAvPg0KICA8cGF0aCBjbGFzcz0iZWRnZSIgZD0iTSAzNjAgNDg2IEwgMzYwIDUyMiIgbWFya2VyLWVuZD0idXJsKCNhcnJvdykiIC8+DQoNCiAgPCEtLSBSb3cgMTogUGFyYW1ldGVycyAoSGV4YWdvbnMpIC0tPg0KICA8cG9seWdvbiBjbGFzcz0icGFyYW0iIHBvaW50cz0iMTc2LDIyIDI4NCwyMiAzMDAsNDQgMjg0LDY2IDE3Niw2NiAxNjAsNDQiIC8+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXRpdGxlIiB4PSIyMzAiIHk9IjQxIj50b3BpYzwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iMjMwIiB5PSI1NyI+IlJvY2tldCI8L3RleHQ+DQoNCiAgPHBvbHlnb24gY2xhc3M9InBhcmFtIiBwb2ludHM9IjQzNiwyMiA1NDQsMjIgNTYwLDQ0IDU0NCw2NiA0MzYsNjYgNDIwLDQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iNDkwIiB5PSI0MSI+dGFyZ2V0X2FnZTwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iNDkwIiB5PSI1NyI+My0xMjwvdGV4dD4NCg0KICA8IS0tIFJvdyAyOiBXcml0ZXIgQWdlbnQgLS0+DQogIDxyZWN0IGNsYXNzPSJhZ2VudCIgeD0iMjgwIiB5PSIxMDIiIHdpZHRoPSIxNjAiIGhlaWdodD0iNDQiIHJ4PSI5IiAvPg0KICA8dGV4dCBjbGFzcz0idGl0bGUiIHg9IjM2MCIgeT0iMTIxIj5Xcml0ZXI8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXN1YiIgeD0iMzYwIiB5PSIxMzgiPnN0YWdlMV93cml0ZXI8L3RleHQ+DQoNCiAgPCEtLSBSb3cgMzogMDFfZHJhZnQubWQgRmlsZSAtLT4NCiAgPHJlY3QgY2xhc3M9ImZpbGUiIHg9IjI3MiIgeT0iMTg0IiB3aWR0aD0iMTc2IiBoZWlnaHQ9IjQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iMzYwIiB5PSIyMDMiPjAxX2RyYWZ0Lm1kPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0ic3ViIiB4PSIzNjAiIHk9IjIyMCI+UHJvc2UgKyBwbGFjZWhvbGRlcjwvdGV4dD4NCg0KICA8IS0tIFJvdyA0OiBQYXJhbGxlbCBDaGVja2VycyAtLT4NCiAgPHJlY3QgY2xhc3M9ImFnZW50IiB4PSI4MyIgeT0iMjcwIiB3aWR0aD0iMTY0IiBoZWlnaHQ9IjQ0IiByeD0iOSIgLz4NCiAgPHRleHQgY2xhc3M9InRpdGxlIiB4PSIxNjUiIHk9IjI4OSI+RmFjdCBDaGVja2VyPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0iY29kZS1zdWIiIHg9IjE2NSIgeT0iMzA2Ij5zdGFnZTFfZmFjdF9jaGVja2VyPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJhZ2VudCIgeD0iNDczIiB5PSIyNzAiIHdpZHRoPSIxNjQiIGhlaWdodD0iNDQiIHJ4PSI5IiAvPg0KICA8dGV4dCBjbGFzcz0idGl0bGUiIHg9IjU1NSIgeT0iMjg5Ij5BZ2UgQ2hlY2tlcjwvdGV4dD4NCiAgPHRleHQgY2xhc3M9ImNvZGUtc3ViIiB4PSI1NTUiIHk9IjMwNiI+c3RhZ2UxX2FnZV9jaGVja2VyPC90ZXh0Pg0KDQogIDwhLS0gUm93IDU6IEF1ZGl0IEZpbGVzICYgSHVtYW4gUmV2aWV3IEdhdGUgLS0+DQogIDxyZWN0IGNsYXNzPSJmaWxlIiB4PSI4MyIgeT0iMzU2IiB3aWR0aD0iMTY0IiBoZWlnaHQ9IjQ0IiAvPg0KICA8dGV4dCBjbGFzcz0iY29kZS10aXRsZSIgeD0iMTY1IiB5PSIzNzUiPmZhY3RfYXVkaXQubWQ8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJzdWIiIHg9IjE2NSIgeT0iMzkyIj5GYWN0dWFsIGNyaXRpcXVlPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJnYXRlIiB4PSIyNjgiIHk9IjM1NiIgd2lkdGg9IjE4NCIgaGVpZ2h0PSI0NCIgcng9IjMiIC8+DQogIDx0ZXh0IGNsYXNzPSJ0aXRsZSIgeD0iMzYwIiB5PSIzNzUiPkh1bWFuIFJldmlldyBHYXRlPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0ic3ViIiB4PSIzNjAiIHk9IjM5MiI+RWRpdG9yaWFsIGFwcHJvdmFsPC90ZXh0Pg0KDQogIDxyZWN0IGNsYXNzPSJmaWxlIiB4PSI0NzMiIHk9IjM1NiIgd2lkdGg9IjE2NCIgaGVpZ2h0PSI0NCIgLz4NCiAgPHRleHQgY2xhc3M9ImNvZGUtdGl0bGUiIHg9IjU1NSIgeT0iMzc1Ij5hZ2VfYXVkaXQubWQ8L3RleHQ+DQogIDx0ZXh0IGNsYXNzPSJzdWIiIHg9IjU1NSIgeT0iMzkyIj5SZWFkYWJpbGl0eSBjcml0aXF1ZTwvdGV4dD4NCg0KICA8IS0tIFJvdyA2OiBJbGx1c3RyYXRvciBBZ2VudCAtLT4NCiAgPHJlY3QgY2xhc3M9ImFnZW50IiB4PSIyNzYiIHk9IjQ0MiIgd2lkdGg9IjE2OCIgaGVpZ2h0PSI0NCIgcng9IjkiIC8+DQogIDx0ZXh0IGNsYXNzPSJ0aXRsZSIgeD0iMzYwIiB5PSI0NjEiPklsbHVzdHJhdG9yPC90ZXh0Pg0KICA8dGV4dCBjbGFzcz0iY29kZS1zdWIiIHg9IjM2MCIgeT0iNDc4Ij5zdGFnZTJfaWxsdXN0cmF0b3I8L3RleHQ+DQoNCiAgPCEtLSBSb3cgNzogMDJfaWxsdXN0cmF0aW9uLnBuZyBGaWxlIC0tPg0KICA8cmVjdCBjbGFzcz0iZmlsZSIgeD0iMjcyIiB5PSI1MjQiIHdpZHRoPSIxNzYiIGhlaWdodD0iNDQiIC8+DQogIDx0ZXh0IGNsYXNzPSJjb2RlLXRpdGxlIiB4PSIzNjAiIHk9IjU0MyI+MDJfaWxsdXN0cmF0aW9uLnBuZzwvdGV4dD4NCiAgPHRleHQgY2xhc3M9InN1YiIgeD0iMzYwIiB5PSI1NjAiPlN5bnRoZXNpemVkIGltYWdlPC90ZXh0Pg0KPC9zdmc+DQo=" class="my-1.5 max-w-full max-h-80 rounded object-contain block" loading="lazy" />
+
+
+<span class="inline-flex items-center gap-1.5 text-slate-300 font-bold"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>caption.md</span></span>
+Diagram of the two-stage Editorial -&gt; Publishing KidsWiki pipeline.</div></div></div><div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="grp_s2_review_squad"><div class="flex items-center gap-2"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 rotate-90"><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="weave-group-title font-bold text-xs text-white tracking-wide">Review Squad</span></div><span class="weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] font-mono">1/4 completed</span></div><div class="space-y-2 mt-1.5"><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_copy_editor"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Copy Editor</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1">6/6 Verified<span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_copy_editor">completed: approved</span></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_safety_reviewer"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Safety Reviewer</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="weave-badge weave-badge-waiting bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_safety_reviewer">waiting: parent guide</span></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_audio_exporter"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Audio Exporter</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="weave-badge weave-badge-blocked bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_audio_exporter">blocked: missing tts voice</span></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_publisher"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 "><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Publisher</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_publisher">pending</span></div></div></div></div></div><div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="card_s2_fact_checker"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 rotate-90"><svg class="weave-icon weave-chevron" data-weave-icon="chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.25 4.5L9.75 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="font-bold text-xs text-slate-200 tracking-wide">Fact Checker</span></div><div class="flex items-center gap-2 font-mono text-[11px]"><span class="inline-flex items-center gap-2 text-slate-400 mr-1"><button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all weave-deliverable-chip" data-deliverable-toggle="card_s2_fact_checker"><svg class="weave-icon weave-file-icon" data-weave-icon="file" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.25 2.25h5.25L12.75 5.5v8.25a.75.75 0 0 1-.75.75H4.25a.75.75 0 0 1-.75-.75V3a.75.75 0 0 1 .75-.75Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 2.25V5.5h3.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>fact_audit.md</span></button><span class="weave-sep-dot" aria-hidden="true"></span></span><span class="weave-badge vivid-pulse text-[10px] font-bold border font-mono px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-85 transition-all" data-status-toggle="card_s2_fact_checker">in progress: 01 verify</span></div></div><div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2"><div class="flex items-center gap-2 font-mono"><span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)"><svg class="weave-icon weave-clock-icon" data-weave-icon="clock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.75" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.75V8l2.25 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-running-timer data-start-ms="1795647027000" data-prior-ms="9000" data-base-seconds="21" data-calc-time="1795647039000">21s</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span><button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="4b6381d3-1303-4c42-b197-5da41e540087"><svg class="weave-icon weave-chat-icon" data-weave-icon="chat" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Open Subagent Chat</span></button><span class="text-slate-600">(4b6381d3...)</span></div><div class="text-[11px] text-slate-500 font-mono"><span title="11:50:28 PM" data-relative-time="2026-11-25T22:50:28.000Z">Updated: just now</span></div></div><div data-agent-body="card_s2_fact_checker" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30"><span class="text-slate-500 font-mono">---</span>
+<span class="weave-fm-key text-indigo-300 font-mono">status</span>: <span class="weave-fm-str text-amber-200 font-mono">"in_progress/01_verify"</span>
+<span class="weave-fm-key text-indigo-300 font-mono">conversation_id</span>: <span class="weave-fm-str text-amber-200 font-mono">"4b6381d3-1303-4c42-b197-5da41e540087"</span>
+<span class="text-indigo-300 font-mono">inputs</span>:
+  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] text-emerald-300 bg-emerald-500/10 border-emerald-500/30 weave-input-ok">"draft.md"</span>
+  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] text-amber-300 bg-amber-500/10 border-amber-500/30 weave-input-warn">"sources/*.md" (3)</span>
+  <span class="text-slate-500 font-mono">-</span> <span class="inline-flex items-center px-1.5 py-0.2 rounded border font-mono text-[11px] text-rose-400 bg-rose-500/10 border-rose-500/30 weave-input-missing">"missing_glossary.md"</span>
+<span class="weave-fm-key text-indigo-300 font-mono">outputs</span>:
+  <span class="text-slate-500 font-mono">-</span> <span class="text-emerald-300 font-mono">"fact_audit.md"</span>
+<span class="weave-fm-key text-indigo-300 font-mono">updated_at</span>: <span class="weave-fm-str text-amber-200 font-mono">"2026-11-25T22:50:28.000Z"</span>
+<span class="text-slate-500 font-mono">---</span>
+
+<div class="weave-log-entry leading-relaxed py-0.5"><span class="weave-log-bullet" aria-hidden="true"></span><strong class="text-slate-200 font-bold font-mono">11:50:15 PM</strong>  <span class="font-mono text-[11px] text-amber-300 font-medium">[waiting]</span> <span class="text-slate-300 font-sans">— Initialized agent workspace</span></div>
+<div class="weave-log-entry leading-relaxed py-0.5"><span class="weave-log-bullet" aria-hidden="true"></span><strong class="text-slate-200 font-bold font-mono">11:50:18 PM</strong> <span class="text-slate-400 font-normal">(9s)</span>  <span class="font-mono text-[11px] text-amber-400 font-bold">[in_progress/00_intake]</span> <span class="text-slate-300 font-sans">— Loaded draft.md and 3 source files</span></div>
+<div class="weave-log-entry leading-relaxed py-0.5"><span class="weave-log-bullet" aria-hidden="true"></span><strong class="text-slate-200 font-bold font-mono">11:50:27 PM</strong> <span class="text-slate-400 font-normal">(12s)</span>  <span class="font-mono text-[11px] text-amber-400 font-bold">[in_progress/01_verify]</span> <span class="text-slate-300 font-sans">— Cross-checking Saturn V height and thrust figures</span></div></div></div></div></div></div></div>
+        
+      <div class="weave-stage-panel-wrap mt-4 pt-4 border-t border-slate-800/80">
+        <div class="weave-stage-panel p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded text-xs font-mono font-bold weave-badge weave-badge-review bg-lime-500/15 text-lime-300 border border-lime-500/30">STAGE 2</span>
+            <span class="text-xs font-mono text-slate-400">02_concept.md</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Concept &amp; Episode Outline</h3>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">Synthesizes verified research sources into a structured episode outline and awaits user review.</p>
+          </div>
+          <div class="weave-card-toolbar pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-500">
+            <span>Primary Output: <strong class="text-slate-300">02_concept.md</strong></span>
+            <span>State: <strong class="text-lime-400">awaiting_review</strong></span>
+          </div>
+        </div>
+      </div>
+    
+        <div class="space-y-4"><div class="weave-empty-state p-6 rounded-xl border border-slate-800 bg-slate-900/30 text-center text-xs text-slate-500 font-mono">No subagents discovered across pipeline stages yet.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRESETS = {
+      'onyx-dark': { mode: 'dark', vars: { '--background':'#090a0d','--foreground':'#e5e7eb','--shell':'#111216','--card':'#15161c','--onyx-well':'#0d0e12','--border':'rgba(255,255,255,0.08)','--card-border':'rgba(255,255,255,0.10)','--secondary':'rgba(255,255,255,0.06)','--secondary-foreground':'#cbd5e1','--muted-foreground':'#94a3b8','--primary':'#3b82f6','--success':'#34d399','--warning':'#f59e0b','--error':'#f43f5e' } },
+      'onyx-light': { mode: 'light', vars: { '--background':'#ffffff','--foreground':'#0f172a','--shell':'#f6f7f9','--card':'#ffffff','--onyx-well':'#f1f5f9','--border':'rgba(15,23,42,0.09)','--card-border':'rgba(15,23,42,0.12)','--secondary':'rgba(15,23,42,0.045)','--secondary-foreground':'#334155','--muted-foreground':'#64748b','--primary':'#2563eb','--success':'#16a34a','--warning':'#d97706','--error':'#e11d48' } },
+      'catppuccin-dark': { mode: 'dark', vars: { '--background':'#1e1e2e','--foreground':'#cdd6f4','--shell':'#181825','--card':'#262639','--onyx-well':'#181825','--border':'rgba(205,214,244,0.10)','--card-border':'rgba(205,214,244,0.13)','--secondary':'rgba(205,214,244,0.07)','--secondary-foreground':'#bac2de','--muted-foreground':'#9399b2','--primary':'#cba6f7','--success':'#a6e3a1','--warning':'#f9e2af','--error':'#f38ba8' } },
+      'solarized-light': { mode: 'light', vars: { '--background':'#fdf6e3','--foreground':'#3b484c','--shell':'#f4eedb','--card':'#fffbf0','--onyx-well':'#eee8d5','--border':'rgba(67,81,85,0.13)','--card-border':'rgba(67,81,85,0.17)','--secondary':'rgba(67,81,85,0.06)','--secondary-foreground':'#586e75','--muted-foreground':'#657b83','--primary':'#268bd2','--success':'#58983f','--warning':'#b58900','--error':'#dc322f' } }
+    };
+    function setOpt(o) {
+      document.documentElement.dataset.styleOption = o;
+      document.getElementById('btn-a').setAttribute('aria-pressed', String(o === 'a'));
+      document.getElementById('btn-b').setAttribute('aria-pressed', String(o === 'b'));
+    }
+    function setPreset(k) {
+      const p = PRESETS[k]; if (!p) return;
+      document.documentElement.dataset.theme = p.mode;
+      document.documentElement.style.colorScheme = p.mode;
+      Object.entries(p.vars).forEach(([name, val]) => document.documentElement.style.setProperty(name, val));
+    }
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'theme-change') {
+        setPreset(e.data.theme === 'light' ? 'onyx-light' : 'onyx-dark');
+      }
+    });
+    (function() {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('hideToolbar') === '1') document.getElementById('mock-toolbar').style.display = 'none';
+      if (q.get('opt')) setOpt(q.get('opt'));
+      if (q.get('preset')) { document.getElementById('preset-sel').value = q.get('preset'); setPreset(q.get('preset')); }
+    })();
+  </script>
+</body>
+</html>
