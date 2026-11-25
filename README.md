@@ -306,7 +306,7 @@ trigger: always_on
 
 1. **Activate trigger**: Move `orchestrator_trigger.md` into `.agent/rules/orchestrator_trigger.md`.
 2. **Execute**: Prompt `"Write a KidsWiki article about 'Rocket' for a 4yo."`
-3. **Observe & Steer**: Click `[WeaveMAS UI](sidecar://weavemas/panel/)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
+3. **Observe & Steer**: Click `[WeaveMAS UI](sidecar://weavemas/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
 
 ![WeaveMAS UI Sidecar](assets/weavemas_ui_kidswiki.png)
 
@@ -363,6 +363,15 @@ To register the MCP state and contract server directly in an MCP host configurat
     }
   }
 }
+```
+
+### Option 3: VS Code / Antigravity IDE Custom Editor (`weavemas-viewer.vsix`)
+
+To open the WeaveMAS UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) across Antigravity IDE, VS Code, Cursor, or Windsurf -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
+
+```bash
+npm run build:vsix
+code --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
 ```
 
 ### MCP Tools (`weavemas_weave`)

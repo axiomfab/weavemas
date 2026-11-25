@@ -1,0 +1,65 @@
+{
+  "name": "weavemas-viewer",
+  "displayName": "WeaveMAS Viewer",
+  "description": "Zero-token custom editor that opens the WeaveMAS UI natively on any weave.md pipeline manifest.",
+  "version": "1.1.0",
+  "publisher": "axiomfab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/axiomfab/weavemas-agy.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCustomEditor:weavemas.viewer"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "weavemas.viewer",
+        "displayName": "WeaveMAS UI",
+        "selector": [
+          {
+            "filenamePattern": "**/weave.md"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "weavemas.viewRawMarkdown",
+        "title": "View Raw Markdown",
+        "category": "WeaveMAS",
+        "icon": "$(code)"
+      },
+      {
+        "command": "weavemas.openViewer",
+        "title": "Open WeaveMAS UI",
+        "category": "WeaveMAS",
+        "icon": "$(preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "weavemas.viewRawMarkdown",
+          "when": "activeCustomEditorId == weavemas.viewer",
+          "group": "navigation@1"
+        },
+        {
+          "command": "weavemas.openViewer",
+          "when": "resourceFilename == weave.md && activeCustomEditorId != weavemas.viewer",
+          "group": "navigation@1"
+        }
+      ]
+    }
+  }
+}

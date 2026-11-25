@@ -144,14 +144,15 @@
     return null;
   }
 
-  function renderMediaPreviewHtml(name, mediaType, filePath = null) {
+  function renderMediaPreviewHtml(name, mediaType, filePath = null, webviewUri = null) {
     if (!name || typeof name !== 'string') throw new TypeError('CRITICAL: name must be a non-empty string');
     if (mediaType !== 'image' && mediaType !== 'audio' && mediaType !== 'video') {
       throw new TypeError(`CRITICAL: mediaType must be 'image', 'audio', or 'video', got '${mediaType}'`);
     }
     const target = (typeof filePath === 'string' && filePath.trim()) ? filePath.trim() : name.trim();
     const tokMatch = (typeof window !== 'undefined' && typeof window.location?.search === 'string') ? window.location.search.match(/[?&]token=([^&]+)/) : null;
-    const src = `/api/media?path=${encodeURIComponent(target)}${tokMatch ? `&token=${encodeURIComponent(decodeURIComponent(tokMatch[1]))}` : ''}`;
+    const directUri = (typeof webviewUri === 'string' && webviewUri.trim()) ? webviewUri.trim() : null;
+    const src = directUri || `/api/media?path=${encodeURIComponent(target)}${tokMatch ? `&token=${encodeURIComponent(decodeURIComponent(tokMatch[1]))}` : ''}`;
     if (mediaType === 'image') return `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" data-media-preview="image" data-media-src="${escapeHtml(src)}" class="my-1.5 max-w-full max-h-80 rounded object-contain block" loading="lazy" />`;
     if (mediaType === 'audio') return `<audio controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="audio" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full h-9 block"></audio>`;
     return `<video controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="video" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full max-h-80 rounded bg-black block"></video>`;
@@ -168,7 +169,7 @@
     if (outs.length === 1) {
       const singleName = outs[0], item = itemMap.get(singleName) || outputItems[0] || null;
       const mType = (item && item.exists === false) ? null : detectMediaType(singleName, item?.mediaType);
-      const preview = mType ? renderMediaPreviewHtml(singleName, mType, item?.filePath || singleName) : '';
+      const preview = mType ? renderMediaPreviewHtml(singleName, mType, item?.filePath || singleName, item?.webviewUri || null) : '';
       const escapedText = hasText ? escapeHtml(rawDeliv) : '';
       return preview ? (escapedText ? `${preview}\n${escapedText}` : preview) : escapedText;
     }
@@ -176,7 +177,7 @@
     return escapeHtml(baseText).replace(/^── 📄 (.+?) ──$/gm, (_, escapedName) => {
       const item = itemMap.get(escapedName);
       const mType = (item && item.exists === false) ? null : detectMediaType(escapedName, item?.mediaType);
-      const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName)}` : '';
+      const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName, item?.webviewUri || null)}` : '';
       return `<span class="inline-flex items-center gap-1.5 text-slate-300 font-bold">── ${ICON_FILE} ${escapedName} ──</span>${preview}`;
     });
   }
@@ -331,7 +332,9 @@
     }));
     container.querySelectorAll('[data-conv-id]').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(btn.getAttribute('data-conv-id'));
+      const convId = btn.getAttribute('data-conv-id');
+      if (window.sidecar?.ui?.toggleConversation) window.sidecar.ui.toggleConversation(convId);
+      else if (window.WeaveHostBridge?.openConversation) window.WeaveHostBridge.openConversation(convId);
     }));
     container.querySelectorAll('[data-agent-body]').forEach(el => {
       const cid = el.getAttribute('data-agent-body'), prev = prevScrolls.get(cid);

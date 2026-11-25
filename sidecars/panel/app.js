@@ -41,16 +41,41 @@
     return await res.json();
   }
 
-  async function refreshData() {
-    try {
-      pipelineData = await fetchJSON('/api/pipeline');
-      
-      const activeDir = pipelineData ? (pipelineData.contextDir || pipelineData.showDir) : null;
+  function getHostBridge() {
+    return (typeof window !== 'undefined' && window.WeaveHostBridge && typeof window.WeaveHostBridge === 'object')
+      ? window.WeaveHostBridge
+      : null;
+  }
+
+  function applyPipelinePayload(nextPayload) {
+    if (!nextPayload || typeof nextPayload !== 'object') return;
+    pipelineData = nextPayload;
+    if (typeof nextPayload.selectedContextDir === 'string' && nextPayload.selectedContextDir) {
+      selectedContextDir = nextPayload.selectedContextDir;
+    } else {
+      const activeDir = nextPayload.contextDir || nextPayload.showDir || null;
       if (!selectedContextDir && activeDir) {
         selectedContextDir = activeDir;
       }
+    }
+    if (typeof nextPayload.focusStageNum === 'number' && selectedStageNum === null) {
+      selectedStageNum = nextPayload.focusStageNum;
+    }
+    if (typeof nextPayload.focusCardId === 'string' && nextPayload.focusCardId && window.AgentPanel?.expandedCards) {
+      window.AgentPanel.expandedCards.add(nextPayload.focusCardId);
+    }
+    renderUI();
+  }
 
-      renderUI();
+  async function refreshData() {
+    const bridge = getHostBridge();
+    if (bridge && typeof bridge.requestPipeline === 'function') {
+      bridge.requestPipeline(selectedContextDir);
+      return;
+    }
+    try {
+      const nextPayload = await fetchJSON('/api/pipeline');
+      applyPipelinePayload(nextPayload);
     } catch (err) {
       console.error('Error refreshing pipeline panel:', err);
     }
@@ -59,22 +84,40 @@
   function renderHeader() {
     const headerContainer = document.getElementById('header-root');
     if (headerContainer && window.HeaderBar) {
+      const bridge = getHostBridge();
       const runs = pipelineData ? (pipelineData.availableContexts || pipelineData.availableShows || []) : [];
       const activeDir = selectedContextDir || (pipelineData ? (pipelineData.contextDir || pipelineData.showDir) : null);
-      window.HeaderBar.render(headerContainer, {
+      const headerOptions = {
         shows: runs,
         contexts: runs,
         activePath: activeDir,
         onSelectShow: (dirPath) => {
           selectedContextDir = dirPath;
-          refreshData();
+          if (bridge && typeof bridge.selectContext === 'function') {
+            bridge.selectContext(dirPath);
+          } else {
+            refreshData();
+          }
         },
         onSelectContext: (dirPath) => {
           selectedContextDir = dirPath;
-          refreshData();
+          if (bridge && typeof bridge.selectContext === 'function') {
+            bridge.selectContext(dirPath);
+          } else {
+            refreshData();
+          }
         },
         onSync: refreshData
-      });
+      };
+      if (bridge) {
+        if (typeof bridge.viewRawMarkdown === 'function') {
+          headerOptions.onViewRawMarkdown = () => bridge.viewRawMarkdown(selectedContextDir || activeDir);
+        }
+        if (bridge.storage) {
+          headerOptions.storage = bridge.storage;
+        }
+      }
+      window.HeaderBar.render(headerContainer, headerOptions);
     }
   }
 
@@ -180,10 +223,34 @@
     },
     refresh() {
       renderUI();
+    },
+    applyPayload: applyPipelinePayload,
+    isPollingActive() {
+      return pollInterval !== null;
     }
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function bootApp() {
+    const bridge = getHostBridge();
+    if (bridge) {
+      if (typeof bridge.initialContextDir === 'string' && bridge.initialContextDir) {
+        selectedContextDir = bridge.initialContextDir;
+      }
+      if (typeof bridge.onPipelineUpdate === 'function') {
+        bridge.onPipelineUpdate((payload) => {
+          applyPipelinePayload(payload);
+        });
+      }
+      renderHeader();
+      if (bridge.initialPayload && typeof bridge.initialPayload === 'object') {
+        applyPipelinePayload(bridge.initialPayload);
+      }
+      if (typeof bridge.notifyReady === 'function') {
+        bridge.notifyReady(selectedContextDir);
+      }
+      return;
+    }
+
     renderHeader();
     refreshData();
     pollInterval = setInterval(() => {
@@ -192,5 +259,13 @@
       }
       refreshData();
     }, 4000);
-  });
+  }
+
+  if (typeof document !== 'undefined') {
+    if (typeof document.readyState === 'string' && document.readyState !== 'loading') {
+      bootApp();
+    } else if (typeof document.addEventListener === 'function') {
+      document.addEventListener('DOMContentLoaded', bootApp);
+    }
+  }
 })();

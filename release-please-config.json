@@ -7,6 +7,11 @@
       "type": "json",
       "path": "plugin.json",
       "jsonpath": "$.version"
+    },
+    {
+      "type": "json",
+      "path": "extensions/vscode-viewer/package.json",
+      "jsonpath": "$.version"
     }
   ],
   "packages": {

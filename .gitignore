@@ -3,6 +3,8 @@ node_modules/
 runs/
 output/
 tmp/
+dist/
+*.vsix
 
 # Local Solony workspace, session, worktree, and issue-cache state
 .solony/

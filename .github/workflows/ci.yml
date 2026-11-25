@@ -29,3 +29,6 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+
+      - name: Package VS Code Custom Editor VSIX
+        run: npm run build:vsix
