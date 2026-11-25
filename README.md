@@ -482,6 +482,9 @@ npm run build:adapters
 # Generate a single harness directly into a target project workspace
 node scripts/build-adapters.mjs --harness claude-code --out-dir /path/to/workspace
 
+# Install the Cursor adapter (.cursor/rules, .cursor/agents) and merge weavemas_weave into .cursor/mcp.json
+node scripts/install-cursor.mjs --target /path/to/workspace
+
 # Verify zero template drift and run cross-harness contract checks (CI mode)
 node scripts/build-adapters.mjs --check
 ```

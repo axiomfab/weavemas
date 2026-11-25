@@ -6,6 +6,7 @@
   "main": "src/mcp_server.mjs",
   "scripts": {
     "build:adapters": "node scripts/build-adapters.mjs",
+    "install:cursor": "node scripts/install-cursor.mjs",
     "test": "node --test tests/*.mjs",
     "build:vsix": "node scripts/build_vsix.mjs",
     "start": "node src/mcp_server.mjs"
