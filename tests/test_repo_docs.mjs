@@ -164,3 +164,68 @@ test('Repository Polish (R11) - Guard Path: docs/TUTORIAL.md is removed and no t
     );
   }
 });
+
+test('Install Guides & Release Workflow (#26) - README.md provides self-contained collapsible per-platform guides', () => {
+  const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  const startIdx = readme.indexOf('## Installation and Setup');
+  const endIdx = readme.indexOf('### MCP Tools (`weavemas_weave`)');
+  assert.notEqual(startIdx, -1, 'README.md must contain Installation and Setup section');
+  assert.notEqual(endIdx, -1, 'README.md must contain MCP Tools subsection');
+  assert.ok(endIdx > startIdx, 'MCP Tools subsection must follow Installation and Setup');
+
+  const installSection = readme.slice(startIdx, endIdx);
+  const asciiCheck = checkStrictAscii(installSection);
+  assert.equal(
+    asciiCheck.ok,
+    true,
+    `Installation and Setup contains non-ASCII character at line ${asciiCheck.line}, col ${asciiCheck.col}`
+  );
+
+  // Extract all <details...>...</details> blocks in Installation and Setup
+  const detailsRegex = /<details(\s+open)?>([\s\S]*?)<\/details>/g;
+  const blocks = [];
+  let m;
+  while ((m = detailsRegex.exec(installSection)) !== null) {
+    blocks.push({ open: Boolean(m[1]), body: m[2] });
+  }
+  assert.equal(blocks.length, 4, 'Installation and Setup must contain exactly 4 <details> blocks');
+
+  // 1. Antigravity App (expanded by default)
+  assert.equal(blocks[0].open, true, '1. Antigravity App block must be <details open>');
+  assert.match(blocks[0].body, /1\. Antigravity App/);
+  assert.match(blocks[0].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
+
+  // 2. Antigravity IDE & VS Code (collapsed, self-contained)
+  assert.equal(blocks[1].open, false, '2. Antigravity IDE & VS Code block must be collapsed by default');
+  assert.match(blocks[1].body, /2\. Antigravity IDE &amp; VS Code/);
+  assert.match(blocks[1].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
+  assert.match(blocks[1].body, /code --install-extension[^\n]*weavemas-viewer\.vsix/);
+
+  // 3. Cursor (collapsed, self-contained)
+  assert.equal(blocks[2].open, false, '3. Cursor block must be collapsed by default');
+  assert.match(blocks[2].body, /3\. Cursor/);
+  assert.match(blocks[2].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
+  assert.match(blocks[2].body, /install-cursor\.mjs/);
+  assert.match(blocks[2].body, /cursor --install-extension[^\n]*weavemas-viewer\.vsix/);
+
+  // 4. Codex, Claude Code, Windsurf & Other Harnesses (collapsed placeholder + standalone MCP JSON)
+  assert.equal(blocks[3].open, false, '4. Other Harnesses block must be collapsed by default');
+  assert.match(blocks[3].body, /4\. Codex, Claude Code, Windsurf &amp; Other Harnesses/);
+  assert.match(blocks[3].body, /contact@axiomfab\.org/);
+  assert.match(blocks[3].body, /"mcpServers"/);
+  assert.match(blocks[3].body, /src\/mcp_server\.mjs/);
+});
+
+test('Install Guides & Release Workflow (#26) - release.yml builds and attaches weavemas-viewer.vsix on Release Please cut', () => {
+  const releasePath = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
+  assert.equal(fs.existsSync(releasePath), true, '.github/workflows/release.yml must exist');
+
+  const content = fs.readFileSync(releasePath, 'utf8');
+  const asciiCheck = checkStrictAscii(content);
+  assert.equal(asciiCheck.ok, true, '.github/workflows/release.yml must be strict ASCII');
+
+  assert.match(content, /googleapis\/release-please-action@v\d+/);
+  assert.match(content, /steps\.release\.outputs\.release_created == 'true'/);
+  assert.match(content, /npm run build:vsix/);
+  assert.match(content, /gh release upload[\s\S]*extensions\/vscode-viewer\/weavemas-viewer\.vsix/);
+});

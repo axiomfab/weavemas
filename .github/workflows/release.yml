@@ -39,4 +39,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run build:vsix
-          gh release upload "${{ steps.release.outputs.tag_name }}" extensions/vscode-viewer/weavemas-viewer.vsix --clobber
+          gh release upload "${{ steps.release.outputs.tag_name }}" extensions/vscode-viewer/weavemas-viewer.vsix --repo "${{ github.repository }}" --clobber

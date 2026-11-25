@@ -334,9 +334,10 @@ Building on this foundation, WeaveMAS provides:
 ### Prerequisites
 
 - **Node.js >= 20** (pure standard library; zero external `npm` dependencies)
-- **Google Antigravity (`agy`)** (or another MCP-capable CLI/IDE harness)
+- **Google Antigravity (`agy`)**, **Antigravity IDE / VS Code**, **Cursor**, or another MCP-capable CLI/IDE harness
 
-### Option 1: Install as an Antigravity Plugin (Recommended)
+<details open>
+<summary><strong>1. Antigravity App</strong> -- Recommended; plugin + zero-token UI sidecar.</summary>
 
 Clone this repository into your Antigravity plugins directory:
 
@@ -350,9 +351,72 @@ git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plu
 
 When enabled in Antigravity (`customization://weavemas`), the plugin automatically registers the `weavemas_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMAS UI` sidecar (`sidecars/panel/`).
 
-### Option 2: Standalone `weavemas_weave` MCP Server
+</details>
 
-To register the MCP state and contract server directly in an MCP host configuration (`mcp_config.json`):
+<details>
+<summary><strong>2. Antigravity IDE &amp; VS Code</strong> -- Plugin + native <code>weavemas-viewer.vsix</code> custom editor for <code>weave.md</code>.</summary>
+
+Clone this repository into your Antigravity plugins directory:
+
+```bash
+# macOS / Linux
+git clone https://github.com/axiomfab/weavemas-agy.git ~/.gemini/config/plugins/weavemas
+
+# Windows (PowerShell)
+git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plugins/weavemas"
+```
+
+Install `weavemas-viewer.vsix` to open the WeaveMAS UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
+
+```bash
+# Option A: Download weavemas-viewer.vsix from the latest GitHub Release
+# https://github.com/axiomfab/weavemas-agy/releases/latest
+code --install-extension weavemas-viewer.vsix
+
+# Option B: Build from the cloned repository and install
+cd ~/.gemini/config/plugins/weavemas
+npm run build:vsix
+code --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
+```
+
+If `code` is not on your `PATH` (or you are in Antigravity IDE), install the `.vsix` via the Command Palette (`Extensions: Install from VSIX...`).
+
+</details>
+
+<details>
+<summary><strong>3. Cursor</strong> -- <code>.cursor/rules</code> + <code>.cursor/agents</code> + <code>.cursor/mcp.json</code> + native <code>weavemas-viewer.vsix</code> editor.</summary>
+
+Clone this repository, install the Cursor adapter and MCP registration into your target workspace, and install `weavemas-viewer.vsix` for native `weave.md` rendering:
+
+```bash
+# 1. Clone the repository (macOS / Linux)
+git clone https://github.com/axiomfab/weavemas-agy.git ~/weavemas-agy
+cd ~/weavemas-agy
+
+# Windows (PowerShell)
+# git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/weavemas-agy"
+# Set-Location "$HOME/weavemas-agy"
+
+# 2. Install .cursor/rules/*.mdc, .cursor/agents/*.md, and merge weavemas_weave into .cursor/mcp.json
+node scripts/install-cursor.mjs --target /path/to/your/workspace
+
+# 3. Install the WeaveMAS Viewer extension (from GitHub Release or local build)
+# Option A: Download weavemas-viewer.vsix from https://github.com/axiomfab/weavemas-agy/releases/latest
+cursor --install-extension weavemas-viewer.vsix
+
+# Option B: Build locally from the cloned repository
+npm run build:vsix
+cursor --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
+```
+
+</details>
+
+<details>
+<summary><strong>4. Codex, Claude Code, Windsurf &amp; Other Harnesses</strong> -- Standalone MCP config, adapter generator, and harness requests.</summary>
+
+First-class installers for **Codex**, **Claude Code**, **Windsurf**, and other MCP/ACP harnesses are planned. Want prioritized support for your harness? Reach out at [contact@axiomfab.org](mailto:contact@axiomfab.org).
+
+In the meantime, you can register the standalone `weavemas_weave` MCP state and contract server directly in any MCP host configuration (`mcp_config.json`):
 
 ```json
 {
@@ -365,14 +429,9 @@ To register the MCP state and contract server directly in an MCP host configurat
 }
 ```
 
-### Option 3: VS Code / Antigravity IDE Custom Editor (`weavemas-viewer.vsix`)
+You can also generate `claude-code` or `codex` protocol skills and control-plane agents into any workspace with `node scripts/build-adapters.mjs --harness <id> --out-dir /path/to/workspace` (see [Multi-Platform Harness Adapters](#multi-platform-harness-adapters)).
 
-To open the WeaveMAS UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) across Antigravity IDE, VS Code, Cursor, or Windsurf -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
-
-```bash
-npm run build:vsix
-code --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
-```
+</details>
 
 ### MCP Tools (`weavemas_weave`)
 
