@@ -287,7 +287,8 @@ body {
 }
 
 .agy-theme-btn,
-.agy-sync-btn {
+.agy-sync-btn,
+.agy-raw-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -310,18 +311,21 @@ body {
 }
 
 .agy-theme-btn:hover,
-.agy-sync-btn:hover {
+.agy-sync-btn:hover,
+.agy-raw-btn:hover {
   background-color: var(--agy-hover);
   color: var(--agy-fg);
 }
 
 .agy-theme-btn:active,
-.agy-sync-btn:active {
+.agy-sync-btn:active,
+.agy-raw-btn:active {
   background-color: var(--agy-press);
 }
 
 .agy-theme-btn:focus-visible,
-.agy-sync-btn:focus-visible {
+.agy-sync-btn:focus-visible,
+.agy-raw-btn:focus-visible {
   outline: 2px solid var(--agy-ring);
   outline-offset: 1px;
 }

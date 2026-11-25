@@ -303,6 +303,9 @@
     if (options.onSync !== undefined && typeof options.onSync !== 'function') {
       throw new TypeError('CRITICAL: onSync must be a function');
     }
+    if (options.onViewRawMarkdown !== undefined && typeof options.onViewRawMarkdown !== 'function') {
+      throw new TypeError('CRITICAL: onViewRawMarkdown must be a function');
+    }
     if (options.theme !== undefined) {
       assertValidTheme(options.theme);
     }
@@ -325,6 +328,7 @@
       onSelectShow,
       onSelectContext = onSelectShow,
       onSync,
+      onViewRawMarkdown,
       theme,
       onToggleTheme,
       storage,
@@ -339,6 +343,7 @@
     }
     state.onSelect = (typeof onSelectContext === 'function') ? onSelectContext : onSelectShow;
     state.onSync = onSync;
+    state.onViewRawMarkdown = onViewRawMarkdown;
     state.onToggleTheme = onToggleTheme;
     state.storage = storage;
     state.rootEl = rootEl;
@@ -358,6 +363,9 @@
 
     const toggleLabel = activeTheme === 'dark' ? 'Switch to light layout' : 'Switch to dark layout';
     const togglePressed = activeTheme === 'light' ? 'true' : 'false';
+    const rawBtnHtml = (typeof onViewRawMarkdown === 'function')
+      ? `<button id="raw-markdown-btn" type="button" class="agy-raw-btn" title="View Raw Markdown"><svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>View Raw Markdown</span></button>`
+      : '';
 
     const headerEl = container.querySelector ? container.querySelector('header') : null;
     if (!headerEl) {
@@ -382,6 +390,7 @@
             <button id="theme-toggle-btn" type="button" class="agy-theme-btn" data-theme-state="${activeTheme}" aria-pressed="${togglePressed}" aria-label="${toggleLabel}" title="${toggleLabel}">
               ${buildThemeToggleInnerHtml(activeTheme)}
             </button>
+            ${rawBtnHtml}
             <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
               <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -414,6 +423,13 @@
           if (typeof st.onToggleTheme === 'function') {
             st.onToggleTheme(next);
           }
+        });
+      }
+      const rawBtn = container.querySelector ? container.querySelector('#raw-markdown-btn') : null;
+      if (rawBtn && rawBtn.addEventListener) {
+        rawBtn.addEventListener('click', () => {
+          const st = containerStates.get(container);
+          if (st && typeof st.onViewRawMarkdown === 'function') st.onViewRawMarkdown();
         });
       }
       const syncBtn = container.querySelector ? container.querySelector('#sync-btn') : null;

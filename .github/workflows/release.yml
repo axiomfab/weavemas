@@ -14,8 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Release Please
+        id: release
         uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - name: Checkout release tag for VSIX asset
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - name: Set up Node.js
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build and attach weavemas-viewer.vsix to GitHub Release
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run build:vsix
+          gh release upload "${{ steps.release.outputs.tag_name }}" extensions/vscode-viewer/weavemas-viewer.vsix --clobber
