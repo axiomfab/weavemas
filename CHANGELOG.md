@@ -2,6 +2,18 @@
 
 All notable changes to WeaveMAS are documented in this file.
 
+## [1.2.0](https://github.com/axiomfab/weavemas/compare/v1.1.0...v1.2.0) (2026-11-25)
+
+
+### Features
+
+* add canonical harness adapter generator for multi-platform portability ([#24](https://github.com/axiomfab/weavemas/issues/24)) ([ecc4bdc](https://github.com/axiomfab/weavemas/commit/ecc4bdcdf72db248119bf44291392fa9c1a4872a))
+* align MCP tool, skill names, and KidsWiki example with paper ([#22](https://github.com/axiomfab/weavemas/issues/22)) ([0feca33](https://github.com/axiomfab/weavemas/commit/0feca33af8590726db9e9946d4c397505f97d5ad))
+* **cursor:** add Cursor adapter authoring rule, installer script, and KidsWiki smoke test ([#25](https://github.com/axiomfab/weavemas/issues/25)) ([b504180](https://github.com/axiomfab/weavemas/commit/b5041805195840e3457c08d97d6dcb5d0efe24e8))
+* **ui:** align sidecar panel with native Antigravity host theme (Option A, [#27](https://github.com/axiomfab/weavemas/issues/27)) ([992d3a4](https://github.com/axiomfab/weavemas/commit/992d3a49a27cfab3b37494eb2d762d65d8a64019))
+* **ui:** polish dark palette, muted stepper rail, neutral file chips, and SVG icons ([#20](https://github.com/axiomfab/weavemas/issues/20)) ([1d4273b](https://github.com/axiomfab/weavemas/commit/1d4273b397a8fda140e0a8488b5d55f9e867251c))
+* **viewer:** build VS Code Custom Editor extension for weave.md ([#23](https://github.com/axiomfab/weavemas/issues/23)) ([db7f95e](https://github.com/axiomfab/weavemas/commit/db7f95efcf51764e042b9901bc29b8fdc18f905f))
+
 ## [1.1.0](https://github.com/axiomfab/weavemas-agy/compare/v1.0.0...v1.1.0) (2026-11-23)
 
 
