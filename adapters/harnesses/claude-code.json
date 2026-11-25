@@ -1,0 +1,26 @@
+{
+  "id": "claude-code",
+  "displayName": "Claude Code",
+  "targets": {
+    "protocolsDir": ".claude/skills",
+    "protocolFormat": "skill",
+    "agentsDir": ".claude/agents"
+  },
+  "models": { "fast": "haiku", "inherit": "inherit" },
+  "tools": {
+    "read": "Read",
+    "write": "Write",
+    "shell": "Bash",
+    "subagent": "Task",
+    "resume": "Task"
+  },
+  "mcp": {
+    "style": "prefixed",
+    "serverName": "weavemas_weave",
+    "toolPrefix": "mcp__weavemas_weave__"
+  },
+  "revision": {
+    "mode": "resume",
+    "handleKey": "agentId"
+  }
+}

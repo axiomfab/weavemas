@@ -1,0 +1,28 @@
+{{PROTOCOL_EXECUTION_FRONTMATTER}}
+
+# 🚀 Phase 2: Orchestrator Agent Execution
+
+> **Note**: Already inlined in `weave-orchestrator`. Skip reading this {{PROTOCOL_NOUN}} when `weave-orchestrator` is loaded. Do **NOT** call {{ALT_READ_TOOLS_SLASH}} on {{MCP_SCHEMA_REF}} unless an unexpected schema error occurs.
+
+## Inline `{{MCP_SERVER_NAME}}` MCP Signatures ({{MCP_SIGNATURE_CONTEXT}})
+* `weave_init`: `{{SIG_WEAVE_INIT}}`
+* `weave_update`: `{{SIG_WEAVE_UPDATE}}`
+* `weave_verify`: `{{SIG_WEAVE_VERIFY}}`
+* `weave_read`: `{{SIG_WEAVE_READ}}` *(exactly one of `dir`, `dirs`, `stage_dir`; `mirror_to` is `dir`-only)*
+* `weave_discover_agents`: `{{SIG_WEAVE_DISCOVER_AGENTS}}`
+
+## 1. Per-Stage Delegation vs. Direct Discovery
+1. **Multi-Stage Pipelines**: {{EXEC_REF_MULTISTAGE_ITEM}}
+2. **Stageless Runs / Inside `stage_orchestrator`**: Call `weave_discover_agents` (`{"directory": "<workspace_root>/runs/<context_slug>[/<stage_slug>]", "filter_status": "initialized", "limit": 10}`); repeat if `remaining_count > 0`. If `## Execution` declares `sub-orchestrator`, use **Protocol B**; otherwise use **Protocol A**. Never execute domain work in orchestrator context.
+
+## 2. Protocol A: Direct Workers
+{{EXEC_REF_PROTOCOL_A_ITEMS}}
+
+## 3. Protocol B: Ephemeral Cluster Sub-Orchestrators (`stage_orchestrator`)
+1. {{EXEC_REF_PROTOCOL_B_ITEM_1}}
+2. {{EXEC_REF_PROTOCOL_B_ITEM_2}}
+
+## 4. Verification & Zero-Copy Review Gates
+1. **Fail Fast**: On `STAGE_BLOCKED` / `CLUSTER_BLOCKED`, `weave_verify` failure, or `blocked` state, update master `weave.md` (`type: "orchestrator"`, `status: "<stage_slug>/blocked"` or `"blocked"`) and halt immediately.
+2. **Batch `weave_read`**: Use `dir` for a single worker, or one batch `weave_read` (`dirs` or `stage_dir`, `expected_status: "completed"`) for waves/stages; halt if `verified` is `false` or `missing_outputs` is non-empty.
+3. **Zero-Copy Review Gate**: Set `status: "<stage_slug>/awaiting_review"` (`type: "orchestrator"`), surface {{UI_TRACKER_SURFACE}} + clickable `file://` link to `${RUN_DIR}/<stage_output_name>` (never `{{PRIMARY_ALT_READ}}` + `{{PRIMARY_ALT_WRITE}}` deliverables; use `mirror_to` if an external copy is explicitly needed), and {{EXEC_REF_GATE_REVISION}}.

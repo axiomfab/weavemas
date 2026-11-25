@@ -1,0 +1,25 @@
+{
+  "id": "cursor",
+  "displayName": "Cursor",
+  "targets": {
+    "protocolsDir": ".cursor/rules",
+    "protocolFormat": "mdc",
+    "agentsDir": ".cursor/agents"
+  },
+  "models": { "fast": "fast", "inherit": "inherit" },
+  "tools": {
+    "read": "read_file",
+    "write": "edit_file",
+    "shell": "run_terminal_cmd",
+    "subagent": "mcp_task",
+    "resume": null
+  },
+  "mcp": {
+    "style": "prefixed",
+    "serverName": "weavemas_weave",
+    "toolPrefix": "mcp_weavemas_weave_"
+  },
+  "revision": {
+    "mode": "stateless"
+  }
+}

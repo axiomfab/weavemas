@@ -1,0 +1,33 @@
+{
+  "id": "agy",
+  "displayName": "Google Antigravity",
+  "outputRoot": ".",
+  "targets": {
+    "protocolsDir": "skills",
+    "protocolFormat": "skill",
+    "agentsDir": "agents",
+    "mirrorAgentsDirs": [".agent/agents"],
+    "workerAgentsDir": ".agent/agents"
+  },
+  "models": { "fast": "flash", "inherit": "inherit" },
+  "tools": {
+    "read": "view_file",
+    "readAlt": "read_file",
+    "write": "write_to_file",
+    "writeAlt": "write_file",
+    "shell": "run_command",
+    "shellNote": " (already inside PowerShell—never wrap in `powershell -Command \"...\"`)",
+    "subagent": "invoke_subagent",
+    "resume": "send_message",
+    "manageSubagents": "manage_subagents"
+  },
+  "mcp": {
+    "style": "wrapper",
+    "serverName": "weavemas_weave",
+    "wrapperTool": "call_mcp_tool",
+    "schemaGlob": "<appDataDir>/mcp/weavemas_weave/*.json"
+  },
+  "revision": { "mode": "resume", "handleKey": "conversationId" },
+  "agentFrontmatter": { "agyFlags": true },
+  "uiTrackerLink": "[WeaveMAS UI](sidecar://weavemas/panel/)"
+}

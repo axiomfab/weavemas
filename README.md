@@ -1,6 +1,6 @@
 # WeaveMAS
 
-**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-orchestrator`, `weave-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. While currently built and tested for Antigravity, its design can be readily adapted to other agent harnesses such as Claude Code and Codex as future work (available upon request).
+**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-orchestrator`, `weave-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. A canonical adapter generator ([`scripts/build-adapters.mjs`](scripts/build-adapters.mjs)) compiles these protocols and control-plane agents from a single template source to **Antigravity**, **Claude Code**, **Codex**, **Cursor**, and custom MCP harnesses.
 
 ## Quick Example: KidsWiki
 
@@ -450,6 +450,68 @@ Every run is scoped to `runs/kidswiki_<topic_slug>_age<target_age>/`.
    - Parameters: `topic`
    - Execution: Audit `../writer/draft.md` and write `fact_audit.md`. If `verdict: FAIL` (max 2 cycles), send corrections to `writer` via `send_message` and re-verify.
 ```
+
+## Multi-Platform Harness Adapters
+
+WeaveMAS maintains its core orchestration/worker skills (`weave-orchestrator`, `weave-agent`, `orchestrator-agent-instantiation`, `orchestrator-agent-execution`) and control-plane subagents (`provisioner`, `stage_orchestrator`) as canonical templates in `adapters/templates/` paired with declarative JSON configs in `adapters/harnesses/` (validated against [`adapters/schema.json`](adapters/schema.json)).
+
+### Built-In Harnesses
+
+| Harness ID | Config | Protocol Output | Control-Plane Agents | Revision Strategy |
+| :--- | :--- | :--- | :--- | :--- |
+| `agy` | [`agy.json`](adapters/harnesses/agy.json) | `skills/<name>/SKILL.md` (in-repo) | `agents/*.md` & `.agent/agents/*.md` | Stateful (`send_message`) |
+| `claude-code` | [`claude-code.json`](adapters/harnesses/claude-code.json) | `.claude/skills/<name>/SKILL.md` | `.claude/agents/*.md` | Stateful (`Task` resume) |
+| `codex` | [`codex.json`](adapters/harnesses/codex.json) | `.codex/skills/<name>/SKILL.md` | `.codex/agents/*.md` | Stateless disk-backed fallback |
+| `cursor` | [`cursor.json`](adapters/harnesses/cursor.json) | `.cursor/rules/<name>.mdc` | `.cursor/agents/*.md` | Stateless disk-backed fallback |
+
+### Generating Adapters
+
+```bash
+# Build all adapters (syncs agy in-place and emits non-agy bundles under dist/adapters/<id>/)
+npm run build:adapters
+
+# Generate a single harness directly into a target project workspace
+node scripts/build-adapters.mjs --harness claude-code --out-dir /path/to/workspace
+
+# Verify zero template drift and run cross-harness contract checks (CI mode)
+node scripts/build-adapters.mjs --check
+```
+
+### Adding a New Harness in ~30 Lines of JSON
+
+To port WeaveMAS to a new MCP/ACP harness (e.g., Windsurf), add `adapters/harnesses/<id>.json` conforming to [`adapters/schema.json`](adapters/schema.json) and run `npm run build:adapters`:
+
+```json
+{
+  "id": "windsurf",
+  "displayName": "Windsurf Cascade",
+  "targets": {
+    "protocolsDir": ".windsurf/rules",
+    "protocolFormat": "rule",
+    "agentsDir": ".windsurf/agents"
+  },
+  "models": { "fast": "fast", "inherit": "inherit" },
+  "tools": {
+    "read": "read_file",
+    "write": "write_to_file",
+    "shell": "run_command",
+    "subagent": "spawn_subagent",
+    "resume": null
+  },
+  "mcp": {
+    "style": "direct",
+    "serverName": "weavemas_weave"
+  },
+  "revision": {
+    "mode": "stateless"
+  }
+}
+```
+
+Key schema mappings:
+- **`targets.protocolFormat`**: `"skill"` (`<protocolsDir>/<name>/SKILL.md`), `"mdc"` (`<protocolsDir>/<name>.mdc` with `alwaysApply: false`), or `"rule"` (`<protocolsDir>/<name>.md` with `trigger: model_decision`).
+- **`mcp.style`**: `"wrapper"` (invokes `wrapperTool` with `ServerName`), `"prefixed"` (prefixes tools with `toolPrefix`, e.g. `mcp__weavemas_weave__`), or `"direct"` (invokes bare MCP tool names).
+- **`revision.mode`**: `"resume"` (routes audit/gate edits to an idle worker session via `tools.resume` and `revision.handleKey`) or `"stateless"` (re-dispatches the worker via `tools.subagent` in its existing `<dir>/` CWD so on-disk artifacts and `weave.md` update in place).
 
 ## Testing
 

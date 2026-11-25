@@ -1,0 +1,25 @@
+{
+  "id": "codex",
+  "displayName": "OpenAI Codex",
+  "targets": {
+    "protocolsDir": ".codex/skills",
+    "protocolFormat": "skill",
+    "agentsDir": ".codex/agents"
+  },
+  "models": { "fast": "gpt-5-mini", "inherit": "inherit" },
+  "tools": {
+    "read": "read_file",
+    "write": "write_file",
+    "shell": "exec_command",
+    "subagent": "spawn_agent",
+    "resume": null
+  },
+  "mcp": {
+    "style": "prefixed",
+    "serverName": "weavemas_weave",
+    "toolPrefix": "mcp__weavemas_weave__"
+  },
+  "revision": {
+    "mode": "stateless"
+  }
+}

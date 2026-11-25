@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WeaveMAS Harness Adapter Configuration",
+  "description": "Declarative per-harness tool, MCP, revision, and directory mapping for WeaveMAS canonical templates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "displayName", "targets", "models", "tools", "mcp", "revision"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Lowercase kebab-case harness identifier (e.g. agy, claude-code, codex, cursor)."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable harness name."
+    },
+    "outputRoot": {
+      "type": "string",
+      "description": "Optional default output root relative to repository root ('.' for agy; defaults to 'dist/adapters/<id>')."
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolsDir", "protocolFormat", "agentsDir"],
+      "properties": {
+        "protocolsDir": {
+          "type": "string",
+          "description": "Relative directory for generated orchestration/worker skills or rules."
+        },
+        "protocolFormat": {
+          "type": "string",
+          "enum": ["skill", "mdc", "rule"],
+          "description": "'skill' -> <name>/SKILL.md, 'mdc' -> <name>.mdc, 'rule' -> <name>.md."
+        },
+        "agentsDir": {
+          "type": "string",
+          "description": "Relative directory for control-plane subagent definitions (provisioner, stage_orchestrator)."
+        },
+        "mirrorAgentsDirs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional additional relative directories that receive identical control-plane agent files."
+        },
+        "workerAgentsDir": {
+          "type": "string",
+          "description": "Workspace-relative directory where user-authored pipeline worker agents live (defaults to agentsDir)."
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fast", "inherit"],
+      "properties": {
+        "fast": { "type": "string", "minLength": 1 },
+        "inherit": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read", "write", "shell", "subagent"],
+      "properties": {
+        "read": { "type": "string", "minLength": 1 },
+        "readAlt": { "type": "string", "minLength": 1 },
+        "write": { "type": "string", "minLength": 1 },
+        "writeAlt": { "type": "string", "minLength": 1 },
+        "shell": { "type": "string", "minLength": 1 },
+        "shellNote": { "type": "string" },
+        "subagent": { "type": "string", "minLength": 1 },
+        "resume": { "type": ["string", "null"] },
+        "manageSubagents": { "type": ["string", "null"] }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["style", "serverName"],
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["wrapper", "prefixed", "direct"]
+        },
+        "serverName": { "type": "string", "minLength": 1 },
+        "wrapperTool": { "type": "string", "minLength": 1 },
+        "toolPrefix": { "type": "string" },
+        "schemaGlob": { "type": ["string", "null"] }
+      }
+    },
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["resume", "stateless"]
+        },
+        "handleKey": { "type": "string", "minLength": 1 }
+      }
+    },
+    "agentFrontmatter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agyFlags": { "type": "boolean" }
+      }
+    },
+    "uiTrackerLink": {
+      "type": ["string", "null"]
+    }
+  }
+}
