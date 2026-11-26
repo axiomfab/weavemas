@@ -78,7 +78,7 @@ function startMcpClient(command, args, cwd) {
 }
 
 test('Cursor Installer (#25) - Happy Path: installs valid .mdc rules, agents, and .cursor/mcp.json with zero agy leaks', () => {
-  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-cursor-fresh-'));
+  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-cursor-fresh-'));
   try {
     const res = installCursorAdapter({ repoRoot: REPO_ROOT, targetDir: tmpTarget });
     assert.equal(res.harnessId, 'cursor');
@@ -163,7 +163,7 @@ test('Cursor Installer (#25) - Happy Path: installs valid .mdc rules, agents, an
 });
 
 test('Cursor Installer (#25) - Idempotency: repeated runs produce byte-for-byte identical files and unchanged MCP status', () => {
-  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-cursor-idem-'));
+  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-cursor-idem-'));
   try {
     const first = installCursorAdapter({ repoRoot: REPO_ROOT, targetDir: tmpTarget });
     assert.equal(first.mcpStatus, 'created');
@@ -186,7 +186,7 @@ test('Cursor Installer (#25) - Idempotency: repeated runs produce byte-for-byte 
 });
 
 test('Cursor Installer (#25) - MCP Merge: preserves existing servers and sibling top-level keys without clobbering', () => {
-  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-cursor-merge-'));
+  const tmpTarget = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-cursor-merge-'));
   try {
     const existingMcp = {
       inputs: [{ id: 'github_token', type: 'promptString' }],
@@ -228,7 +228,7 @@ test('Cursor Installer (#25) - MCP Merge: preserves existing servers and sibling
 });
 
 test('Cursor Installer CLI (#25) - Happy & Failure Paths: --help, --dry-run, positional/--target, and fail-fast guards', () => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-cursor-cli-'));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-cursor-cli-'));
   try {
     const helpOut = execFileSync(process.execPath, [INSTALLER_SCRIPT, '--help'], {
       cwd: REPO_ROOT,
@@ -301,7 +301,7 @@ test('Cursor Installer CLI (#25) - Happy & Failure Paths: --help, --dry-run, pos
 });
 
 test('KidsWiki End-to-End Cursor Smoke Test (#25) - drives full 2-stage pipeline + stateless revision loop via .cursor/mcp.json', async () => {
-  const tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-cursor-kidswiki-'));
+  const tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-cursor-kidswiki-'));
   let client;
 
   try {

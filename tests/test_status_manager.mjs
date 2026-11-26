@@ -15,7 +15,7 @@ import {
 } from '../src/status_manager.mjs';
 
 function createTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-test-'));
 }
 
 test('parseFrontmatter - Happy Path: parses valid frontmatter and body', () => {

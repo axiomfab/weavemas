@@ -6,7 +6,7 @@ import os from 'node:os';
 import { handleMessage, formatBatchReadResult } from '../src/mcp_server.mjs';
 
 function createTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mcp-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-mcp-test-'));
 }
 
 /**

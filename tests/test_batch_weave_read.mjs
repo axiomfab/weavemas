@@ -12,7 +12,7 @@ import {
 } from '../src/status_manager.mjs';
 
 function createTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-batch-read-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-batch-read-test-'));
 }
 
 // ---------------------------------------------------------------------------

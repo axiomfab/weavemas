@@ -100,7 +100,7 @@ test('Sidecar Security (#18) - RuntimeTracker.formatHumanLogBody escapes HTML in
 });
 
 test('Sidecar Security (#18) - executeStatusUpdate blocks path traversal in show, stage, and agent parameters', () => {
-  const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-sec-ws-'));
+  const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-sec-ws-'));
   fs.mkdirSync(path.join(tmpWs, 'runs'), { recursive: true });
   try {
     assert.throws(
@@ -127,7 +127,7 @@ test('Sidecar Security (#18) - executeStatusUpdate blocks path traversal in show
 });
 
 test('Sidecar Security (#18) - resolveSafeMediaPath serves in-workspace media and blocks outside-workspace traversal', () => {
-  const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-sec-media-'));
+  const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-sec-media-'));
   const wsDir = path.join(tmpParent, 'workspace');
   const outsideFile = path.join(tmpParent, 'secret.png');
   const ctxDir = path.join(wsDir, 'runs', 'demo_run');
