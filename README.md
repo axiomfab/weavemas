@@ -308,7 +308,7 @@ trigger: always_on
 2. **Execute**: Prompt `"Write a KidsWiki article about 'Rocket' for a 4yo."`
 3. **Observe & Steer**: Click `[WeaveMX UI](sidecar://weavemx/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
 
-![WeaveMX UI Sidecar](assets/weavemas_ui_kidswiki.png)
+![WeaveMX UI Sidecar](assets/weavemx_ui_kidswiki.png)
 
 ## Why WeaveMX?
 

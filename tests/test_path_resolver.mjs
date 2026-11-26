@@ -76,7 +76,7 @@ test('substitutePathVariables - Failure Path 4: missing contextDir when ${RUN_DI
 });
 
 test('mergeOutputDeclarations & verifyOutputFiles - Happy Path: preserves <local>: <target> bindings and promotes 1-to-1, wildcard-to-dir, and wildcard-to-wildcard outputs', () => {
-  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-path-test-'));
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-path-test-'));
   const runDir = path.join(workspaceRoot, 'runs', 'show_01');
   const agentDir = path.join(runDir, 'stage05_audio', 'agents', 'audio');
   const audioSubDir = path.join(agentDir, 'audio');
@@ -106,7 +106,7 @@ test('mergeOutputDeclarations & verifyOutputFiles - Happy Path: preserves <local
 });
 
 test('verifyOutputFiles - Failure Paths: throws on missing local file or invalid wildcard-to-single-file target', () => {
-  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-path-fail-'));
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-path-fail-'));
   const runDir = path.join(workspaceRoot, 'runs', 'show_01');
   const agentDir = path.join(runDir, 'stage01', 'agents', 'writer');
   fs.mkdirSync(agentDir, { recursive: true });
@@ -126,7 +126,7 @@ test('verifyOutputFiles - Failure Paths: throws on missing local file or invalid
 });
 
 test('mirrorOutputFiles - Happy Path: mirrors single file to exact file path and multiple files to directory', () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mirror-test-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-mirror-test-'));
   const srcA = path.join(tmp, '01_setup.md');
   const srcB = path.join(tmp, '01_host.md');
   fs.writeFileSync(srcA, '# Setup Deliverable', 'utf-8');
@@ -149,7 +149,7 @@ test('mirrorOutputFiles - Happy Path: mirrors single file to exact file path and
 });
 
 test('mirrorOutputFiles - Failure Paths: rejects invalid mirror_to, empty sources, missing source, and multi-to-file', () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-mirror-fail-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-mirror-fail-'));
   const srcA = path.join(tmp, 'a.md');
   const srcB = path.join(tmp, 'b.md');
   fs.writeFileSync(srcA, 'A', 'utf-8');
@@ -180,7 +180,7 @@ test('mirrorOutputFiles - Failure Paths: rejects invalid mirror_to, empty source
 });
 
 test('resolveInputEntry - Happy Path: resolves local agentDir, explicit ${RUN_DIR}, ${PROJECT_DIR}, ${AGENT_DIR}, and relative paths', () => {
-  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-ok-'));
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-resolve-ok-'));
   const runDir = path.join(workspaceRoot, 'runs', 'show_01');
   const stageDir = path.join(runDir, 'stage01_setup');
   const writerDir = path.join(stageDir, 'agents', 'writer');
@@ -211,7 +211,7 @@ test('resolveInputEntry - Happy Path: resolves local agentDir, explicit ${RUN_DI
 });
 
 test('resolveInputEntry - Failure Path 1: bare filename in runDir without ${RUN_DIR} throws CRITICAL Error', () => {
-  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-fail1-'));
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-resolve-fail1-'));
   const runDir = path.join(workspaceRoot, 'runs', 'show_01');
   const agentDir = path.join(runDir, 'stage01', 'agents', 'editor');
   fs.mkdirSync(agentDir, { recursive: true });
@@ -226,7 +226,7 @@ test('resolveInputEntry - Failure Path 1: bare filename in runDir without ${RUN_
 });
 
 test('resolveInputEntry - Failure Path 2: bare relative path in workspaceRoot without ${PROJECT_DIR} throws CRITICAL Error', () => {
-  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-resolve-fail2-'));
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-resolve-fail2-'));
   const agentDir = path.join(workspaceRoot, 'runs', 'show_01', 'stage01', 'agents', 'editor');
   const promptsDir = path.join(workspaceRoot, 'prompts');
   fs.mkdirSync(agentDir, { recursive: true });

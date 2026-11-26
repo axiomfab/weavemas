@@ -503,7 +503,7 @@ test('Webview Bridge & Frontend Controller (#23) - boots with zero polling, rend
 });
 
 test('WeaveCustomEditorProvider (#23) - end-to-end FileSystemWatcher live updates, run switching, 1-click raw toggle, and security guards', async () => {
-  const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-vsce-ws-'));
+  const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-vsce-ws-'));
   const run1 = path.join(tmpWs, 'runs', 'kidswiki_rocket_age4');
   const run2 = path.join(tmpWs, 'runs', 'kidswiki_moon_age6');
   const wtRun = path.join(tmpWs, '.solony', 'worktrees', 'feat-ui', 'runs', 'kidswiki_mars_age5');

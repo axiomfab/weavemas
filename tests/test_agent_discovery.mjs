@@ -7,7 +7,7 @@ import { discoverAgents, readFirst1KB } from '../src/agent_discovery.mjs';
 import { weaveInit } from '../src/status_manager.mjs';
 
 function createTempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-discovery-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-discovery-test-'));
 }
 
 test('discoverAgents - Happy Path: discovers initialized agents sorted deterministically by agent_id', () => {

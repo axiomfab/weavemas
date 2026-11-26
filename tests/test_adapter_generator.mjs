@@ -176,7 +176,7 @@ test('Extensibility (#24) - Happy Path: custom ~25-line Windsurf config renders 
 
 test('CLI Execution (#24) - Happy & Failure Paths: scripts/build-adapters.mjs supports --check, --harness, and --out-dir', () => {
   const scriptPath = path.join(REPO_ROOT, 'scripts', 'build-adapters.mjs');
-  const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-adapters-cli-'));
+  const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-adapters-cli-'));
 
   try {
     const checkOut = execFileSync(process.execPath, [scriptPath, '--check'], {
@@ -289,7 +289,7 @@ test('Guard & Failure Paths (#24) - Schema validation, unresolved tokens, agy le
   );
 
   // Drift detection when an in-repo agy file diverges from canonical template
-  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-drift-check-'));
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-drift-check-'));
   try {
     fs.cpSync(path.join(REPO_ROOT, 'adapters'), path.join(tmpRepo, 'adapters'), { recursive: true });
     buildAdapters({ repoRoot: tmpRepo, harnessId: 'agy' });
