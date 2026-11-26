@@ -3,6 +3,7 @@
   let pipelineData = null;
   let selectedStageNum = null;
   let selectedContextDir = null;
+  let activeWorkspaceUri = null;
   let pollInterval = null;
 
   function escapeHtml(str) {
@@ -20,7 +21,12 @@
     if (window.sidecar && window.sidecar.getWorkspaceUris) {
       try {
         const uris = await window.sidecar.getWorkspaceUris();
-        if (uris && uris.length > 0) parts.push(`workspaceUri=${encodeURIComponent(uris[0])}`);
+        if (uris && uris.length > 0) {
+          activeWorkspaceUri = uris[0];
+          parts.push(`workspaceUri=${encodeURIComponent(uris[0])}`);
+        } else {
+          activeWorkspaceUri = null;
+        }
       } catch (e) {
         console.warn('Workspace URI lookup failed:', e);
       }
@@ -221,7 +227,12 @@
     const agentsContainer = document.getElementById('agents-root') || document.getElementById('pipeline-agents-container');
     const panel = window.AgentPanel || window.ConceptTracker;
     if (agentsContainer && panel) {
-      panel.render(agentsContainer, { stages: pipelineData.stageAgents || [] }, selectedStageNum);
+      const activeDir = selectedContextDir || (pipelineData ? (pipelineData.contextDir || pipelineData.showDir) : null);
+      panel.render(agentsContainer, {
+        stages: pipelineData.stageAgents || [],
+        workspaceUri: activeWorkspaceUri || pipelineData.workspaceUri || null,
+        contextDir: activeDir || null
+      }, selectedStageNum);
     }
   }
 
