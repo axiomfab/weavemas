@@ -378,8 +378,10 @@ function renderWebviewHtml(opts) {
   <header id="header-root"></header>
 
   <div class="max-w-4xl mx-auto p-3 space-y-4">
-    <section id="stepper-root" class="py-2.5 px-1">
-      <div class="relative my-2">
+    <div id="error-banner-root" style="display: none;"></div>
+
+    <section id="stepper-root" class="weave-stepper-scroll custom-scrollbar py-2.5 px-1 overflow-x-auto">
+      <div id="stepper-track" class="weave-stepper-track relative my-2">
         <div id="stepper-line" class="stepper-line" style="display: none;"></div>
         <div id="stages-stepper-row" class="relative z-10 flex justify-between items-start"></div>
       </div>

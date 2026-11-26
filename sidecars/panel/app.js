@@ -142,6 +142,7 @@
     const stepperRoot = document.getElementById('stepper-root');
     const stepperRow = document.getElementById('stages-stepper-row');
     const stepperLine = document.getElementById('stepper-line');
+    const stepperTrack = (stepperLine && stepperLine.parentElement) || (typeof document !== 'undefined' && document.getElementById ? document.getElementById('stepper-track') : null);
     if (!stepperRow) return;
 
     const stages = pipelineData.stages || {};
@@ -154,9 +155,13 @@
     if (stageList.length === 0) {
       if (stepperRoot) stepperRoot.style.display = 'none';
       if (stepperLine) stepperLine.style.display = 'none';
+      if (stepperTrack && stepperTrack.style) stepperTrack.style.minWidth = '';
       stepperRow.innerHTML = '';
     } else {
       if (stepperRoot) stepperRoot.style.display = '';
+      if (stepperTrack && stepperTrack.style) {
+        stepperTrack.style.minWidth = `max(100%, ${stageList.length * 72}px)`;
+      }
 
       if (stepperLine) {
         if (stageList.length <= 1) {
@@ -203,7 +208,7 @@
         stepperHtml += `
           <div class="weave-stepper-item flex-1 flex flex-col items-center group cursor-pointer text-center" role="button" tabindex="0" aria-pressed="${isSelected ? 'true' : 'false'}" onclick="App.selectStage(${safeNum})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.selectStage(${safeNum});}">
             <div class="stage-dot ${dotClass}" title="${escapeHtml(st.tag || st.name)}"></div>
-            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center">Stage ${safeNum}</span>
+            <span class="mt-2 text-[11px] font-bold ${isSelected ? 'weave-stepper-title-active text-white' : 'weave-stepper-title text-slate-300'} text-center whitespace-nowrap">Stage ${safeNum}</span>
             <span class="text-[10px] text-slate-500 text-center truncate max-w-[70px]" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>
           </div>
         `;

@@ -94,9 +94,9 @@
   function getRuntimeBadgeHtml(body, currentStatus, nowMs = Date.now()) {
     const res = calculateActiveRuntime(body, currentStatus, nowMs);
     if (res.isRunning) {
-      return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Active execution time (counting while in_progress)">${ICON_CLOCK}<span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="text-[10px] text-slate-500 font-medium">(running)</span></span>`;
+      return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 whitespace-nowrap shrink-0" title="Active execution time (counting while in_progress)">${ICON_CLOCK}<span data-running-timer data-start-ms="${res.lastStartMs}" data-prior-ms="${res.priorActiveMs}" data-base-seconds="${res.seconds}" data-calc-time="${nowMs}">${res.formatted}</span> <span class="weave-runtime-state text-[10px] text-slate-500 font-medium">(running)</span></span>`;
     }
-    return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500" title="Total active execution time">${ICON_CLOCK}${res.formatted}</span>`;
+    return `<span class="weave-runtime-badge inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 whitespace-nowrap shrink-0" title="Total active execution time">${ICON_CLOCK}${res.formatted}</span>`;
   }
 
   function tickTimers(root = (typeof document !== 'undefined' ? document : null), now = Date.now()) {

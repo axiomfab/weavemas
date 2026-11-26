@@ -161,8 +161,9 @@ body {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex: 1 1 0%;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .agy-header-right {
@@ -176,7 +177,8 @@ body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: 84px;
   max-width: min(100%, 280px);
 }
 
@@ -229,6 +231,18 @@ body {
   pointer-events: none;
 }
 
+#worktree-badge-root {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+#worktree-badge-root:empty {
+  display: none;
+}
+
 .agy-worktree-badge {
   display: inline-flex;
   align-items: center;
@@ -242,7 +256,18 @@ body {
   color: var(--weave-worktree-fg);
   background-color: var(--weave-worktree-bg);
   border: 1px solid var(--weave-worktree-border);
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.agy-worktree-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .agy-live {
@@ -373,7 +398,30 @@ body {
   border-radius: 3px;
 }
 
-/* Stepper Connecting Line */
+/* Horizontal Scrollable Stepper & Connecting Line */
+.weave-stepper-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.weave-stepper-track {
+  position: relative;
+  min-width: 100%;
+  width: 100%;
+}
+
+.weave-stepper-item {
+  flex: 1 0 72px;
+  min-width: 72px;
+  padding: 0 1px;
+}
+
+.weave-stepper-title,
+.weave-stepper-title-active {
+  white-space: nowrap;
+}
+
 .stepper-line {
   position: absolute;
   top: 10px;
@@ -503,8 +551,37 @@ body {
   box-shadow: none !important;
 }
 
+.weave-card {
+  container: weave-card / inline-size;
+}
+
 .weave-card-header {
   background-color: var(--weave-card-header-bg) !important;
+}
+
+.weave-card-title-wrap {
+  min-width: 68px;
+  flex: 1 1 84px;
+}
+
+.weave-card-meta {
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.weave-card-chip-group {
+  min-width: 0;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.weave-plain-chip {
+  min-width: 0;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .weave-card-header:hover,
@@ -544,6 +621,29 @@ body {
   background-color: var(--weave-chip-bg);
   color: var(--weave-chip-fg);
   border-color: var(--weave-chip-border);
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+}
+
+.weave-badge {
+  display: inline-block;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 190px;
+}
+
+.weave-group-header .weave-badge {
+  flex-shrink: 0;
+}
+
+.weave-runtime-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .weave-deliverable-chip:hover {
@@ -705,6 +805,129 @@ body {
   background-color: var(--agy-field);
   border: 1px solid var(--weave-card-border);
   color: var(--weave-fg-muted);
+}
+
+/* Responsive & Narrow-Pane Layout Rules (Container + Viewport Queries) */
+@container weave-card (max-width: 460px) {
+  .weave-card-header {
+    padding: 10px 10px;
+    gap: 6px;
+  }
+  .weave-card-meta {
+    gap: 4px;
+  }
+  .weave-card-chip-group {
+    margin-right: 0;
+    gap: 5px;
+  }
+  .weave-deliverable-chip,
+  .weave-plain-chip {
+    max-width: 98px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .weave-badge {
+    min-width: 60px;
+    max-width: 156px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .weave-card-expanded {
+    padding: 10px 12px;
+  }
+  .weave-chat-btn .weave-btn-label,
+  .weave-conv-short,
+  .weave-copy-btn > span,
+  .weave-deliv-tag,
+  .weave-view-updates-btn .weave-btn-label,
+  .weave-runtime-state {
+    display: none;
+  }
+  .weave-chat-btn,
+  .weave-copy-btn {
+    padding: 4px 6px;
+    gap: 0;
+  }
+  .weave-view-updates-btn {
+    text-decoration: none;
+    padding: 4px 5px;
+    border-radius: 5px;
+    gap: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .agy-header {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .agy-header-right {
+    gap: 4px;
+  }
+  .agy-sync-btn .agy-btn-label,
+  .agy-raw-btn .agy-btn-label {
+    display: none;
+  }
+  .agy-sync-btn,
+  .agy-raw-btn {
+    width: 26px;
+    padding: 0;
+    gap: 0;
+  }
+  .agy-worktree-badge {
+    max-width: 112px;
+  }
+  .weave-card-header {
+    padding: 10px 10px;
+    gap: 6px;
+  }
+  .weave-card-meta {
+    gap: 4px;
+  }
+  .weave-card-chip-group {
+    margin-right: 0;
+    gap: 5px;
+  }
+  .weave-deliverable-chip,
+  .weave-plain-chip {
+    max-width: 98px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .weave-badge {
+    min-width: 60px;
+    max-width: 156px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .weave-card-expanded {
+    padding: 10px 12px;
+  }
+  .weave-chat-btn .weave-btn-label,
+  .weave-conv-short,
+  .weave-copy-btn > span,
+  .weave-deliv-tag,
+  .weave-view-updates-btn .weave-btn-label,
+  .weave-runtime-state {
+    display: none;
+  }
+  .weave-chat-btn,
+  .weave-copy-btn {
+    padding: 4px 6px;
+    gap: 0;
+  }
+  .weave-view-updates-btn {
+    text-decoration: none;
+    padding: 4px 5px;
+    border-radius: 5px;
+    gap: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .agy-live-label {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

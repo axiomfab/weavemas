@@ -353,7 +353,7 @@
     }
     const wtName = String(activeItem.worktree || 'worktree').trim();
     const branchSvg = `<svg class="w-3 h-3 fill-current shrink-0" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path></svg>`;
-    return `<span id="worktree-badge" class="agy-worktree-badge" title="Executing in Git Worktree: ${escapeHtml(wtName)}">${branchSvg}<span>${escapeHtml(wtName)}</span></span>`;
+    return `<span id="worktree-badge" class="agy-worktree-badge" title="Executing in Git Worktree: ${escapeHtml(wtName)}">${branchSvg}<span class="agy-worktree-name truncate">${escapeHtml(wtName)}</span></span>`;
   }
 
   /**
@@ -460,7 +460,7 @@
     const toggleLabel = activeTheme === 'dark' ? 'Switch to light layout' : 'Switch to dark layout';
     const togglePressed = activeTheme === 'light' ? 'true' : 'false';
     const rawBtnHtml = (typeof onViewRawMarkdown === 'function')
-      ? `<button id="raw-markdown-btn" type="button" class="agy-raw-btn" title="View Raw Markdown"><svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>View Raw Markdown</span></button>`
+      ? `<button id="raw-markdown-btn" type="button" class="agy-raw-btn" title="View Raw Markdown" aria-label="View Raw Markdown"><svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.25 5L2.25 8l3 3M10.75 5l3 3-3 3M9.25 3.25l-2.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="agy-btn-label">View Raw Markdown</span></button>`
       : '';
 
     const headerEl = container.querySelector ? container.querySelector('header') : null;
@@ -487,11 +487,11 @@
               ${buildThemeToggleInnerHtml(activeTheme)}
             </button>
             ${rawBtnHtml}
-            <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state">
+            <button id="sync-btn" type="button" class="agy-sync-btn" title="Sync pipeline state" aria-label="Sync pipeline state">
               <svg class="agy-sync-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M13.5 8a5.5 5.5 0 1 1-1.38-3.65M13.5 2.5v2.75h-2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>Sync</span>
+              <span class="agy-btn-label">Sync</span>
             </button>
           </div>
         </header>

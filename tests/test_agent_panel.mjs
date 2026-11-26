@@ -1250,3 +1250,75 @@ test('UI Polish (Issue #27): agy host variable bindings, muted stepper rail, neu
   assert.match(container.innerHTML, /data-weave-icon="file"/);
   assert.doesNotMatch(container.innerHTML, /[▶▼]|⏱️|📄|&bull;|•/);
 });
+
+test('Responsive Narrow-Pane Layout (Issue #32): single-line badges/chips, non-wrapping runtime timer, icon-only toolbar hooks, and container/media CSS rules', () => {
+  // 1. Single-line status badges & deliverable chips with truncation and full title tooltips
+  const statusHtml = getStatusBadge('in_progress/01_transitions', 'card_s1_staging');
+  assert.match(statusHtml, /whitespace-nowrap/);
+  assert.match(statusHtml, /truncate/);
+  assert.match(statusHtml, /inline-block/);
+  assert.match(statusHtml, /title="in progress: 01 transitions"/);
+
+  const chipHtml = getAgentValueChip({ outputs: ['01_a.md', '02_b.md'] }, 'card_s1_staging', false);
+  assert.match(chipHtml, /whitespace-nowrap/);
+  assert.match(chipHtml, /min-w-0/);
+  assert.match(chipHtml, /title="2 outputs"/);
+  assert.match(chipHtml, /<span class="truncate">2 outputs<\/span>/);
+
+  // 2. Expanded updates & deliverable toolbars carry icon-only collapse hooks, tooltips, aria-labels, and non-wrapping timers
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    stages: [{
+      num: 1,
+      name: 'Staging & Transitions',
+      nodes: [{
+        type: 'agent',
+        id: 'staging',
+        name: 'staging',
+        frontmatter: {
+          status: 'in_progress/01_transitions',
+          conversation_id: '3f8a9c12-4b7e-4d1a-9e2b-8c7d6e5f4a3b',
+          outputs: ['01_transitions_plan.md', '02_transitions_notes.md'],
+          updated_at: '2026-11-26T10:00:00.000Z'
+        },
+        body: '- 2026-11-26T09:35:31.000Z: `in_progress/01_transitions` - Working',
+        deliverableContent: '# Transitions'
+      }]
+    }]
+  };
+
+  expandedCards.add('card_s1_staging');
+  cardViewModes.set('card_s1_staging', 'updates');
+  render(container, mockData);
+
+  assert.match(container.innerHTML, /weave-runtime-badge[^"]*whitespace-nowrap shrink-0/);
+  assert.match(container.innerHTML, /weave-chat-btn[^"]*whitespace-nowrap shrink-0/);
+  assert.match(container.innerHTML, /title="Open Subagent Chat" aria-label="Open Subagent Chat"/);
+  assert.match(container.innerHTML, /<span class="weave-btn-label">Open Subagent Chat<\/span>/);
+  assert.match(container.innerHTML, /class="weave-conv-short[^"]*"/);
+
+  cardViewModes.set('card_s1_staging', 'deliverable');
+  render(container, mockData);
+
+  assert.match(container.innerHTML, /class="weave-copy-btn[^"]*" title="Copy deliverable" aria-label="Copy deliverable"/);
+  assert.match(container.innerHTML, /class="weave-deliv-tag[^"]*">\(Deliverable\)<\/span>/);
+  assert.match(container.innerHTML, /class="weave-view-updates-btn[^"]*" title="View Updates" aria-label="View Updates"/);
+  assert.match(container.innerHTML, /<span class="weave-btn-label">View Updates<\/span>/);
+
+  expandedCards.clear();
+  cardViewModes.clear();
+
+  // 3. CSS & offline VS Code viewer utility parity
+  const css = fs.readFileSync(path.resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css'), 'utf-8');
+  assert.match(css, /container:\s*weave-card\s*\/\s*inline-size;/);
+  assert.match(css, /@container weave-card \(max-width:\s*460px\)/);
+  assert.match(css, /@media \(max-width:\s*480px\)/);
+  assert.match(css, /\.weave-stepper-scroll\s*\{[\s\S]*?overflow-x:\s*auto;/);
+  assert.match(css, /\.weave-stepper-item\s*\{[\s\S]*?min-width:\s*72px;/);
+
+  const offlineTailwind = fs.readFileSync(path.resolve(__dirname, '..', 'extensions', 'vscode-viewer', 'webview_tailwind.css'), 'utf-8');
+  assert.match(offlineTailwind, /\.overflow-x-auto\s*\{\s*overflow-x:\s*auto;\s*\}/);
+  assert.match(offlineTailwind, /\.whitespace-nowrap\s*\{\s*white-space:\s*nowrap;\s*\}/);
+  assert.match(offlineTailwind, /\.min-w-0\s*\{\s*min-width:\s*0px;\s*\}/);
+  assert.match(offlineTailwind, /\.inline-block\s*\{\s*display:\s*inline-block;\s*\}/);
+});
