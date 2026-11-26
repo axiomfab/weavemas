@@ -655,4 +655,56 @@ describe('Pipeline Panel Stage Evaluation', () => {
     );
     assert.equal(splitOrchestratorStatus('in_progress/stage2_concept').stageSlug, 'stage2_concept');
   });
+
+  it('Scrollable Horizontal Stepper (Issue #32): wraps stepper in overflow-x-auto track and enforces 72px minimum stage width across 9 stages', () => {
+    const html = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'index.html'), 'utf8');
+    const extJs = readFileSync(resolve(__dirname, '..', 'extensions', 'vscode-viewer', 'extension.js'), 'utf8');
+    assert.match(html, /<section id="stepper-root" class="weave-stepper-scroll custom-scrollbar py-2\.5 px-1 overflow-x-auto">/);
+    assert.match(html, /<div id="stepper-track" class="weave-stepper-track relative my-2">/);
+    assert.match(extJs, /<section id="stepper-root" class="weave-stepper-scroll custom-scrollbar py-2\.5 px-1 overflow-x-auto">/);
+    assert.match(extJs, /<div id="stepper-track" class="weave-stepper-track relative my-2">/);
+
+    const stepperTrack = { style: {} };
+    const stepperLine = { style: {}, parentElement: stepperTrack };
+    const stepperRow = { innerHTML: '' };
+    const stepperRoot = { style: {} };
+    const elements = {
+      'stepper-root': stepperRoot,
+      'stepper-track': stepperTrack,
+      'stepper-line': stepperLine,
+      'stages-stepper-row': stepperRow,
+      'agents-root': { innerHTML: '', querySelectorAll: () => [] }
+    };
+    const ctx = {
+      window: { WeaveHostBridge: { onPipelineUpdate() {}, notifyReady() {} } },
+      document: {
+        readyState: 'complete',
+        getElementById: (id) => elements[id] || null,
+        addEventListener() {}
+      },
+      console
+    };
+    vm.createContext(ctx);
+    vm.runInContext(readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'app.js'), 'utf8'), ctx);
+
+    const stageList = Array.from({ length: 9 }, (_, idx) => ({
+      num: idx + 1,
+      name: `StageName ${idx + 1}`,
+      status: idx < 3 ? 'completed' : (idx === 3 ? 'in_progress' : 'pending'),
+      isCompleted: idx < 3
+    }));
+    const stages = Object.fromEntries(stageList.map(s => [s.num, s]));
+    ctx.window.App.applyPayload({ stages, stageList, stageAgents: [] });
+
+    assert.equal(stepperTrack.style.minWidth, 'max(100%, 648px)');
+    assert.equal(stepperLine.style.left, '5.56%');
+    assert.equal(stepperLine.style.right, '5.56%');
+    const nowrapMatches = stepperRow.innerHTML.match(/whitespace-nowrap">Stage \d+<\/span>/g) || [];
+    assert.equal(nowrapMatches.length, 9);
+
+    // Empty stage list resets track minWidth cleanly
+    ctx.window.App.applyPayload({ stages: {}, stageList: [], stageAgents: [] });
+    assert.equal(stepperTrack.style.minWidth, '');
+    assert.equal(stepperRoot.style.display, 'none');
+  });
 });

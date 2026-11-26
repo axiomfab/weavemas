@@ -27,7 +27,7 @@
     else if (base === 'waiting') cls = 'weave-badge weave-badge-waiting bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium font-mono';
     else if (base === 'completed' || base === 'approved') cls = 'weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold font-mono';
     else if (base === 'blocked' || base === 'error' || base === 'failed') cls = 'weave-badge weave-badge-blocked bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold font-mono';
-    return `<span class="${cls} px-2 py-0.5 rounded text-[10px] ${cardId ? 'cursor-pointer hover:opacity-85' : ''} transition-all" ${cardId ? `data-status-toggle="${escapeHtml(cardId)}"` : ''}>${escapeHtml(label)}</span>`;
+    return `<span class="${cls} inline-block max-w-full truncate whitespace-nowrap px-2 py-0.5 rounded text-[10px] ${cardId ? 'cursor-pointer hover:opacity-85' : ''} transition-all" title="${escapeHtml(label)}" ${cardId ? `data-status-toggle="${escapeHtml(cardId)}"` : ''}>${escapeHtml(label)}</span>`;
   }
   function getOutputsList(fm, outputItems = null) {
     if (Array.isArray(outputItems) && outputItems.length > 0) return outputItems.map(it => String(it.name));
@@ -44,7 +44,7 @@
       const activeCls = isDeliverableActive
         ? 'weave-deliverable-chip weave-deliverable-chip-active'
         : 'weave-deliverable-chip';
-      return `<button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all ${activeCls}" data-deliverable-toggle="${escapeHtml(cardId)}">${ICON_FILE}<span>${escapeHtml(chipLabel)}</span></button>`;
+      return `<button type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded cursor-pointer transition-all whitespace-nowrap min-w-0 ${activeCls}" title="${escapeHtml(chipLabel)}" data-deliverable-toggle="${escapeHtml(cardId)}">${ICON_FILE}<span class="truncate">${escapeHtml(chipLabel)}</span></button>`;
     }
     if (fm?.progress) return `${escapeHtml(fm.progress)} Verified`;
     if (fm?.total_acts != null && fm?.total_segments != null) return `${fm.total_acts} Acts • ${fm.total_segments} Segments`;
@@ -131,9 +131,9 @@
   function getGroupSummaryChip(node) {
     const s = getGroupSummary(node);
     const label = `${s.completed}/${s.total} completed`;
-    if (s.total > 0 && s.completed === s.total) return `<span class="weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded text-[10px] font-semibold font-mono">${escapeHtml(label)}</span>`;
-    if (s.inProgress > 0) return `<span class="weave-badge vivid-pulse px-2 py-0.5 rounded text-[10px] font-bold border font-mono">${escapeHtml(label)}</span>`;
-    return `<span class="weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50 px-2 py-0.5 rounded text-[10px] font-mono">${escapeHtml(label)}</span>`;
+    if (s.total > 0 && s.completed === s.total) return `<span class="weave-badge weave-badge-completed bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold font-mono" title="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
+    if (s.inProgress > 0) return `<span class="weave-badge vivid-pulse whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border font-mono" title="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
+    return `<span class="weave-badge weave-badge-neutral bg-slate-800 text-slate-400 border border-slate-700/50 whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-[10px] font-mono" title="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
   }
 
   function detectMediaType(filename, explicitMediaType = null) {
@@ -193,19 +193,19 @@
     let updatedLabelHtml = '';
     if (fm.updated_at) {
       const rel = rtTracker?.formatRelativeTime ? rtTracker.formatRelativeTime(fm.updated_at) : new Date(fm.updated_at).toLocaleTimeString();
-      updatedLabelHtml = `<span title="${escapeHtml(new Date(fm.updated_at).toLocaleTimeString())}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
+      updatedLabelHtml = `<span class="whitespace-nowrap" title="${escapeHtml(new Date(fm.updated_at).toLocaleTimeString())}" data-relative-time="${escapeHtml(fm.updated_at)}">Updated: ${escapeHtml(rel)}</span>`;
     }
-    const chatBtn = convId ? `<button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium transition-colors" data-conv-id="${escapeHtml(convId)}">${ICON_CHAT}<span>Open Subagent Chat</span></button><span class="text-slate-600">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
+    const chatBtn = convId ? `<button type="button" class="weave-chat-btn inline-flex items-center gap-1.5 px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 font-medium whitespace-nowrap shrink-0 transition-colors" title="Open Subagent Chat" aria-label="Open Subagent Chat" data-conv-id="${escapeHtml(convId)}">${ICON_CHAT}<span class="weave-btn-label">Open Subagent Chat</span></button><span class="weave-conv-short text-slate-600 whitespace-nowrap" title="${escapeHtml(convId)}">(${escapeHtml(convId.slice(0, 8))}...)</span>` : '';
     const outs = getOutputsList(fm, agentData?.outputItems);
     const isDeliverableMode = viewMode === 'deliverable' && outs.length > 0;
     const delivLabel = outs.length === 1 ? outs[0] : `${outs.length} outputs`;
     let headerActionHtml = '', mainContentHtml = '';
     if (isDeliverableMode) {
-      const copyBtn = `<button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono transition-colors" data-copy-deliverable="${escapeHtml(cardId)}">${ICON_COPY}<span>Copy</span></button>`;
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono"><span class="inline-flex items-center gap-1.5 text-slate-200 text-[11px] font-semibold">${ICON_FILE}<span>${escapeHtml(delivLabel)}</span></span><span class="text-slate-500 text-[11px]">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="weave-view-updates-btn inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 font-mono underline" data-status-toggle="${escapeHtml(cardId)}"><span>View Updates</span>${ICON_ARROW_DOWN}</button>`;
+      const copyBtn = `<button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono whitespace-nowrap shrink-0 transition-colors" title="Copy deliverable" aria-label="Copy deliverable" data-copy-deliverable="${escapeHtml(cardId)}">${ICON_COPY}<span>Copy</span></button>`;
+      headerActionHtml = `<div class="weave-toolbar-left flex items-center gap-2 font-mono min-w-0 flex-1"><span class="weave-deliv-title inline-flex items-center gap-1.5 min-w-0 text-slate-200 text-[11px] font-semibold" title="${escapeHtml(delivLabel)}">${ICON_FILE}<span class="truncate">${escapeHtml(delivLabel)}</span></span><span class="weave-deliv-tag text-slate-500 text-[11px] whitespace-nowrap shrink-0">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="weave-view-updates-btn inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 font-mono underline whitespace-nowrap shrink-0" title="View Updates" aria-label="View Updates" data-status-toggle="${escapeHtml(cardId)}"><span class="weave-btn-label">View Updates</span>${ICON_ARROW_DOWN}</button>`;
       mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
     } else {
-      headerActionHtml = `<div class="flex items-center gap-2 font-mono">${runtimeBadge}${chatBtn}</div><div class="text-[11px] text-slate-500 font-mono">${updatedLabelHtml}</div>`;
+      headerActionHtml = `<div class="weave-toolbar-left flex items-center gap-2 font-mono min-w-0 shrink-0">${runtimeBadge}${chatBtn}</div><div class="weave-toolbar-right text-[11px] text-slate-500 font-mono whitespace-nowrap truncate min-w-0">${updatedLabelHtml}</div>`;
       const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
       const hasFm = fmContent && fmContent !== 'No frontmatter available.';
       const formattedLog = formatHumanLogBody(body);
@@ -216,7 +216,8 @@
         mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="py-6 text-center text-xs text-slate-500 italic font-mono select-text">No frontmatter available. No logs recorded yet. Agent is pending or starting up...</div>`;
       }
     }
-    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="flex items-center gap-2.5"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="font-bold text-xs text-slate-200 tracking-wide">${escapeHtml(title)}</span></div><div class="flex items-center gap-2 font-mono text-[11px]">${customChip ? `<span class="inline-flex items-center gap-2 text-slate-400 mr-1">${customChip}<span class="weave-sep-dot" aria-hidden="true"></span></span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/60 pb-2">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
+    const wrappedChip = customChip ? (String(customChip).trimStart().startsWith('<') ? customChip : `<span class="weave-plain-chip truncate whitespace-nowrap" title="${escapeHtml(customChip)}">${customChip}</span>`) : '';
+    return `<div class="weave-card rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-sm transition-all"><div class="weave-card-header p-3 bg-slate-900/80 flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-800/50 transition-colors" data-concept-toggle="${escapeHtml(cardId)}"><div class="weave-card-title-wrap flex items-center gap-2.5 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-card-title font-bold text-xs text-slate-200 tracking-wide truncate" title="${escapeHtml(title)}">${escapeHtml(title)}</span></div><div class="weave-card-meta flex items-center gap-2 font-mono text-[11px] min-w-0">${wrappedChip ? `<span class="weave-card-chip-group inline-flex items-center gap-2 text-slate-400 mr-1 min-w-0">${wrappedChip}<span class="weave-sep-dot" aria-hidden="true"></span></span>` : ''}${getStatusBadge(status, cardId)}</div></div>${isOpen ? `<div class="weave-card-expanded p-4 border-t border-slate-800/70 bg-slate-950/40 space-y-3"><div class="weave-card-toolbar flex items-center justify-between gap-2 text-xs text-slate-400 border-b border-slate-800/60 pb-2 min-w-0">${headerActionHtml}</div>${mainContentHtml}</div>` : ''}</div>`;
   }
 
   function getNodeCreationTime(node) {
@@ -234,7 +235,7 @@
         const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
         return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
       });
-      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-group-title font-bold text-xs text-white tracking-wide">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
+      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-group-title font-bold text-xs text-white tracking-wide truncate" title="${escapeHtml(title)}">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const chip = getAgentValueChip(node.frontmatter, cardId, cardViewModes.get(cardId) === 'deliverable', node.outputItems);
@@ -262,14 +263,14 @@
         const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || null;
         const stageRt = rtTracker?.calculateStageRuntime ? rtTracker.calculateStageRuntime(nodeList) : null;
         const timerHtml = (stageRt && (stageRt.seconds > 0 || stageRt.isRunning))
-          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}">${ICON_CLOCK}${stageRt.isRunning ? `<span data-running-timer data-start-ms="${stageRt.lastStartMs || 0}" data-prior-ms="${stageRt.priorActiveMs || 0}" data-base-seconds="${stageRt.seconds || 0}" data-calc-time="${Date.now()}">${escapeHtml(stageRt.formatted)}</span>` : escapeHtml(stageRt.formatted)}</span>`
+          ? `<span class="inline-flex items-center gap-1 text-[11px] font-mono whitespace-nowrap shrink-0 ${stageRt.isRunning ? 'text-slate-400' : 'text-slate-500'}">${ICON_CLOCK}${stageRt.isRunning ? `<span data-running-timer data-start-ms="${stageRt.lastStartMs || 0}" data-prior-ms="${stageRt.priorActiveMs || 0}" data-base-seconds="${stageRt.seconds || 0}" data-calc-time="${Date.now()}">${escapeHtml(stageRt.formatted)}</span>` : escapeHtml(stageRt.formatted)}</span>`
           : '';
         const stageId = (st.num != null) ? `stage_${st.num}` : (st.name ? `stage_${st.name}` : 'stage_unknown');
         const isExpanded = !collapsedStages.has(stageId);
         const stageHeader = (st.num != null && st.num > 0)
-          ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>`
-          : (st.name ? `<div class="flex items-center gap-1.5 shrink-0"><span class="inline-flex items-center justify-center text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>` : '');
-        return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
+          ? `<div class="flex items-center gap-1.5 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors whitespace-nowrap shrink-0">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400 truncate min-w-0" title="${escapeHtml(st.name)}">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>`
+          : (st.name ? `<div class="flex items-center gap-1.5 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors truncate min-w-0" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>` : '');
+        return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity min-w-0" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 min-w-[12px] h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono whitespace-nowrap shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
     const prevScrolls = new Map(), activeMediaEls = new Map();
@@ -338,10 +339,12 @@
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) navigator.clipboard.writeText(textToCopy);
       if ('innerHTML' in btn) btn.innerHTML = `${ICON_CHECK}<span>Copied</span>`;
       else btn.textContent = 'Copied';
+      if ('title' in btn) btn.title = 'Copied';
       if (typeof setTimeout === 'function') {
         const t = setTimeout(() => {
           if ('innerHTML' in btn) btn.innerHTML = `${ICON_COPY}<span>Copy</span>`;
           else btn.textContent = 'Copy';
+          if ('title' in btn) btn.title = 'Copy deliverable';
         }, 1800);
         if (t && typeof t.unref === 'function') t.unref();
       }

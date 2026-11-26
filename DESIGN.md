@@ -91,3 +91,26 @@ WeaveMX uses **13 inline `16x16` SVG icons** (`aria-hidden="true"`): the **11 ex
 | 11 | `chat` | `12x12px` | `Open Subagent Chat` button (`agent_panel.js` `L9`) | `<svg class="weave-icon weave-chat-icon" data-weave-icon="chat" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.75 3.75a1.5 1.5 0 0 1 1.5-1.5h7.5a1.5 1.5 0 0 1 1.5 1.5v5.5a1.5 1.5 0 0 1-1.5 1.5H6.5l-2.75 2.25v-2.25h-.5a1.5 1.5 0 0 1-1.5-1.5v-5.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>` |
 | 12 | `check` *(new)* | `12x12px` | `Copied` confirmation state on Copy button (replaces raw Unicode check in `L327`) | `<svg class="weave-icon weave-check-icon" data-weave-icon="check" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>` |
 | 13 | `arrow-down` *(new)* | `12x12px` | `View Updates` toggle button in Deliverable drawer (replaces `&darr;` in `L203`) | `<svg class="weave-icon weave-arrow-icon" data-weave-icon="arrow-down" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3.25v9.5M4.5 9.25L8 12.75l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` |
+
+---
+
+## 5. Responsive & Narrow-Pane Layout Rules (`320px–480px`)
+
+When WeaveMX is docked in a narrow Antigravity sidecar pane or split VS Code editor tab (`~320px–400px`), the UI preserves single-line alignment without crushing or multi-line wrapping:
+
+1. **Dual Container & Viewport Thresholds:**
+   - **Card Container Query (`container: weave-card / inline-size`):** `@container weave-card (max-width: 460px)` adapts agent card rows and expanded toolbars based on the card's actual inline width (handling both narrow panes and deeply nested `.weave-group` hierarchies).
+   - **Viewport Media Queries:** `@media (max-width: 480px)` compacts sticky header actions and provides an identical fallback for card rows/toolbars; `@media (max-width: 380px)` hides the `"Live"` text label next to `.pulsing-dot`.
+2. **Horizontal Scrollable Stage Stepper (`.weave-stepper-scroll` & `.weave-stepper-track`):**
+   - `#stepper-root` acts as a horizontal scroll container (`overflow-x: auto; overflow-y: hidden`) styled with `.custom-scrollbar`.
+   - `#stepper-track` sets `min-width: max(100%, calc(N * 72px))` (`72px` minimum column width per stage via `.weave-stepper-item { flex: 1 0 72px; min-width: 72px; }`) so `Stage N` titles remain `whitespace-nowrap` on one line, subtitles truncate cleanly at `max-w-[70px]`, and `#stepper-line` spans across all `N` circle centers smoothly during horizontal scroll.
+3. **Icon-Only Compact Controls & Non-Wrapping Timers:**
+   - Elapsed runtime badges (`.weave-runtime-badge`) enforce `white-space: nowrap; flex-shrink: 0` so durations such as `24m 29s` never split across lines.
+   - Below `460px` card width (`480px` viewport width), verbose toolbar labels collapse to crisp icon-only buttons backed by `title` and `aria-label` attributes:
+     - `.weave-chat-btn`: hides `.weave-btn-label` (`"Open Subagent Chat"`) and `.weave-conv-short` (`(uuid...)`), showing the `12x12` `chat` SVG with `title="Open Subagent Chat"` / `aria-label="Open Subagent Chat"`.
+     - `.weave-copy-btn`: hides `<span>Copy</span>` / `<span>Copied</span>`, showing `copy` / `check` SVG with `title="Copy deliverable"` (`"Copied"` on click) / `aria-label="Copy deliverable"`.
+     - `.weave-view-updates-btn`: hides `.weave-btn-label` (`"View Updates"`) and `.weave-deliv-tag` (`"(Deliverable)"`), showing the `arrow-down` SVG with `title="View Updates"` / `aria-label="View Updates"`.
+     - `.agy-header`: hides `.agy-btn-label` on `#raw-markdown-btn` and `#sync-btn` (`26x26px` icon-only buttons with `title` and `aria-label`).
+4. **Single-Line Truncation for Badges, Chips & Worktree Tag:**
+   - `.agy-header-left` uses `flex-wrap: nowrap; overflow: hidden` and `.agy-worktree-badge` (`max-width: 200px`, `112px` at `<= 480px`) truncates `.agy-worktree-name` on one line with ellipsis while keeping `"Executing in Git Worktree: <branch>"` in `title`.
+   - `.weave-deliverable-chip` (`max-width: 160px`, `98px` narrow) and `.weave-badge` (`display: inline-block`, `max-width: 190px`, `156px` narrow) enforce `white-space: nowrap; overflow: hidden; text-overflow: ellipsis` with full text in `title` so every agent row maintains uniform single-line height without prematurely truncating short chips such as `2 outputs`.

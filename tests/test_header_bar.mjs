@@ -424,4 +424,29 @@ test('HeaderBar Component Unit Tests', async (t) => {
     assert.throws(() => HeaderBar.render(container, { shows: [], storage: { getItem() {} } }), /CRITICAL: storage must provide getItem and setItem functions/);
     assert.throws(() => HeaderBar.render(container, { shows: [], rootEl: 'bad' }), /CRITICAL: rootEl must be an object or null/);
   });
+
+  await t.test('Responsive Header & Worktree Badge Truncation (Issue #32): single-line worktree truncation with full title and accessible compact button labels', () => {
+    const { container, badgeRoot } = createMockContainer();
+    const longBranch = 'issue-32-fix-responsive-layout-of-weavemx-sidecar-narrow-pane';
+    HeaderBar.render(container, {
+      shows: [{
+        path: `c:/ws/.solony/worktrees/${longBranch}/runs/demo`,
+        displayPath: 'runs\\demo',
+        isWorktree: true,
+        worktree: longBranch
+      }],
+      activePath: `c:/ws/.solony/worktrees/${longBranch}/runs/demo`,
+      onViewRawMarkdown: () => {}
+    });
+
+    assert.match(badgeRoot.innerHTML, new RegExp(`title="Executing in Git Worktree: ${longBranch}"`));
+    assert.match(badgeRoot.innerHTML, new RegExp(`<span class="agy-worktree-name truncate">${longBranch}</span>`));
+    assert.match(container.innerHTML, /id="raw-markdown-btn"[^>]*aria-label="View Raw Markdown"/);
+    assert.match(container.innerHTML, /id="sync-btn"[^>]*aria-label="Sync pipeline state"/);
+    assert.match(container.innerHTML, /<span class="agy-btn-label">Sync<\/span>/);
+
+    const css = fs.readFileSync(path.resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css'), 'utf-8');
+    assert.match(css, /\.agy-header-left\s*\{[^}]*flex-wrap:\s*nowrap;/);
+    assert.match(css, /\.agy-worktree-name\s*\{[^}]*text-overflow:\s*ellipsis;/);
+  });
 });
