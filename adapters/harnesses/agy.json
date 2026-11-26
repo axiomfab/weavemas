@@ -29,5 +29,5 @@
   },
   "revision": { "mode": "resume", "handleKey": "conversationId" },
   "agentFrontmatter": { "agyFlags": true },
-  "uiTrackerLink": "[WeaveMX UI](sidecar://weavemx/panel/)"
+  "uiTrackerLink": "[WeaveMX](sidecar://weavemx/panel/)"
 }

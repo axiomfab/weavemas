@@ -2,16 +2,16 @@
   "command": "node",
   "args": ["main.mjs"],
   "restart_policy": "always",
-  "display_name": "WeaveMX UI",
+  "display_name": "WeaveMX",
   "description": "Pipeline production tracker and modular stage inspector.",
   "has_web_ui": true,
   "ui_config": {
-    "display_name": "WeaveMX UI",
+    "display_name": "WeaveMX",
     "views": [
       {
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
-        "title": "WeaveMX UI"
+        "title": "WeaveMX"
       }
     ]
   }

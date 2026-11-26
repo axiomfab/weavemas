@@ -1,7 +1,7 @@
 {
   "name": "weavemx-viewer",
   "displayName": "WeaveMX Viewer",
-  "description": "Zero-token custom editor that opens the WeaveMX UI natively on any weave.md pipeline manifest.",
+  "description": "Zero-token custom editor that opens WeaveMX natively on any weave.md pipeline manifest.",
   "version": "1.2.0",
   "publisher": "axiomfab",
   "license": "MIT",
@@ -24,7 +24,7 @@
     "customEditors": [
       {
         "viewType": "weavemx.viewer",
-        "displayName": "WeaveMX UI",
+        "displayName": "WeaveMX",
         "selector": [
           {
             "filenamePattern": "**/weave.md"
@@ -42,7 +42,7 @@
       },
       {
         "command": "weavemx.openViewer",
-        "title": "Open WeaveMX UI",
+        "title": "Open WeaveMX",
         "category": "WeaveMX",
         "icon": "$(preview)"
       }

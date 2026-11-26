@@ -94,7 +94,7 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
    - `age_checker` Parameters: `target_age`
    - Execution: Audit `../writer/draft.md` concurrently for factual accuracy (`fact_audit.md`) and age readability (`age_audit.md`). If either audit returns `verdict: FAIL` (max 2 revision cycles), route combined critique feedback to `writer` via `send_message` and re-run the failed checker(s).
 3. **User Review Gate**:
-   - Present `01_draft.md` for approval via WeaveMX UI and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.
+   - Present `01_draft.md` for approval via WeaveMX and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.
 ```
 
 </details>
@@ -306,9 +306,9 @@ trigger: always_on
 
 1. **Activate trigger**: Move `orchestrator_trigger.md` into `.agent/rules/orchestrator_trigger.md`.
 2. **Execute**: Prompt `"Write a KidsWiki article about 'Rocket' for a 4yo."`
-3. **Observe & Steer**: Click `[WeaveMX UI](sidecar://weavemx/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
+3. **Observe & Steer**: Click `[WeaveMX](sidecar://weavemx/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
 
-![WeaveMX UI Sidecar](assets/weavemx_ui_kidswiki.png)
+![WeaveMX Sidecar](assets/weavemx_ui_kidswiki.png)
 
 ## Why WeaveMX?
 
@@ -349,7 +349,7 @@ git clone https://github.com/axiomfab/weavemx.git ~/.gemini/config/plugins/weave
 git clone https://github.com/axiomfab/weavemx.git "$HOME/.gemini/config/plugins/weavemx"
 ```
 
-When enabled in Antigravity (`customization://weavemx`), the plugin automatically registers the `weavemx_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMX UI` sidecar (`sidecars/panel/`).
+When enabled in Antigravity (`customization://weavemx`), the plugin automatically registers the `weavemx_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMX` sidecar (`sidecars/panel/`).
 
 </details>
 
@@ -366,7 +366,7 @@ git clone https://github.com/axiomfab/weavemx.git ~/.gemini/config/plugins/weave
 git clone https://github.com/axiomfab/weavemx.git "$HOME/.gemini/config/plugins/weavemx"
 ```
 
-Install `weavemx-viewer.vsix` to open the WeaveMX UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
+Install `weavemx-viewer.vsix` to open WeaveMX natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
 
 ```bash
 # Option A: Download weavemx-viewer.vsix from the latest GitHub Release

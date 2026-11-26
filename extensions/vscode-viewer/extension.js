@@ -370,7 +370,7 @@ function renderWebviewHtml(opts) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data: blob:; media-src ${cspSource} data: blob:; style-src ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
-  <title>WeaveMX UI</title>
+  <title>WeaveMX</title>
   <link rel="stylesheet" href="${tailwindCssUri}">
   <link rel="stylesheet" href="${panelStylesUri}">
 </head>
@@ -688,7 +688,7 @@ class WeaveCustomEditorProvider {
 
 /**
  * Activates the WeaveMX Viewer extension, registering `weavemx.viewer` for `weave.md` files
- * and the two-way `"View Raw Markdown"` / `"Open WeaveMX UI"` editor title commands.
+ * and the two-way `"View Raw Markdown"` / `"Open WeaveMX"` editor title commands.
  * @param {import('vscode').ExtensionContext} context
  * @param {typeof import('vscode')} [vscodeOverride]
  * @returns {WeaveCustomEditorProvider}
