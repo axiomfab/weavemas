@@ -146,21 +146,40 @@
     return null;
   }
 
-  function renderMediaPreviewHtml(name, mediaType, filePath = null, webviewUri = null) {
+  function renderMediaPreviewHtml(name, mediaType, filePath = null, webviewUri = null, mediaContext = null) {
     if (!name || typeof name !== 'string') throw new TypeError('CRITICAL: name must be a non-empty string');
     if (mediaType !== 'image' && mediaType !== 'audio' && mediaType !== 'video') {
       throw new TypeError(`CRITICAL: mediaType must be 'image', 'audio', or 'video', got '${mediaType}'`);
     }
     const target = (typeof filePath === 'string' && filePath.trim()) ? filePath.trim() : name.trim();
-    const tokMatch = (typeof window !== 'undefined' && typeof window.location?.search === 'string') ? window.location.search.match(/[?&]token=([^&]+)/) : null;
+    const searchStr = (typeof window !== 'undefined' && typeof window.location?.search === 'string') ? window.location.search : '';
+    const readQueryParam = (key) => {
+      if (!searchStr) return null;
+      const m = searchStr.match(new RegExp(`[?&]${key}=([^&]+)`));
+      if (!m) return null;
+      try { return decodeURIComponent(m[1]).trim() || null; } catch { return m[1].trim() || null; }
+    };
+    const tokVal = readQueryParam('token');
+    const wsUri = (typeof mediaContext?.workspaceUri === 'string' && mediaContext.workspaceUri.trim())
+      ? mediaContext.workspaceUri.trim()
+      : readQueryParam('workspaceUri');
+    const ctxDir = (typeof mediaContext?.contextDir === 'string' && mediaContext.contextDir.trim())
+      ? mediaContext.contextDir.trim()
+      : ((typeof mediaContext?.showDir === 'string' && mediaContext.showDir.trim())
+        ? mediaContext.showDir.trim()
+        : (readQueryParam('contextDir') || readQueryParam('showDir')));
     const directUri = (typeof webviewUri === 'string' && webviewUri.trim()) ? webviewUri.trim() : null;
-    const src = directUri || `/api/media?path=${encodeURIComponent(target)}${tokMatch ? `&token=${encodeURIComponent(decodeURIComponent(tokMatch[1]))}` : ''}`;
+    const queryParts = [`path=${encodeURIComponent(target)}`];
+    if (wsUri) queryParts.push(`workspaceUri=${encodeURIComponent(wsUri)}`);
+    if (ctxDir) queryParts.push(`contextDir=${encodeURIComponent(ctxDir)}`);
+    if (tokVal) queryParts.push(`token=${encodeURIComponent(tokVal)}`);
+    const src = directUri || `/api/media?${queryParts.join('&')}`;
     if (mediaType === 'image') return `<img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" data-media-preview="image" data-media-src="${escapeHtml(src)}" class="my-1.5 max-w-full max-h-80 rounded object-contain block" loading="lazy" />`;
     if (mediaType === 'audio') return `<audio controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="audio" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full h-9 block"></audio>`;
     return `<video controls preload="metadata" src="${escapeHtml(src)}" data-media-preview="video" data-media-src="${escapeHtml(src)}" class="my-1.5 w-full max-h-80 rounded bg-black block"></video>`;
   }
 
-  function formatDeliverableHtml(agentData, delivLabel, outs) {
+  function formatDeliverableHtml(agentData, delivLabel, outs, mediaContext = null) {
     const rawDeliv = agentData?.deliverableContent;
     const outputItems = Array.isArray(agentData?.outputItems) ? agentData.outputItems : [];
     const itemMap = new Map();
@@ -171,7 +190,7 @@
     if (outs.length === 1) {
       const singleName = outs[0], item = itemMap.get(singleName) || outputItems[0] || null;
       const mType = (item && item.exists === false) ? null : detectMediaType(singleName, item?.mediaType);
-      const preview = mType ? renderMediaPreviewHtml(singleName, mType, item?.filePath || singleName, item?.webviewUri || null) : '';
+      const preview = mType ? renderMediaPreviewHtml(singleName, mType, item?.filePath || singleName, item?.webviewUri || null, mediaContext) : '';
       const escapedText = hasText ? escapeHtml(rawDeliv) : '';
       return preview ? (escapedText ? `${preview}\n${escapedText}` : preview) : escapedText;
     }
@@ -179,13 +198,13 @@
     return escapeHtml(baseText).replace(/^── (?:\uD83D\uDCC4 )?(.+?) ──$/gm, (_, escapedName) => {
       const item = itemMap.get(escapedName);
       const mType = (item && item.exists === false) ? null : detectMediaType(escapedName, item?.mediaType);
-      const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName, item?.webviewUri || null)}` : '';
+      const preview = mType ? `\n${renderMediaPreviewHtml(escapedName, mType, item?.filePath || escapedName, item?.webviewUri || null, mediaContext)}` : '';
       return `<span class="inline-flex items-center gap-1.5 text-slate-300 font-bold">── ${ICON_FILE} ${escapedName} ──</span>${preview}`;
     });
   }
 
   function renderAgentCard(cardId, title, ...args) {
-    const [agentData, customChip] = (args.length >= 2 && typeof args[0] === 'string') ? [args[1], args[2]] : [args[0], args[1]];
+    const [agentData, customChip, mediaContext] = (args.length >= 2 && typeof args[0] === 'string') ? [args[1], args[2], args[3]] : [args[0], args[1], args[2]];
     const isOpen = expandedCards.has(cardId), viewMode = cardViewModes.get(cardId) || 'updates';
     const fm = agentData?.frontmatter || {}, body = agentData?.body || '', status = fm.status || 'pending', convId = fm.conversation_id;
     const rtTracker = (typeof window !== 'undefined' && window.RuntimeTracker) || (typeof RuntimeTracker !== 'undefined' ? RuntimeTracker : null);
@@ -203,7 +222,7 @@
     if (isDeliverableMode) {
       const copyBtn = `<button type="button" class="weave-copy-btn inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono whitespace-nowrap shrink-0 transition-colors" title="Copy deliverable" aria-label="Copy deliverable" data-copy-deliverable="${escapeHtml(cardId)}">${ICON_COPY}<span>Copy</span></button>`;
       headerActionHtml = `<div class="weave-toolbar-left flex items-center gap-2 font-mono min-w-0 flex-1"><span class="weave-deliv-title inline-flex items-center gap-1.5 min-w-0 text-slate-200 text-[11px] font-semibold" title="${escapeHtml(delivLabel)}">${ICON_FILE}<span class="truncate">${escapeHtml(delivLabel)}</span></span><span class="weave-deliv-tag text-slate-500 text-[11px] whitespace-nowrap shrink-0">(Deliverable)</span>${copyBtn}${runtimeBadge}${chatBtn}</div><button type="button" class="weave-view-updates-btn inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 font-mono underline whitespace-nowrap shrink-0" title="View Updates" aria-label="View Updates" data-status-toggle="${escapeHtml(cardId)}"><span class="weave-btn-label">View Updates</span>${ICON_ARROW_DOWN}</button>`;
-      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs)}</div>`;
+      mainContentHtml = `<div data-agent-body="${escapeHtml(cardId)}" class="weave-code-box custom-scrollbar p-3 rounded-lg bg-slate-950 border border-slate-800/80 text-xs text-slate-300 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto leading-relaxed select-text selection:bg-indigo-500/30">${formatDeliverableHtml(agentData, delivLabel, outs, mediaContext)}</div>`;
     } else {
       headerActionHtml = `<div class="weave-toolbar-left flex items-center gap-2 font-mono min-w-0 shrink-0">${runtimeBadge}${chatBtn}</div><div class="weave-toolbar-right text-[11px] text-slate-500 font-mono whitespace-nowrap truncate min-w-0">${updatedLabelHtml}</div>`;
       const fmContent = formatFrontmatterOnly(fm, agentData?.statusContent, agentData?.inputStatuses);
@@ -227,7 +246,7 @@
     return 0;
   }
 
-  function renderNode(node, stageNum) {
+  function renderNode(node, stageNum, mediaContext = null) {
     if (node.type === 'group') {
       const groupId = (stageNum != null) ? `grp_s${stageNum}_${node.id}` : `grp_${node.id}`;
       const isExpanded = expandedGroups.has(groupId), title = formatAgentTitle(node.name || node.id);
@@ -235,15 +254,21 @@
         const ta = getNodeCreationTime(a), tb = getNodeCreationTime(b);
         return (ta && tb && ta !== tb) ? (ta - tb) : (a.name || a.id).localeCompare(b.name || b.id);
       });
-      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-group-title font-bold text-xs text-white tracking-wide truncate" title="${escapeHtml(title)}">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum)).join('')}</div>` : ''}</div>`;
+      return `<div class="weave-group rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-2 transition-all"><div class="weave-group-header flex items-center justify-between gap-2 cursor-pointer hover:bg-slate-800/40 p-1 rounded-lg transition-colors" data-group-toggle="${escapeHtml(groupId)}"><div class="flex items-center gap-2 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-group-title font-bold text-xs text-white tracking-wide truncate" title="${escapeHtml(title)}">${escapeHtml(title)}</span></div>${getGroupSummaryChip(node)}</div>${isExpanded ? `<div class="space-y-2 mt-1.5">${sortedChildren.map(child => renderNode(child, stageNum, mediaContext)).join('')}</div>` : ''}</div>`;
     }
     const cardId = (stageNum != null) ? `card_s${stageNum}_${node.id}` : `card_${node.id}`;
     const chip = getAgentValueChip(node.frontmatter, cardId, cardViewModes.get(cardId) === 'deliverable', node.outputItems);
-    return renderAgentCard(cardId, formatAgentTitle(node.name || node.id), node, chip);
+    return renderAgentCard(cardId, formatAgentTitle(node.name || node.id), node, chip, mediaContext);
   }
 
   function render(container, data, filterStageNum = null) {
     if (!container) return;
+    const mediaContext = {
+      workspaceUri: (typeof data?.workspaceUri === 'string' && data.workspaceUri.trim()) ? data.workspaceUri.trim() : null,
+      contextDir: (typeof data?.contextDir === 'string' && data.contextDir.trim())
+        ? data.contextDir.trim()
+        : ((typeof data?.showDir === 'string' && data.showDir.trim()) ? data.showDir.trim() : null)
+    };
     let stageList = Array.isArray(data?.stages) ? data.stages : (data?.agents ? [{ num: 2, name: 'Concept & Outline', agents: data.agents }] : []);
     if (filterStageNum !== null && filterStageNum !== undefined) stageList = stageList.filter(s => s.num === filterStageNum);
     let totalAgents = 0;
@@ -270,7 +295,7 @@
         const stageHeader = (st.num != null && st.num > 0)
           ? `<div class="flex items-center gap-1.5 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors whitespace-nowrap shrink-0">Stage ${st.num}</span><span class="text-xs font-normal text-slate-400 truncate min-w-0" title="${escapeHtml(st.name)}">- ${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>`
           : (st.name ? `<div class="flex items-center gap-1.5 min-w-0"><span class="inline-flex items-center justify-center shrink-0 text-slate-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}">${ICON_CHEVRON}</span><span class="weave-stage-title text-xs font-bold text-white tracking-wide group-hover:text-indigo-300 transition-colors truncate min-w-0" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>${timerHtml ? `<span class="weave-sep-dot" aria-hidden="true"></span>${timerHtml}` : ''}</div>` : '');
-        return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity min-w-0" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 min-w-[12px] h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono whitespace-nowrap shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num)).join('')}</div>` : ''}</div>`;
+        return `<div class="space-y-2.5"><div class="weave-stage-row flex items-center gap-3 my-2 cursor-pointer select-none group hover:opacity-90 transition-opacity min-w-0" data-stage-toggle="${escapeHtml(stageId)}">${stageHeader}<div class="weave-stage-divider flex-1 min-w-[12px] h-px bg-slate-800"></div><span class="text-[11px] text-slate-500 font-mono whitespace-nowrap shrink-0">${activeCount} Agent${activeCount === 1 ? '' : 's'}</span></div>${isExpanded ? `<div class="space-y-2 pl-0.5">${nodeList.map(node => renderNode(node, st.num, mediaContext)).join('')}</div>` : ''}</div>`;
       }).filter(Boolean).join('');
     }
     const prevScrolls = new Map(), activeMediaEls = new Map();

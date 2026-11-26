@@ -1322,3 +1322,133 @@ test('Responsive Narrow-Pane Layout (Issue #32): single-line badges/chips, non-w
   assert.match(offlineTailwind, /\.min-w-0\s*\{\s*min-width:\s*0px;\s*\}/);
   assert.match(offlineTailwind, /\.inline-block\s*\{\s*display:\s*inline-block;\s*\}/);
 });
+
+test('External Workspace & Worktree Media Previews (Issue #34): propagates workspaceUri and contextDir to /api/media URLs', async () => {
+  const wsUri = 'file:///C:/external-project';
+  const ctxDir = 'C:/external-project/.solony/worktrees/feat-media/runs/demo_run';
+  const imgPath = `${ctxDir}/stage01_media/agents/illustrator/cover.png`;
+  const audioPath = `${ctxDir}/stage01_media/agents/composer/theme.mp3`;
+  const videoPath = `${ctxDir}/stage01_media/agents/composer/promo.mp4`;
+
+  // 1. Direct renderMediaPreviewHtml with explicit mediaContext + token in window.location.search
+  context.window.location = { search: '?token=tok_ext_42' };
+  try {
+    const html = AgentPanel.renderMediaPreviewHtml('cover.png', 'image', imgPath, null, {
+      workspaceUri: wsUri,
+      contextDir: ctxDir
+    });
+    assert.match(html, new RegExp(`path=${encodeURIComponent(imgPath).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(html, new RegExp(`&amp;workspaceUri=${encodeURIComponent(wsUri).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(html, new RegExp(`&amp;contextDir=${encodeURIComponent(ctxDir).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(html, /&amp;token=tok_ext_42/);
+  } finally {
+    delete context.window.location;
+  }
+
+  // 2. AgentPanel.render propagates workspaceUri & contextDir into single-file and multi-file media deliverables
+  const container = { innerHTML: '', querySelectorAll: () => [] };
+  const mockData = {
+    workspaceUri: wsUri,
+    contextDir: ctxDir,
+    stages: [{
+      num: 1,
+      name: 'Media Production',
+      nodes: [
+        {
+          type: 'agent',
+          id: 'illustrator',
+          name: 'illustrator',
+          frontmatter: { status: 'completed', outputs: ['cover.png'] },
+          deliverableContent: '[Media/Binary file: cover.png • 24.0 KB]',
+          outputItems: [{ name: 'cover.png', content: '[Media/Binary file: cover.png • 24.0 KB]', exists: true, mediaType: 'image', filePath: imgPath }]
+        },
+        {
+          type: 'group',
+          id: 'audio_team',
+          name: 'audio_team',
+          children: [{
+            type: 'agent',
+            id: 'composer',
+            name: 'composer',
+            frontmatter: { status: 'completed', outputs: ['theme.mp3', 'promo.mp4'] },
+            deliverableContent: '── 📄 theme.mp3 ──\n[Media/Binary file: theme.mp3 • 1.2 MB]\n\n── 📄 promo.mp4 ──\n[Media/Binary file: promo.mp4 • 4.5 MB]',
+            outputItems: [
+              { name: 'theme.mp3', content: '[Media/Binary file: theme.mp3 • 1.2 MB]', exists: true, mediaType: 'audio', filePath: audioPath },
+              { name: 'promo.mp4', content: '[Media/Binary file: promo.mp4 • 4.5 MB]', exists: true, mediaType: 'video', filePath: videoPath }
+            ]
+          }]
+        }
+      ]
+    }]
+  };
+
+  expandedGroups.add('grp_s1_audio_team');
+  expandedCards.add('card_s1_illustrator');
+  cardViewModes.set('card_s1_illustrator', 'deliverable');
+  expandedCards.add('card_s1_composer');
+  cardViewModes.set('card_s1_composer', 'deliverable');
+
+  render(container, mockData);
+
+  const expectedWsParam = `workspaceUri=${encodeURIComponent(wsUri)}`;
+  const expectedCtxParam = `contextDir=${encodeURIComponent(ctxDir)}`;
+  assert.ok(container.innerHTML.includes(expectedWsParam), 'Rendered media src must include workspaceUri');
+  assert.ok(container.innerHTML.includes(expectedCtxParam), 'Rendered media src must include contextDir');
+  assert.match(container.innerHTML, /data-media-preview="image"/);
+  assert.match(container.innerHTML, /data-media-preview="audio"/);
+  assert.match(container.innerHTML, /data-media-preview="video"/);
+
+  expandedGroups.clear();
+  expandedCards.clear();
+  cardViewModes.clear();
+
+  // 3. app.js forwards activeWorkspaceUri (from window.sidecar.getWorkspaceUris) and contextDir to AgentPanel.render
+  const appJs = fs.readFileSync(path.resolve(__dirname, '..', 'sidecars', 'panel', 'app.js'), 'utf-8');
+  let capturedRenderData = null;
+  const elements = {
+    'header-root': { innerHTML: '' },
+    'stepper-root': { style: {} },
+    'stepper-track': { style: {} },
+    'stepper-line': { style: {} },
+    'stages-stepper-row': { innerHTML: '' },
+    'agents-root': { innerHTML: '', querySelectorAll: () => [] },
+    'error-banner-root': { style: {}, innerHTML: '' }
+  };
+  const appCtx = {
+    window: {
+      sidecar: {
+        async getWorkspaceUris() { return [wsUri]; },
+        async fetch() {
+          return {
+            ok: true,
+            async json() {
+              return {
+                contextDir: ctxDir,
+                stages: {},
+                stageList: [],
+                stageAgents: []
+              };
+            }
+          };
+        }
+      },
+      AgentPanel: {
+        render(_container, data) { capturedRenderData = data; }
+      }
+    },
+    document: {
+      readyState: 'complete',
+      getElementById: (id) => elements[id] || null,
+      addEventListener() {}
+    },
+    setInterval: () => ({ unref() {} }),
+    console
+  };
+  vm.createContext(appCtx);
+  vm.runInContext(appJs, appCtx);
+  await new Promise(r => setTimeout(r, 20));
+
+  assert.ok(capturedRenderData, 'app.js should invoke AgentPanel.render after fetching /api/pipeline');
+  assert.equal(capturedRenderData.workspaceUri, wsUri);
+  assert.equal(capturedRenderData.contextDir, ctxDir);
+});

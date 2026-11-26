@@ -178,9 +178,10 @@ app.api('/api/media', (data) => {
   }
 
   const contextDir = resolveContextDir(ws, data);
+  const effectiveWs = resolveEffectiveWorkspace(ws, contextDir);
   let resolvedPath = null;
   try {
-    resolvedPath = resolveSafeMediaPath(rawPath, ws, contextDir);
+    resolvedPath = resolveSafeMediaPath(rawPath, effectiveWs, contextDir);
   } catch (err) {
     if (err && err.code === 'FORBIDDEN_PATH') {
       return new Response(JSON.stringify({ error: err.message }), {

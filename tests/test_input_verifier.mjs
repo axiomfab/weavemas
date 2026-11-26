@@ -9,7 +9,9 @@ const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, '..');
 
 const inputVerifierPath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'lib', 'input_verifier.mjs');
-const { checkAgentInputs, getMediaType, getMediaMimeType, resolveAgentOutputs } = await import(`file://${inputVerifierPath.replace(/\\/g, '/')}`);
+const { checkAgentInputs, getMediaType, getMediaMimeType, resolveAgentOutputs, resolveSafeMediaPath } = await import(`file://${inputVerifierPath.replace(/\\/g, '/')}`);
+const pipelinePath = path.resolve(__dirname, '..', 'sidecars', 'panel', 'lib', 'pipeline.mjs');
+const { resolveEffectiveWorkspace } = await import(`file://${pipelinePath.replace(/\\/g, '/')}`);
 
 const testDir = path.join(workspaceRoot, 'tmp', 'test_input_verifier');
 const dummyAgentDir = path.join(testDir, 'runs', 'show_test', 'stage01', 'agents', 'test_agent');
@@ -138,4 +140,44 @@ test('resolveAgentOutputs - Failure Path: throws TypeError on invalid dir and se
   assert.equal(missing.outputItems[0].exists, false);
   assert.equal(missing.outputItems[0].mediaType, 'video');
   assert.equal(missing.outputItems[0].filePath, null);
+});
+
+test('Git Worktree Media Resolution (Issue #34): resolveEffectiveWorkspace + resolveSafeMediaPath serves worktree media and blocks boundary escapes', () => {
+  const mainWs = path.join(testDir, 'ext_workspace');
+  const wtRoot = path.join(mainWs, '.solony', 'worktrees', 'feat-media-wt');
+  const wtContextDir = path.join(wtRoot, 'runs', 'show_wt');
+  const wtAgentDir = path.join(wtContextDir, 'stage01_art', 'agents', 'illustrator');
+  const outsideFile = path.join(testDir, 'outside_secret.png');
+
+  fs.mkdirSync(wtAgentDir, { recursive: true });
+  const wtImage = path.join(wtAgentDir, 'poster.png');
+  fs.writeFileSync(wtImage, 'PNG_WT_DATA', 'utf-8');
+  fs.writeFileSync(outsideFile, 'SECRET_DATA', 'utf-8');
+
+  // resolveEffectiveWorkspace maps the worktree run dir to the worktree root
+  const effectiveWs = resolveEffectiveWorkspace(mainWs, wtContextDir);
+  assert.equal(path.resolve(effectiveWs), path.resolve(wtRoot));
+
+  // Happy Paths: absolute path, worktree-relative path, and bare filename all resolve inside effectiveWs
+  assert.equal(resolveSafeMediaPath(wtImage, effectiveWs, wtContextDir), wtImage);
+  assert.equal(
+    resolveSafeMediaPath('runs/show_wt/stage01_art/agents/illustrator/poster.png', effectiveWs, wtContextDir),
+    wtImage
+  );
+  assert.equal(resolveSafeMediaPath('poster.png', effectiveWs, wtContextDir), wtImage);
+  assert.equal(resolveSafeMediaPath('does_not_exist.png', effectiveWs, wtContextDir), null);
+
+  // Guard Paths: traversal outside worktree boundary and arbitrary external paths throw FORBIDDEN_PATH
+  assert.throws(
+    () => resolveSafeMediaPath('../../../../outside_secret.png', effectiveWs, wtContextDir),
+    (err) => err && err.code === 'FORBIDDEN_PATH'
+  );
+  assert.throws(
+    () => resolveSafeMediaPath(outsideFile, effectiveWs, wtContextDir),
+    (err) => err && err.code === 'FORBIDDEN_PATH'
+  );
+
+  // Sidecar /api/media handler wires resolveEffectiveWorkspace(ws, contextDir) into resolveSafeMediaPath
+  const mainMjs = fs.readFileSync(path.resolve(__dirname, '..', 'sidecars', 'panel', 'main.mjs'), 'utf-8');
+  assert.match(mainMjs, /const effectiveWs = resolveEffectiveWorkspace\(ws,\s*contextDir\);[\s\S]*?resolveSafeMediaPath\(rawPath,\s*effectiveWs,\s*contextDir\)/);
 });
