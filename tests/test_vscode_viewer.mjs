@@ -227,12 +227,23 @@ test('Extension Manifest & Orchestrator Skills (#23) - registers **/weave.md cus
   const customEditors = extPkg.contributes?.customEditors || [];
   assert.equal(customEditors.length, 1);
   assert.equal(customEditors[0].viewType, 'weavemx.viewer');
+  assert.equal(customEditors[0].displayName, 'WeaveMX');
   assert.equal(customEditors[0].priority, 'default');
   assert.deepEqual(customEditors[0].selector, [{ filenamePattern: '**/weave.md' }]);
 
   const cmdIds = (extPkg.contributes?.commands || []).map((c) => c.command);
   assert.ok(cmdIds.includes('weavemx.viewRawMarkdown'));
   assert.ok(cmdIds.includes('weavemx.openViewer'));
+  const openViewerCmd = (extPkg.contributes?.commands || []).find((c) => c.command === 'weavemx.openViewer');
+  assert.equal(openViewerCmd?.title, 'Open WeaveMX');
+
+  const sidecarManifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'sidecars', 'panel', 'sidecar.json'), 'utf8'));
+  assert.equal(sidecarManifest.display_name, 'WeaveMX');
+  assert.equal(sidecarManifest.ui_config?.display_name, 'WeaveMX');
+  assert.equal(sidecarManifest.ui_config?.views?.[0]?.title, 'WeaveMX');
+
+  const sidecarHtml = fs.readFileSync(path.join(REPO_ROOT, 'sidecars', 'panel', 'index.html'), 'utf8');
+  assert.match(sidecarHtml, /<title>WeaveMX<\/title>/);
 
   const titleMenus = extPkg.contributes?.menus?.['editor/title'] || [];
   assert.ok(titleMenus.some((m) => m.command === 'weavemx.viewRawMarkdown' && m.when.includes('weavemx.viewer')));
@@ -241,9 +252,13 @@ test('Extension Manifest & Orchestrator Skills (#23) - registers **/weave.md cus
   const orchSkill = fs.readFileSync(path.join(REPO_ROOT, 'skills', 'weave-orchestrator', 'SKILL.md'), 'utf8');
   const matches = orchSkill.match(/\[weave\.md\]\(file:\/\/<workspace_root>\/runs\/<context_slug>\/weave\.md\)/g) || [];
   assert.ok(matches.length >= 3, 'weave-orchestrator/SKILL.md must emit [weave.md](file://...) at Step 0, Review Gate, and Stage Advance');
+  assert.match(orchSkill, /\[WeaveMX\]\(sidecar:\/\/weavemx\/panel\/\)/);
+  assert.doesNotMatch(orchSkill, /WeaveMX UI/);
 
   const execSkill = fs.readFileSync(path.join(REPO_ROOT, 'skills', 'orchestrator-agent-execution', 'SKILL.md'), 'utf8');
   assert.match(execSkill, /\[weave\.md\]\(file:\/\/<workspace_root>\/runs\/<context_slug>\/weave\.md\)/);
+  assert.match(execSkill, /\[WeaveMX\]\(sidecar:\/\/weavemx\/panel\/\)/);
+  assert.doesNotMatch(execSkill, /WeaveMX UI/);
 });
 
 test('Shared Panel Hooks (#23) - HeaderBar onViewRawMarkdown toggle and AgentPanel webviewUri / WeaveHostBridge hooks', () => {
@@ -591,7 +606,7 @@ test('WeaveCustomEditorProvider (#23) - end-to-end FileSystemWatcher live update
     assert.ok(openRawCall, 'viewRawMarkdown must execute vscode.openWith with "default"');
     assert.equal(path.resolve(openRawCall.args[0].fsPath), path.resolve(path.join(run2, 'weave.md')));
 
-    // Reverse 1-click "Open WeaveMX UI" command reopens weave.md in weavemx.viewer
+    // Reverse 1-click "Open WeaveMX" command reopens weave.md in weavemx.viewer
     await mockHost.vscodeApi.commands.executeCommand('weavemx.openViewer', doc.uri);
     const openViewerCall = mockHost.executedCommands.find((c) => c.id === 'vscode.openWith' && c.args[1] === 'weavemx.viewer');
     assert.ok(openViewerCall, 'weavemx.openViewer must execute vscode.openWith with "weavemx.viewer"');
