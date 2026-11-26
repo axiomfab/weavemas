@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildAdapters } from './adapter_builder.mjs';
 
-export const CURSOR_MCP_SERVER_NAME = 'weavemas_weave';
+export const CURSOR_MCP_SERVER_NAME = 'weavemx_weave';
 
 function assertPlainObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -27,7 +27,7 @@ export function normalizePosixPath(targetPath) {
 }
 
 /**
- * Constructs the `.cursor/mcp.json` server entry for `weavemas_weave`.
+ * Constructs the `.cursor/mcp.json` server entry for `weavemx_weave`.
  * @param {string} serverScriptPath
  * @returns {{ command: string, args: string[] }}
  */
@@ -40,7 +40,7 @@ export function buildCursorMcpServerEntry(serverScriptPath) {
 }
 
 /**
- * Non-destructively merges the `weavemas_weave` MCP server entry into an existing
+ * Non-destructively merges the `weavemx_weave` MCP server entry into an existing
  * `.cursor/mcp.json` object without clobbering sibling top-level keys or other MCP servers.
  *
  * @param {Record<string, any> | null | undefined} existingConfig
@@ -72,8 +72,8 @@ export function mergeCursorMcpConfig(existingConfig, serverScriptPath) {
 }
 
 /**
- * Installs the generated WeaveMAS Cursor adapter (`.cursor/rules/*.mdc`, `.cursor/agents/*.md`)
- * and registers `weavemas_weave` in `<targetDir>/.cursor/mcp.json`.
+ * Installs the generated WeaveMX Cursor adapter (`.cursor/rules/*.mdc`, `.cursor/agents/*.md`)
+ * and registers `weavemx_weave` in `<targetDir>/.cursor/mcp.json`.
  *
  * @param {{
  *   repoRoot: string,

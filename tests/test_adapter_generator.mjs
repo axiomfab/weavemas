@@ -111,9 +111,9 @@ test('Multi-Platform Contracts (#24) - Happy Path: Claude Code, Codex, and Curso
       assert.deepEqual(frontmatter.tools, [
         'Read',
         'Task',
-        'mcp__weavemas_weave__weave_discover_agents',
-        'mcp__weavemas_weave__weave_update',
-        'mcp__weavemas_weave__weave_read'
+        'mcp__weavemx_weave__weave_discover_agents',
+        'mcp__weavemx_weave__weave_update',
+        'mcp__weavemx_weave__weave_read'
       ]);
       assert.match(body, /Surgical Revision Resume \(`Task`\)/);
       assert.match(body, /resume: "<agentId>"/);
@@ -133,7 +133,7 @@ test('Multi-Platform Contracts (#24) - Happy Path: Claude Code, Codex, and Curso
       assert.ok(orchRule);
       const { frontmatter, body } = parseAdapterFrontmatter(orchRule.content);
       assert.equal(frontmatter.alwaysApply, false);
-      assert.match(frontmatter.description, /WeaveMAS orchestrator protocol/);
+      assert.match(frontmatter.description, /WeaveMX orchestrator protocol/);
       assert.match(body, /stateless disk-backed fallback/);
     }
   }
@@ -158,7 +158,7 @@ test('Extensibility (#24) - Happy Path: custom ~25-line Windsurf config renders 
     },
     mcp: {
       style: 'direct',
-      serverName: 'weavemas_weave'
+      serverName: 'weavemx_weave'
     },
     revision: { mode: 'stateless' }
   };
@@ -263,7 +263,7 @@ test('Guard & Failure Paths (#24) - Schema validation, unresolved tokens, agy le
     () =>
       validateHarnessConfig({
         ...validClaude,
-        mcp: { style: 'wrapper', serverName: 'weavemas_weave' }
+        mcp: { style: 'wrapper', serverName: 'weavemx_weave' }
       }),
     /CRITICAL: 'mcp\.wrapperTool' must be a non-empty string/
   );

@@ -1,6 +1,6 @@
 # Authoring Guide: Sub-Orchestrators & Parallel Execution
 
-WeaveMAS uses the lean **`stage_orchestrator`** custom subagent (`TypeName: "stage_orchestrator"`, `~8.5K–9.5K` cold-start tokens vs. `18K–27K` for `self`) at **two encapsulation boundaries**:
+WeaveMX uses the lean **`stage_orchestrator`** custom subagent (`TypeName: "stage_orchestrator"`, `~8.5K–9.5K` cold-start tokens vs. `18K–27K` for `self`) at **two encapsulation boundaries**:
 1. **Per-Stage Sub-Orchestration (Automatic in Multi-Stage Pipelines)**: `weave-orchestrator` automatically delegates each stage (`S1..SN`) to its own `stage_orchestrator` (`Mode: stage`) and keeps it idle upon completion (never `kill`), isolating heavy intra-stage loops from the Root Orchestrator's KV-cache while preserving child worker sessions for surgical edits.
 2. **Intra-Stage Cluster Sub-Orchestration (Protocol B)**: Declared inside `## Execution` when a stage contains multi-agent units with local revision loops. **Sub-Orchestrators (Encapsulation)** and **Parallel Execution (Concurrency)** combine into a 2x2 matrix:
 

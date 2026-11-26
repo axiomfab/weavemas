@@ -77,9 +77,9 @@ export const AGY_EXCLUSIVE_IDENTIFIERS = Object.freeze([
   'inheritCustomizations',
   'inheritMcp',
   'commandExecutionPolicy',
-  'sidecar://weavemas/panel/',
-  'weavemas:provisioner',
-  'weavemas:stage_orchestrator'
+  'sidecar://weavemx/panel/',
+  'weavemx:provisioner',
+  'weavemx:stage_orchestrator'
 ]);
 
 /**
@@ -91,7 +91,7 @@ export const PROTOCOL_SPECS = Object.freeze([
     templateFile: 'protocols/weave-orchestrator.md.tmpl',
     frontmatterToken: 'PROTOCOL_WEAVE_ORCHESTRATOR_FRONTMATTER',
     foldedDescription: [
-      'Self-contained WeaveMAS orchestrator protocol. Includes inline weavemas_weave MCP',
+      'Self-contained WeaveMX orchestrator protocol. Includes inline weavemx_weave MCP',
       'tool signatures, Step 0 stage directory scaffolding, per-stage stage_orchestrator',
       'delegation, Phase 1 provisioner delegation, Phase 2 agent discovery/dispatch',
       '(Protocols A & B), and batch weave_read verification.'
@@ -103,7 +103,7 @@ export const PROTOCOL_SPECS = Object.freeze([
     templateFile: 'protocols/weave-agent.md.tmpl',
     frontmatterToken: 'PROTOCOL_WEAVE_AGENT_FRONTMATTER',
     foldedDescription: [
-      'Standard WeaveMAS subagent execution protocol with inline weavemas_weave MCP',
+      'Standard WeaveMX subagent execution protocol with inline weavemx_weave MCP',
       'signatures, CWD sandboxing, Turn-1 pre-flight verification, and 1-line chat acks.'
     ],
     requiredMcpTools: ['weave_verify', 'weave_update']
@@ -113,7 +113,7 @@ export const PROTOCOL_SPECS = Object.freeze([
     templateFile: 'protocols/weave-authoring.md.tmpl',
     frontmatterToken: 'PROTOCOL_WEAVE_AUTHORING_FRONTMATTER',
     foldedDescription: [
-      'Authoring guide for WeaveMAS: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.'
+      'Authoring guide for WeaveMX: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.'
     ],
     requiredMcpTools: []
   },
@@ -487,23 +487,23 @@ export function buildTemplateContext(config) {
 
   // Provisioner & Stage Orchestrator invocation strings
   const provisionerInvokeCall = isAgy
-    ? `Invoke \`provisioner\` (\`TypeName: "provisioner"\` or \`"weavemas:provisioner"\`, \`Model: "${models.fast}"\`, \`Role: "provisioner"\`)`
+    ? `Invoke \`provisioner\` (\`TypeName: "provisioner"\` or \`"weavemx:provisioner"\`, \`Model: "${models.fast}"\`, \`Role: "provisioner"\`)`
     : `Invoke \`provisioner\` via \`${tools.subagent}\` (agent \`"provisioner"\`, model \`"${models.fast}"\`, role \`"provisioner"\`)`;
 
   const orchDispatchProvisionerHead = isAgy
-    ? `Invoke \`TypeName: "provisioner"\` (or \`"weavemas:provisioner"\`), \`Model: "${models.fast}"\`, \`Role: "provisioner"\``
+    ? `Invoke \`TypeName: "provisioner"\` (or \`"weavemx:provisioner"\`), \`Model: "${models.fast}"\`, \`Role: "provisioner"\``
     : `Invoke \`provisioner\` via \`${tools.subagent}\` (model \`"${models.fast}"\`, role \`"provisioner"\`)`;
 
   const orchDispatchStageHead = isAgy
-    ? `Invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemas:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "stage_orchestrator_<stage_slug>"\``
+    ? `Invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemx:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "stage_orchestrator_<stage_slug>"\``
     : `Invoke \`stage_orchestrator\` via \`${tools.subagent}\` (model \`"${models.inherit}"\`, role \`"stage_orchestrator_<stage_slug>"\`)`;
 
   const stageOrchProtocolBCall = isAgy
-    ? `invoke \`stage_orchestrator\` (\`TypeName: "stage_orchestrator"\` or \`"weavemas:stage_orchestrator"\`, \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\`, concurrently only if \`execute in parallel\` is declared)`
+    ? `invoke \`stage_orchestrator\` (\`TypeName: "stage_orchestrator"\` or \`"weavemx:stage_orchestrator"\`, \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\`, concurrently only if \`execute in parallel\` is declared)`
     : `invoke \`stage_orchestrator\` via \`${tools.subagent}\` (model \`"${models.inherit}"\`, role \`"suborchestrator_<unit_id>"\`, concurrently only if \`execute in parallel\` is declared)`;
 
   const orchProtocolBHead = isAgy
-    ? `Invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemas:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\` (**never** \`TypeName: "self"\`, avoiding \`18K–27K\` main-harness prefill bloat; dispatch concurrently only if \`execute in parallel\` is declared)`
+    ? `Invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemx:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\` (**never** \`TypeName: "self"\`, avoiding \`18K–27K\` main-harness prefill bloat; dispatch concurrently only if \`execute in parallel\` is declared)`
     : `Invoke \`stage_orchestrator\` via \`${tools.subagent}\` (model \`"${models.inherit}"\`, role \`"suborchestrator_<unit_id>"\`, avoiding main-harness context bloat; dispatch concurrently only if \`execute in parallel\` is declared)`;
 
   const clusterChildTypeLabel = isAgy ? 'TypeName' : 'Agent';
@@ -592,7 +592,7 @@ export function buildTemplateContext(config) {
       : `\`${tools.resume}\` resume`;
 
     execRefMultistageItem = isAgy
-      ? `The Root Orchestrator stays thin by delegating each stage (\`S1..SN\`) via \`${tools.subagent}\` to \`TypeName: "stage_orchestrator"\` (or \`"weavemas:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "stage_orchestrator_<stage_slug>"\` (\`Mode: stage\`, passing \`Stage Guide\`, \`Stage Directory\`, \`Context Slug\`, and \`Runtime Parameters\`). Keep every completed \`stage_orchestrator\` session **idle** (never \`kill\` via \`${tools.manageSubagents}\`, preserving child worker conversations for surgical \`${tools.resume}\` edits).`
+      ? `The Root Orchestrator stays thin by delegating each stage (\`S1..SN\`) via \`${tools.subagent}\` to \`TypeName: "stage_orchestrator"\` (or \`"weavemx:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "stage_orchestrator_<stage_slug>"\` (\`Mode: stage\`, passing \`Stage Guide\`, \`Stage Directory\`, \`Context Slug\`, and \`Runtime Parameters\`). Keep every completed \`stage_orchestrator\` session **idle** (never \`kill\` via \`${tools.manageSubagents}\`, preserving child worker conversations for surgical \`${tools.resume}\` edits).`
       : `The Root Orchestrator stays thin by delegating each stage (\`S1..SN\`) via \`${tools.subagent}\` to \`stage_orchestrator\` (model \`"${models.inherit}"\`, role \`"stage_orchestrator_<stage_slug>"\`, \`Mode: stage\`, passing \`Stage Guide\`, \`Stage Directory\`, \`Context Slug\`, and \`Runtime Parameters\`). Keep every completed \`stage_orchestrator\` session **idle** (preserving child worker sessions for surgical ${resumeActionVerb} edits).`;
 
     execRefProtocolAItems = isAgy
@@ -606,7 +606,7 @@ export function buildTemplateContext(config) {
         ].join('\n');
 
     execRefProtocolBItem1 = isAgy
-      ? `Discover cluster child agents (\`filter_status: "initialized"\`), then invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemas:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\` (**never** \`TypeName: "self"\`, avoiding \`18K–27K\` main-harness prefill bloat; dispatch concurrently only if \`execute in parallel\` is specified).`
+      ? `Discover cluster child agents (\`filter_status: "initialized"\`), then invoke \`TypeName: "stage_orchestrator"\` (or \`"weavemx:stage_orchestrator"\`), \`Model: "${models.inherit}"\`, \`Role: "suborchestrator_<unit_id>"\` (**never** \`TypeName: "self"\`, avoiding \`18K–27K\` main-harness prefill bloat; dispatch concurrently only if \`execute in parallel\` is specified).`
       : `Discover cluster child agents (\`filter_status: "initialized"\`), then invoke \`stage_orchestrator\` via \`${tools.subagent}\` (model \`"${models.inherit}"\`, role \`"suborchestrator_<unit_id>"\`; dispatch concurrently only if \`execute in parallel\` is specified).`;
 
     execRefProtocolBItem2 = isAgy

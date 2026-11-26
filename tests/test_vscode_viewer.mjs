@@ -219,24 +219,24 @@ test('Extension Manifest & Orchestrator Skills (#23) - registers **/weave.md cus
   const rootPkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
   const extPkg = JSON.parse(fs.readFileSync(path.join(EXT_DIR, 'package.json'), 'utf8'));
 
-  assert.equal(extPkg.name, 'weavemas-viewer');
+  assert.equal(extPkg.name, 'weavemx-viewer');
   assert.equal(extPkg.publisher, 'axiomfab');
   assert.equal(extPkg.version, rootPkg.version);
-  assert.deepEqual(extPkg.activationEvents, ['onCustomEditor:weavemas.viewer']);
+  assert.deepEqual(extPkg.activationEvents, ['onCustomEditor:weavemx.viewer']);
 
   const customEditors = extPkg.contributes?.customEditors || [];
   assert.equal(customEditors.length, 1);
-  assert.equal(customEditors[0].viewType, 'weavemas.viewer');
+  assert.equal(customEditors[0].viewType, 'weavemx.viewer');
   assert.equal(customEditors[0].priority, 'default');
   assert.deepEqual(customEditors[0].selector, [{ filenamePattern: '**/weave.md' }]);
 
   const cmdIds = (extPkg.contributes?.commands || []).map((c) => c.command);
-  assert.ok(cmdIds.includes('weavemas.viewRawMarkdown'));
-  assert.ok(cmdIds.includes('weavemas.openViewer'));
+  assert.ok(cmdIds.includes('weavemx.viewRawMarkdown'));
+  assert.ok(cmdIds.includes('weavemx.openViewer'));
 
   const titleMenus = extPkg.contributes?.menus?.['editor/title'] || [];
-  assert.ok(titleMenus.some((m) => m.command === 'weavemas.viewRawMarkdown' && m.when.includes('weavemas.viewer')));
-  assert.ok(titleMenus.some((m) => m.command === 'weavemas.openViewer' && m.when.includes('weave.md')));
+  assert.ok(titleMenus.some((m) => m.command === 'weavemx.viewRawMarkdown' && m.when.includes('weavemx.viewer')));
+  assert.ok(titleMenus.some((m) => m.command === 'weavemx.openViewer' && m.when.includes('weave.md')));
 
   const orchSkill = fs.readFileSync(path.join(REPO_ROOT, 'skills', 'weave-orchestrator', 'SKILL.md'), 'utf8');
   const matches = orchSkill.match(/\[weave\.md\]\(file:\/\/<workspace_root>\/runs\/<context_slug>\/weave\.md\)/g) || [];
@@ -383,7 +383,7 @@ test('Webview Bridge & Frontend Controller (#23) - boots with zero polling, rend
   };
 
   const vmWindow = {
-    __WEAVEMAS_BOOT__: {
+    __WEAVEMX_BOOT__: {
       initialContextDir: 'C:/workspace/runs/kidswiki_rocket_age4',
       initialTheme: 'light',
       initialPayload: {
@@ -487,8 +487,8 @@ test('Webview Bridge & Frontend Controller (#23) - boots with zero polling, rend
   vmWindow.WeaveHostBridge.selectContext('C:/workspace/runs/other_run');
   vmWindow.WeaveHostBridge.requestPipeline('C:/workspace/runs/other_run');
   vmWindow.WeaveHostBridge.viewRawMarkdown('C:/workspace/runs/other_run');
-  vmWindow.WeaveHostBridge.storage.setItem('weavemas-ui-theme', 'dark');
-  assert.equal(vmWindow.WeaveHostBridge.storage.getItem('weavemas-ui-theme'), 'dark');
+  vmWindow.WeaveHostBridge.storage.setItem('weavemx-ui-theme', 'dark');
+  assert.equal(vmWindow.WeaveHostBridge.storage.getItem('weavemx-ui-theme'), 'dark');
   assert.equal(sentMessages.some((m) => m.type === 'selectContext' && m.contextDir === 'C:/workspace/runs/other_run'), true);
   assert.equal(sentMessages.some((m) => m.type === 'requestPipeline'), true);
   assert.equal(sentMessages.some((m) => m.type === 'viewRawMarkdown'), true);
@@ -535,9 +535,9 @@ test('WeaveCustomEditorProvider (#23) - end-to-end FileSystemWatcher live update
     const subscriptions = [];
     viewerExt.activate({ extensionPath: EXT_DIR, subscriptions }, mockHost.vscodeApi);
 
-    assert.equal(mockHost.registeredEditors.has('weavemas.viewer'), true);
-    assert.equal(mockHost.registeredCommands.has('weavemas.viewRawMarkdown'), true);
-    assert.equal(mockHost.registeredCommands.has('weavemas.openViewer'), true);
+    assert.equal(mockHost.registeredEditors.has('weavemx.viewer'), true);
+    assert.equal(mockHost.registeredCommands.has('weavemx.viewRawMarkdown'), true);
+    assert.equal(mockHost.registeredCommands.has('weavemx.openViewer'), true);
 
     const provider = new viewerExt.WeaveCustomEditorProvider(
       { extensionPath: EXT_DIR },
@@ -591,10 +591,10 @@ test('WeaveCustomEditorProvider (#23) - end-to-end FileSystemWatcher live update
     assert.ok(openRawCall, 'viewRawMarkdown must execute vscode.openWith with "default"');
     assert.equal(path.resolve(openRawCall.args[0].fsPath), path.resolve(path.join(run2, 'weave.md')));
 
-    // Reverse 1-click "Open WeaveMAS UI" command reopens weave.md in weavemas.viewer
-    await mockHost.vscodeApi.commands.executeCommand('weavemas.openViewer', doc.uri);
-    const openViewerCall = mockHost.executedCommands.find((c) => c.id === 'vscode.openWith' && c.args[1] === 'weavemas.viewer');
-    assert.ok(openViewerCall, 'weavemas.openViewer must execute vscode.openWith with "weavemas.viewer"');
+    // Reverse 1-click "Open WeaveMX UI" command reopens weave.md in weavemx.viewer
+    await mockHost.vscodeApi.commands.executeCommand('weavemx.openViewer', doc.uri);
+    const openViewerCall = mockHost.executedCommands.find((c) => c.id === 'vscode.openWith' && c.args[1] === 'weavemx.viewer');
+    assert.ok(openViewerCall, 'weavemx.openViewer must execute vscode.openWith with "weavemx.viewer"');
 
     // Guard path: openConversation accepts valid UUID and rejects malformed URIs
     await sendFromWebview({ type: 'openConversation', conversationId: 'not-a-uuid;evil' });
@@ -650,9 +650,9 @@ test('WeaveCustomEditorProvider Guard Paths (#23) - validates constructor, activ
   assert.match(escaped, /\\u003c\/script\\u003e/);
 });
 
-test('VSIX Packager (#23) - builds standalone weavemas-viewer.vsix and runs self-contained outside repo root', async () => {
-  const tmpOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemas-vsix-test-'));
-  const vsixPath = path.join(tmpOutDir, 'weavemas-viewer.vsix');
+test('VSIX Packager (#23) - builds standalone weavemx-viewer.vsix and runs self-contained outside repo root', async () => {
+  const tmpOutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'weavemx-vsix-test-'));
+  const vsixPath = path.join(tmpOutDir, 'weavemx-viewer.vsix');
   const extractedDir = path.join(tmpOutDir, 'unpacked');
   const sampleWs = path.join(tmpOutDir, 'sample-ws');
 
@@ -673,7 +673,7 @@ test('VSIX Packager (#23) - builds standalone weavemas-viewer.vsix and runs self
     assert.equal(entries.has('extension/sidecars/panel/main.mjs'), false);
 
     const manifestXml = entries.get('extension.vsixmanifest').toString('utf8');
-    assert.match(manifestXml, /Id="weavemas-viewer"/);
+    assert.match(manifestXml, /Id="weavemx-viewer"/);
     assert.match(manifestXml, /Publisher="axiomfab"/);
 
     // Extract extension/ into an isolated temp folder outside the repo to prove zero external repo coupling

@@ -324,7 +324,7 @@ test('HeaderBar Component Unit Tests', async (t) => {
 
   await t.test('Theme Toggle Happy Path 2: auto-initializes document.documentElement on script load from window.localStorage', () => {
     const rootEl = createMockRootEl();
-    const storage = createMockStorage({ 'weavemas-ui-theme': 'light' });
+    const storage = createMockStorage({ 'weavemx-ui-theme': 'light' });
     const browserCtx = {
       window: { localStorage: storage },
       document: { documentElement: rootEl },

@@ -1,4 +1,4 @@
-# WeaveMAS Sidecar UI Mockups (`ui-mockups.md`)
+# WeaveMX Sidecar UI Mockups (`ui-mockups.md`)
 
 > **Scope — Minor Styling & Host Theme Inheritance Only (Zero Functional Changes):**
 > All mockups below are **actual browser screenshots** of [docs/ui-mocks/mockups.html](docs/ui-mocks/mockups.html), built from the **exact DOM output of `sidecars/panel/*.js`**. Layout, controls, interactions, and information hierarchy remain identical to [ui-inventory.md](ui-inventory.md) — changing **only** CSS host variable bindings, removing neon dot glows / solid-orange `.vivid-pulse` flashing, harmonizing light/dark contrast, and replacing the 3 residual Unicode symbols with `12x12` SVG icons per [DESIGN.md](DESIGN.md).
@@ -8,7 +8,7 @@
 
 ## Option A: Flat Native Fit *(Closest to current UI — Recommended)*
 
-Preserves the exact geometry of the current WeaveMAS UI (`10px` card radius, `6px` header control radius, `4px` chip/badge radius, flat `--background` canvas):
+Preserves the exact geometry of the current WeaveMX UI (`10px` card radius, `6px` header control radius, `4px` chip/badge radius, flat `--background` canvas):
 - Binds surfaces, borders, text, and accents directly to `agy` host CSS variables (`--background`, `--card`, `--card-border`, `--border`, `--foreground`, `--muted-foreground`, `--secondary`, `--primary`).
 - Replaces `.vivid-pulse`'s blinding solid-orange blink with a restrained amber translucent badge matching `completed` / `awaiting review` / `waiting` / `blocked`, and replaces `.stage-dot-*` `10px–14px` neon `box-shadow`s with clean flat fills + a calm `3px` ring on active stages.
 

@@ -57,9 +57,9 @@ test('Repository Polish (R11) - Happy Path: README.md is strict ASCII and docume
   );
 
   // Installation & MCP setup coverage
-  assert.match(readme, /weavemas_weave/);
+  assert.match(readme, /weavemx_weave/);
   assert.match(readme, /src\/mcp_server\.mjs/);
-  assert.match(readme, /sidecar:\/\/weavemas\/panel\//);
+  assert.match(readme, /sidecar:\/\/weavemx\/panel\//);
 
   for (const tool of TOOLS) {
     assert.equal(
@@ -168,7 +168,7 @@ test('Repository Polish (R11) - Guard Path: docs/TUTORIAL.md is removed and no t
 test('Install Guides & Release Workflow (#26) - README.md provides self-contained collapsible per-platform guides', () => {
   const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
   const startIdx = readme.indexOf('## Installation and Setup');
-  const endIdx = readme.indexOf('### MCP Tools (`weavemas_weave`)');
+  const endIdx = readme.indexOf('### MCP Tools (`weavemx_weave`)');
   assert.notEqual(startIdx, -1, 'README.md must contain Installation and Setup section');
   assert.notEqual(endIdx, -1, 'README.md must contain MCP Tools subsection');
   assert.ok(endIdx > startIdx, 'MCP Tools subsection must follow Installation and Setup');
@@ -193,20 +193,20 @@ test('Install Guides & Release Workflow (#26) - README.md provides self-containe
   // 1. Antigravity App (expanded by default)
   assert.equal(blocks[0].open, true, '1. Antigravity App block must be <details open>');
   assert.match(blocks[0].body, /1\. Antigravity App/);
-  assert.match(blocks[0].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
+  assert.match(blocks[0].body, /git clone https:\/\/github\.com\/axiomfab\/weavemx\.git/);
 
   // 2. Antigravity IDE & VS Code (collapsed, self-contained)
   assert.equal(blocks[1].open, false, '2. Antigravity IDE & VS Code block must be collapsed by default');
   assert.match(blocks[1].body, /2\. Antigravity IDE &amp; VS Code/);
-  assert.match(blocks[1].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
-  assert.match(blocks[1].body, /code --install-extension[^\n]*weavemas-viewer\.vsix/);
+  assert.match(blocks[1].body, /git clone https:\/\/github\.com\/axiomfab\/weavemx\.git/);
+  assert.match(blocks[1].body, /code --install-extension[^\n]*weavemx-viewer\.vsix/);
 
   // 3. Cursor (collapsed, self-contained)
   assert.equal(blocks[2].open, false, '3. Cursor block must be collapsed by default');
   assert.match(blocks[2].body, /3\. Cursor/);
-  assert.match(blocks[2].body, /git clone https:\/\/github\.com\/axiomfab\/weavemas-agy\.git/);
+  assert.match(blocks[2].body, /git clone https:\/\/github\.com\/axiomfab\/weavemx\.git/);
   assert.match(blocks[2].body, /install-cursor\.mjs/);
-  assert.match(blocks[2].body, /cursor --install-extension[^\n]*weavemas-viewer\.vsix/);
+  assert.match(blocks[2].body, /cursor --install-extension[^\n]*weavemx-viewer\.vsix/);
 
   // 4. Codex, Claude Code, Windsurf & Other Harnesses (collapsed placeholder + standalone MCP JSON)
   assert.equal(blocks[3].open, false, '4. Other Harnesses block must be collapsed by default');
@@ -216,7 +216,7 @@ test('Install Guides & Release Workflow (#26) - README.md provides self-containe
   assert.match(blocks[3].body, /src\/mcp_server\.mjs/);
 });
 
-test('Install Guides & Release Workflow (#26) - release.yml builds and attaches weavemas-viewer.vsix on Release Please cut', () => {
+test('Install Guides & Release Workflow (#26) - release.yml builds and attaches weavemx-viewer.vsix on Release Please cut', () => {
   const releasePath = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
   assert.equal(fs.existsSync(releasePath), true, '.github/workflows/release.yml must exist');
 
@@ -227,5 +227,5 @@ test('Install Guides & Release Workflow (#26) - release.yml builds and attaches 
   assert.match(content, /googleapis\/release-please-action@v\d+/);
   assert.match(content, /steps\.release\.outputs\.release_created == 'true'/);
   assert.match(content, /npm run build:vsix/);
-  assert.match(content, /gh release upload[\s\S]*extensions\/vscode-viewer\/weavemas-viewer\.vsix/);
+  assert.match(content, /gh release upload[\s\S]*extensions\/vscode-viewer\/weavemx-viewer\.vsix/);
 });

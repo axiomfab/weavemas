@@ -15,8 +15,8 @@ Frontmatter is strictly for **identity and routing**, NEVER for derived state or
 - **NO Narrative / Progress Logs**: Never put descriptions, progress notes, or summaries into frontmatter. Narrative logs belong exclusively in the Markdown body.
 - **NO Meta Wrappers**: Never add wrapper keys like `success: true` or `error: null`.
 
-## 3. WeaveMAS `weave.md` Immutable 7-Key Contract
-For any WeaveMAS `weave.md` file, the frontmatter contains ONLY these 7 allowed keys and NO others:
+## 3. WeaveMX `weave.md` Immutable 7-Key Contract
+For any WeaveMX `weave.md` file, the frontmatter contains ONLY these 7 allowed keys and NO others:
 1. `type`: (`"agent"` | `"orchestrator"`)
 2. `status`: (lifecycle slug)
 3. `instructions_file`: (path to agent's `.md` instruction file, or omitted)

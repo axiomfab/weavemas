@@ -1,5 +1,5 @@
 /**
- * Antigravity (agy) Host Theme Resolver for WeaveMAS Sidecar Panel.
+ * Antigravity (agy) Host Theme Resolver for WeaveMX Sidecar Panel.
  * Resolves live theme mode, contrast, font scale, and CSS custom property seeds
  * from ~/.gemini/config/config.json and OS-aware Antigravity app_storage.json,
  * following arthurcavallari/antigravity-sidecar-kit conventions with safe fallbacks.

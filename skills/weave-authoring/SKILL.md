@@ -1,12 +1,12 @@
 ---
 name: weave-authoring
 description: >-
-  Authoring guide for WeaveMAS: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.
+  Authoring guide for WeaveMX: designing decoupled multi-agent pipelines, weaving concrete status contracts into agent instructions, building observable UI dashboards, and revising outcomes and pipeline definitions from user feedback.
 ---
 
-# WeaveMAS: Authoring & Design Guide
+# WeaveMX: Authoring & Design Guide
 
-**WeaveMAS** orchestrates multi-agent pipelines with strict directory sandboxing, zero repository exploration, and file-based status tracking. Load only the reference guide matching your current authoring target:
+**WeaveMX** orchestrates multi-agent pipelines with strict directory sandboxing, zero repository exploration, and file-based status tracking. Load only the reference guide matching your current authoring target:
 
 | Target | Reference Guide | When to Read |
 | :--- | :--- | :--- |

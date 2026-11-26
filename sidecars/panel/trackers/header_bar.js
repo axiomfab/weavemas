@@ -1,6 +1,6 @@
-// Header Bar Component - WeaveMAS Panel
+// Header Bar Component - WeaveMX Panel
 (function() {
-  const THEME_STORAGE_KEY = 'weavemas-ui-theme';
+  const THEME_STORAGE_KEY = 'weavemx-ui-theme';
   const VALID_THEMES = ['dark', 'light'];
   const containerStates = new WeakMap();
   const mountedContainers = new Set();
@@ -269,9 +269,9 @@
       seedEl &&
       typeof seedEl.remove === 'function' &&
       typeof window !== 'undefined' &&
-      window.__WEAVEMAS_HOST_THEME__ &&
-      window.__WEAVEMAS_HOST_THEME__.mode &&
-      window.__WEAVEMAS_HOST_THEME__.mode !== nextTheme
+      window.__WEAVEMX_HOST_THEME__ &&
+      window.__WEAVEMX_HOST_THEME__.mode &&
+      window.__WEAVEMX_HOST_THEME__.mode !== nextTheme
     ) {
       seedEl.remove();
     }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "WeaveMAS Harness Adapter Configuration",
-  "description": "Declarative per-harness tool, MCP, revision, and directory mapping for WeaveMAS canonical templates.",
+  "title": "WeaveMX Harness Adapter Configuration",
+  "description": "Declarative per-harness tool, MCP, revision, and directory mapping for WeaveMX canonical templates.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "displayName", "targets", "models", "tools", "mcp", "revision"],

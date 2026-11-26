@@ -1,4 +1,4 @@
-# WeaveMAS Sidecar UI Inventory (`sidecars/panel/`)
+# WeaveMX Sidecar UI Inventory (`sidecars/panel/`)
 
 > **Scope:** Complete audit of every screen, header control, stepper state, stage section, group/agent card, expandable drawer, deliverable/media preview, badge, tooltip, and empty/loading/error state in `sidecars/panel/`.
 > **Ground Truth Source:** Every visual below is an **actual screenshot** — either the pre-Issue-27 repo capture ([docs/ui-mocks/inventory-baseline-kidswiki.png](docs/ui-mocks/inventory-baseline-kidswiki.png)) or a live browser render of [docs/ui-mocks/inventory.html](docs/ui-mocks/inventory.html), which executes the **unmodified pre-Issue-27 `sidecars/panel/` JS modules** (`header_bar.js`, `runtime_tracker.js`, `agent_panel.js`, `stage_panel.js`, `app.js` stepper) with the pre-Issue-27 `styles.css`.
@@ -8,7 +8,7 @@
 ## Visual Baseline (Actual Code Renders)
 
 ### 1. Main Pipeline View (Pre-Update Baseline)
-![Current WeaveMAS UI — Main View](docs/ui-mocks/inventory-baseline-kidswiki.png)
+![Current WeaveMX UI — Main View](docs/ui-mocks/inventory-baseline-kidswiki.png)
 
 ### 2. Header Variants (Worktree Badge, Raw Markdown Button, Empty Runs) & All 6 Stepper Dot States
 *(Actual browser render of unmodified `header_bar.js` + `app.js` + `styles.css` in [docs/ui-mocks/inventory.html](docs/ui-mocks/inventory.html))*
@@ -38,7 +38,7 @@
 
 | # | Component / Control | File Path | Trigger | Static / Dynamic | Screenshot Reference |
 |---|---|---|---|---|---|
-| 1.1 | **Root Document & Theme Bootstrap** (`html[data-theme]`, `body`) | `index.html` (`L1-L24`), `styles.css` (`L1-L174`) | Page load; reads `localStorage['weavemas-ui-theme']` (defaults to `'dark'`); loads `/preload.js` | Dynamic `data-theme` | `weavemas_ui_kidswiki.png` |
+| 1.1 | **Root Document & Theme Bootstrap** (`html[data-theme]`, `body`) | `index.html` (`L1-L24`), `styles.css` (`L1-L174`) | Page load; reads `localStorage['weavemx-ui-theme']` (defaults to `'dark'`); loads `/preload.js` | Dynamic `data-theme` | `weavemas_ui_kidswiki.png` |
 | 1.2 | **Sticky Header Container** (`.agy-header`) | `trackers/header_bar.js` (`L373`), `styles.css` (`L177-L206`) | Mounted on `bootApp()` and updated on `renderUI()` | Dynamic child state | `weavemas_ui_kidswiki.png` |
 | 1.3 | **Pipeline Run Selector** (`#show-select`, `.agy-select`) | `trackers/header_bar.js` (`L375-L382`, `L451-L480`) | Populated from `availableContexts` / `availableShows`; `change` triggers `onSelectContext` | Dynamic `<option>` / `<optgroup>` | `weavemas_ui_kidswiki.png`, `inventory-header-stepper.png` |
 | 1.4 | **Git Worktree Badge** (`#worktree-badge`, `.agy-worktree-badge`) | `trackers/header_bar.js` (`L255-L262`, `L482-L486`) | Active run has `isWorktree`/`worktree`; tooltip `"Executing in Git Worktree: <name>"` | Dynamic | `inventory-header-stepper.png` |

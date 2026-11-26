@@ -1,7 +1,7 @@
 {
-  "name": "weavemas",
+  "name": "weavemx",
   "version": "1.1.0",
-  "description": "WeaveMAS: Observable Multi-Agent Systems Plugin & MCP Server for Antigravity",
+  "description": "WeaveMX (Multi-agent eXecution): Observable Multi-Agent Plugin & MCP Server for Antigravity",
   "type": "module",
   "main": "src/mcp_server.mjs",
   "scripts": {
@@ -13,7 +13,7 @@
   },
   "keywords": [
     "antigravity",
-    "weavemas",
+    "weavemx",
     "mcp",
     "multi-agent",
     "status"
@@ -22,6 +22,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/axiomfab/weavemas-agy.git"
+    "url": "https://github.com/axiomfab/weavemx.git"
   }
 }

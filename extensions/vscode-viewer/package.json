@@ -1,13 +1,13 @@
 {
-  "name": "weavemas-viewer",
-  "displayName": "WeaveMAS Viewer",
-  "description": "Zero-token custom editor that opens the WeaveMAS UI natively on any weave.md pipeline manifest.",
+  "name": "weavemx-viewer",
+  "displayName": "WeaveMX Viewer",
+  "description": "Zero-token custom editor that opens the WeaveMX UI natively on any weave.md pipeline manifest.",
   "version": "1.1.0",
   "publisher": "axiomfab",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/axiomfab/weavemas-agy.git"
+    "url": "https://github.com/axiomfab/weavemx.git"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -17,14 +17,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onCustomEditor:weavemas.viewer"
+    "onCustomEditor:weavemx.viewer"
   ],
   "main": "./extension.js",
   "contributes": {
     "customEditors": [
       {
-        "viewType": "weavemas.viewer",
-        "displayName": "WeaveMAS UI",
+        "viewType": "weavemx.viewer",
+        "displayName": "WeaveMX UI",
         "selector": [
           {
             "filenamePattern": "**/weave.md"
@@ -35,28 +35,28 @@
     ],
     "commands": [
       {
-        "command": "weavemas.viewRawMarkdown",
+        "command": "weavemx.viewRawMarkdown",
         "title": "View Raw Markdown",
-        "category": "WeaveMAS",
+        "category": "WeaveMX",
         "icon": "$(code)"
       },
       {
-        "command": "weavemas.openViewer",
-        "title": "Open WeaveMAS UI",
-        "category": "WeaveMAS",
+        "command": "weavemx.openViewer",
+        "title": "Open WeaveMX UI",
+        "category": "WeaveMX",
         "icon": "$(preview)"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "weavemas.viewRawMarkdown",
-          "when": "activeCustomEditorId == weavemas.viewer",
+          "command": "weavemx.viewRawMarkdown",
+          "when": "activeCustomEditorId == weavemx.viewer",
           "group": "navigation@1"
         },
         {
-          "command": "weavemas.openViewer",
-          "when": "resourceFilename == weave.md && activeCustomEditorId != weavemas.viewer",
+          "command": "weavemx.openViewer",
+          "when": "resourceFilename == weave.md && activeCustomEditorId != weavemx.viewer",
           "group": "navigation@1"
         }
       ]

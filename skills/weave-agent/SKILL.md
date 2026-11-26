@@ -1,18 +1,18 @@
 ---
 name: weave-agent
 description: >-
-  Standard WeaveMAS subagent execution protocol with inline weavemas_weave MCP
+  Standard WeaveMX subagent execution protocol with inline weavemx_weave MCP
   signatures, CWD sandboxing, Turn-1 pre-flight verification, and 1-line chat acks.
 ---
 
-# 🤖 WeaveMAS Subagent Execution Protocol
+# 🤖 WeaveMX Subagent Execution Protocol
 
-All status lifecycle operations use `call_mcp_tool` with `ServerName: "weavemas_weave"`, where `dir` is strictly the **absolute path** to your assigned working directory.
+All status lifecycle operations use `call_mcp_tool` with `ServerName: "weavemx_weave"`, where `dir` is strictly the **absolute path** to your assigned working directory.
 
-## 0. Inline `weavemas_weave` MCP Signatures (`ServerName: "weavemas_weave"`)
+## 0. Inline `weavemx_weave` MCP Signatures (`ServerName: "weavemx_weave"`)
 * `weave_verify`: `{"dir": string, "expected_role"?: string}`
 * `weave_update`: `{"dir": string, "status"?: string, "type"?: "agent"|"orchestrator", "progress"?: string, "outputs"?: string|string[], "conversation_id"?: string, "mirror_to"?: string}` *(subagents omit `type`, `conversation_id`, and `mirror_to`)*
-* **Zero Schema / Weave Reads**: Do **NOT** call `read_file` / `view_file` on `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs, and never inspect or edit `weave.md` directly.
+* **Zero Schema / Weave Reads**: Do **NOT** call `read_file` / `view_file` on `<appDataDir>/mcp/weavemx_weave/*.json` unless an unexpected schema error occurs, and never inspect or edit `weave.md` directly.
 
 ---
 

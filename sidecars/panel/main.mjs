@@ -23,7 +23,7 @@ app.page('/', () => {
     contrast: hostTheme.contrast,
     theme: hostTheme.theme
   }).replace(/</g, '\\u003c');
-  const seedBlock = `<style id="agy-host-theme-seed">:root { ${inlineCss} }</style>\n  <script id="agy-host-theme-meta">window.__WEAVEMAS_HOST_THEME__ = ${metaJson};</script>\n  `;
+  const seedBlock = `<style id="agy-host-theme-seed">:root { ${inlineCss} }</style>\n  <script id="agy-host-theme-meta">window.__WEAVEMX_HOST_THEME__ = ${metaJson};</script>\n  `;
   return rawHtml.replace('<script>', `${seedBlock}<script>`);
 });
 app.api('/api/theme', () => resolveHostTheme(), 'GET');
@@ -80,8 +80,8 @@ app.api('/api/pipeline', (data) => {
   if (!showDir) {
     return {
       error: 'No pipeline directories found under runs/ (or output/)',
-      showTitle: 'WeaveMAS Pipeline',
-      contextTitle: 'WeaveMAS Pipeline',
+      showTitle: 'WeaveMX Pipeline',
+      contextTitle: 'WeaveMX Pipeline',
       availableShows: [],
       availableContexts: [],
       activeStageNum: 1,

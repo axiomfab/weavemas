@@ -3,9 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const VIEW_TYPE = 'weavemas.viewer';
-const CMD_VIEW_RAW_MARKDOWN = 'weavemas.viewRawMarkdown';
-const CMD_OPEN_VIEWER = 'weavemas.openViewer';
+const VIEW_TYPE = 'weavemx.viewer';
+const CMD_VIEW_RAW_MARKDOWN = 'weavemx.viewRawMarkdown';
+const CMD_OPEN_VIEWER = 'weavemx.openViewer';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -50,7 +50,7 @@ function resolvePanelAssetsRoot(extensionPath) {
 }
 
 /**
- * Dynamically imports the ESM core WeaveMAS panel modules directly in the Extension Host.
+ * Dynamically imports the ESM core WeaveMX panel modules directly in the Extension Host.
  * @param {string} extensionPath
  * @returns {Promise<{
  *   panelRoot: string,
@@ -211,7 +211,7 @@ function attachWebviewMediaUris(stageAgents, opts) {
 }
 
 /**
- * Computes the complete WeaveMAS UI payload directly in the Extension Host using `sidecars/panel/lib/*`.
+ * Computes the complete WeaveMX UI payload directly in the Extension Host using `sidecars/panel/lib/*`.
  * @param {Awaited<ReturnType<typeof loadPanelCoreModules>>} mods
  * @param {{
  *   workspaceRoot: string,
@@ -247,8 +247,8 @@ function buildPipelinePayload(mods, params) {
   if (!activeContextDir || !fs.existsSync(activeContextDir)) {
     return {
       error: 'No pipeline directories found under runs/ (or output/)',
-      showTitle: 'WeaveMAS Pipeline',
-      contextTitle: 'WeaveMAS Pipeline',
+      showTitle: 'WeaveMX Pipeline',
+      contextTitle: 'WeaveMX Pipeline',
       availableShows: [],
       availableContexts: [],
       activeStageNum: 1,
@@ -370,7 +370,7 @@ function renderWebviewHtml(opts) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data: blob:; media-src ${cspSource} data: blob:; style-src ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
-  <title>WeaveMAS UI</title>
+  <title>WeaveMX UI</title>
   <link rel="stylesheet" href="${tailwindCssUri}">
   <link rel="stylesheet" href="${panelStylesUri}">
 </head>
@@ -388,7 +388,7 @@ function renderWebviewHtml(opts) {
     <main id="agents-root"></main>
   </div>
 
-  <script nonce="${nonce}">window.__WEAVEMAS_BOOT__ = ${bootJson};</script>
+  <script nonce="${nonce}">window.__WEAVEMX_BOOT__ = ${bootJson};</script>
   <script nonce="${nonce}" src="${bridgeJsUri}"></script>
   <script nonce="${nonce}" src="${headerBarJsUri}"></script>
   <script nonce="${nonce}" src="${runtimeTrackerJsUri}"></script>
@@ -400,7 +400,7 @@ function renderWebviewHtml(opts) {
 }
 
 /**
- * Custom text editor provider for `weave.md` manifests, rendering the WeaveMAS UI natively
+ * Custom text editor provider for `weave.md` manifests, rendering the WeaveMX UI natively
  * in VS Code, Antigravity IDE, Cursor, and Windsurf with live `FileSystemWatcher` push updates.
  */
 class WeaveCustomEditorProvider {
@@ -457,7 +457,7 @@ class WeaveCustomEditorProvider {
   }
 
   /**
-   * Returns the most recently active `weave.md` URI across open WeaveMAS Custom Editor panels.
+   * Returns the most recently active `weave.md` URI across open WeaveMX Custom Editor panels.
    * @returns {import('vscode').Uri | null}
    */
   getActiveTargetUri() {
@@ -568,7 +568,7 @@ class WeaveCustomEditorProvider {
         const payload = computePayload(includeInitialFocus);
         await webviewPanel.webview.postMessage({ type: 'pipelineUpdate', payload });
       } catch (err) {
-        console.error('[weavemas-viewer] failed pushing pipeline update:', err);
+        console.error('[weavemx-viewer] failed pushing pipeline update:', err);
       }
     };
 
@@ -687,8 +687,8 @@ class WeaveCustomEditorProvider {
 }
 
 /**
- * Activates the WeaveMAS Viewer extension, registering `weavemas.viewer` for `weave.md` files
- * and the two-way `"View Raw Markdown"` / `"Open WeaveMAS UI"` editor title commands.
+ * Activates the WeaveMX Viewer extension, registering `weavemx.viewer` for `weave.md` files
+ * and the two-way `"View Raw Markdown"` / `"Open WeaveMX UI"` editor title commands.
  * @param {import('vscode').ExtensionContext} context
  * @param {typeof import('vscode')} [vscodeOverride]
  * @returns {WeaveCustomEditorProvider}
@@ -728,7 +728,7 @@ function activate(context, vscodeOverride) {
 }
 
 /**
- * Deactivates the WeaveMAS Viewer extension.
+ * Deactivates the WeaveMX Viewer extension.
  * @returns {void}
  */
 function deactivate() {}

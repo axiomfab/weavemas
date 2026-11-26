@@ -1,4 +1,4 @@
-/* Offline Tailwind-compatible utility layer for WeaveMAS VS Code Webview (zero remote CDN scripts) */
+/* Offline Tailwind-compatible utility layer for WeaveMX VS Code Webview (zero remote CDN scripts) */
 *, ::before, ::after {
   box-sizing: border-box;
   border-width: 0;

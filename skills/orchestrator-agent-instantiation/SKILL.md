@@ -7,9 +7,9 @@ description: >-
 
 # 🛠️ Phase 1: Orchestrator Agent Instantiation
 
-> **Note**: Already inlined in `weave-orchestrator`. Skip reading this skill when `weave-orchestrator` is loaded. Do **NOT** read `<appDataDir>/mcp/weavemas_weave/*.json` unless an unexpected schema error occurs (`weave_init`: `{"dir": string, "type"?: "agent"|"orchestrator", "status"?: string, "instructions_file"?: string, "inputs"?: string[], "outputs"?: string|string[], "conversation_id"?: string}`).
+> **Note**: Already inlined in `weave-orchestrator`. Skip reading this skill when `weave-orchestrator` is loaded. Do **NOT** read `<appDataDir>/mcp/weavemx_weave/*.json` unless an unexpected schema error occurs (`weave_init`: `{"dir": string, "type"?: "agent"|"orchestrator", "status"?: string, "instructions_file"?: string, "inputs"?: string[], "outputs"?: string|string[], "conversation_id"?: string}`).
 
-1. **Delegate to Provisioner**: Invoke `provisioner` (`TypeName: "provisioner"` or `"weavemas:provisioner"`, `Model: "flash"`, `Role: "provisioner"`):
+1. **Delegate to Provisioner**: Invoke `provisioner` (`TypeName: "provisioner"` or `"weavemx:provisioner"`, `Model: "flash"`, `Role: "provisioner"`):
    ```markdown
    Target Manifest / Stage Guide: <absolute_path_to_manifest_or_stage_md>
    Target Directory: <workspace_root>/runs/<context_slug>/<stage_slug>

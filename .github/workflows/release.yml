@@ -33,10 +33,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build and attach weavemas-viewer.vsix to GitHub Release
+      - name: Build and attach weavemx-viewer.vsix to GitHub Release
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run build:vsix
-          gh release upload "${{ steps.release.outputs.tag_name }}" extensions/vscode-viewer/weavemas-viewer.vsix --repo "${{ github.repository }}" --clobber
+          gh release upload "${{ steps.release.outputs.tag_name }}" extensions/vscode-viewer/weavemx-viewer.vsix --repo "${{ github.repository }}" --clobber

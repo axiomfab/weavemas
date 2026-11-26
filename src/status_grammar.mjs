@@ -1,5 +1,5 @@
 /**
- * WeaveMAS status grammar: `[<stage>/]<state>[/<detail>]`
+ * WeaveMX status grammar: `[<stage>/]<state>[/<detail>]`
  *
  * - `<stage>`  (optional) — a stage directory name matching `stageNN_<slug>` (orchestrators of staged pipelines only).
  * - `<state>`  (required) — one of LIFECYCLE_STATES.
@@ -29,7 +29,7 @@ export const STAGE_DIR_REGEX = /^stage(\d{2})_(.+)$/i;
  */
 
 /**
- * Strictly parses a WeaveMAS status string of the form `[<stage>/]<state>[/<detail>]`.
+ * Strictly parses a WeaveMX status string of the form `[<stage>/]<state>[/<detail>]`.
  * @param {string} status
  * @returns {ParsedWeaveStatus}
  */

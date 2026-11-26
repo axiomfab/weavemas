@@ -1,6 +1,6 @@
-# Authoring Guide: WeaveMAS Orchestrators
+# Authoring Guide: WeaveMX Orchestrators
 
-Authoring a WeaveMAS orchestrator produces:
+Authoring a WeaveMX orchestrator produces:
 1. `orchestrator_trigger.md` (workspace trigger rule for `.agent/rules/`)
 2. `orchestrator.md` (master orchestrator guide)
 3. `orchestrator/<stage_slug>.md` *(optional — used only in multi-stage pipelines)*
@@ -43,7 +43,7 @@ trigger: always_on
 
 * **Mandatory Binding Statement**: Place near the top of `orchestrator.md`:
   ```markdown
-  Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation (or Phase 1 `provisioner` delegation in stageless mode), and pipeline lifecycle tracking.
+  Operate as a WeaveMX orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation (or Phase 1 `provisioner` delegation in stageless mode), and pipeline lifecycle tracking.
   ```
 * **Lean Root Orchestrator & Per-Stage Sub-Orchestration (Multi-Stage Pipelines)**:
   Keep `orchestrator.md` strictly as a thin stage roadmap (target `~35K–45K` root tokens across 9+ stages). At runtime, the Root Orchestrator reads **only** `orchestrator.md`, manages Step 0 stage directory creation, master `runs/<context_slug>/weave.md`, stage transitions, and User Review Gates, and delegates each stage's execution (`S1..SN`) to an isolated `stage_orchestrator` instance (kept idle upon completion—never `kill`ed—so child worker conversations remain alive for surgical `send_message` edits).
@@ -87,7 +87,7 @@ trigger: always_on
       `- segment_<SS>.srt: ${RUN_DIR}/07_subtitles/segment_<SS>.srt`
       The subagent remains 100% blind to `<target>` and writes strictly to its local `<local>` path inside its CWD; when the subagent calls `weave_update(status: "completed")`, the MCP server verifies the local output exists on disk and automatically copies/promotes it to `<target>`.
   - **Zero `Orchestrator Operations` File Copying**: Because `weave_update` automatically promotes `<local>: <target>` outputs to `${RUN_DIR}/`, **never** author `Orchestrator Operations` steps to copy or promote files between agent directories and `${RUN_DIR}/`.
-  - **Zero-Copy User Review Gates**: **Never** instruct the orchestrator to call `read_file` + `write_file` to copy or rewrite full stage deliverables through LLM context (into `<appDataDir>/brain/...` or chat) at review gates. Declare only the promoted deliverable name (e.g. `Present <NN>_<stage_output>.md for approval via WeaveMAS UI and a direct ${RUN_DIR} link`); at runtime, the orchestrator surfaces `[WeaveMAS UI](sidecar://weavemas/panel/)`, `[weave.md](file://<workspace_root>/runs/<context_slug>/weave.md)`, and a clickable `${RUN_DIR}/<NN>_<stage_output>.md` link (or uses zero-token Node.js `mirror_to` if an external mirror path is explicitly required).
+  - **Zero-Copy User Review Gates**: **Never** instruct the orchestrator to call `read_file` + `write_file` to copy or rewrite full stage deliverables through LLM context (into `<appDataDir>/brain/...` or chat) at review gates. Declare only the promoted deliverable name (e.g. `Present <NN>_<stage_output>.md for approval via WeaveMX UI and a direct ${RUN_DIR} link`); at runtime, the orchestrator surfaces `[WeaveMX UI](sidecar://weavemx/panel/)`, `[weave.md](file://<workspace_root>/runs/<context_slug>/weave.md)`, and a clickable `${RUN_DIR}/<NN>_<stage_output>.md` link (or uses zero-token Node.js `mirror_to` if an external mirror path is explicitly required).
   - **No Status Tags in Deliverable Names**: Deliverable filenames in `${RUN_DIR}/` must follow clean `<NN>_<artifact_slug>.<ext>` naming (e.g. `01_draft.md`, `02_article.md`). Never bake stage process states or approval adjectives into filenames (e.g. avoid `01_editorial_approved.md` or `01_draft_final.md`).
 * **Mandatory Static Verification**: After authoring or modifying any orchestrator, stage, or agent file, always run [`references/authoring_verification.md`](authoring_verification.md) and print the stage-by-stage verification checklist to the user.
 * **In-Place Revisions**: Specify `send_message` to the existing `<agent_id>` (with a max iteration cap, e.g. max 2 cycles) rather than re-spawning agents.
@@ -100,7 +100,7 @@ trigger: always_on
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMX orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...
@@ -128,7 +128,7 @@ Every run is scoped to `runs/<context_slug>/`.
 ```markdown
 # Multi-Agent <Pipeline Name> Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMX orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 provisioner delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `param1`: ...
@@ -187,5 +187,5 @@ Every run is scoped to `runs/<context_slug>/`.
    - Parameters: `<param1>`, `<param2>` (or `none`)
    - Execution: Execute with stage parameters and generate `<output_name>.md`.
 2. **User Review Gate** *(Optional)*:
-   - Present `<NN>_<stage_output>.md` for approval via WeaveMAS UI and a direct `${RUN_DIR}/<NN>_<stage_output>.md` link (zero-copy; never read/rewrite full contents in orchestrator context); route any revision feedback to `<role1>_<item_id>` via `send_message`.
+   - Present `<NN>_<stage_output>.md` for approval via WeaveMX UI and a direct `${RUN_DIR}/<NN>_<stage_output>.md` link (zero-copy; never read/rewrite full contents in orchestrator context); route any revision feedback to `<role1>_<item_id>` via `send_message`.
 ```

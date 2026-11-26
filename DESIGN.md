@@ -1,7 +1,7 @@
-# WeaveMAS Sidecar UI Design System (`DESIGN.md`)
+# WeaveMX Sidecar UI Design System (`DESIGN.md`)
 
 > **Scope:** Persistent styling and theme-inheritance specification for `sidecars/panel/` (and shared VS Code webview `extensions/vscode-viewer/`).
-> **Core Rule — Styling Only, Zero Functional Redesign:** Preserve 100% of WeaveMAS's existing layout, component hierarchy, DOM hooks, and interactions. Bind surfaces, borders, typography, and accents directly to Antigravity (`agy`) host CSS variables, restrain neon glow/blink effects, harmonize status colors across light and dark themes, and standardize all 13 UI icons on crisp inline SVGs.
+> **Core Rule — Styling Only, Zero Functional Redesign:** Preserve 100% of WeaveMX's existing layout, component hierarchy, DOM hooks, and interactions. Bind surfaces, borders, typography, and accents directly to Antigravity (`agy`) host CSS variables, restrain neon glow/blink effects, harmonize status colors across light and dark themes, and standardize all 13 UI icons on crisp inline SVGs.
 > **Interactive HTML Specimen:** [docs/ui-mocks/design.html](docs/ui-mocks/design.html)
 
 ---
@@ -9,10 +9,10 @@
 ## Visual Token & Complete SVG Icon Specimen
 
 ### Browser-Verified Render (`docs/ui-mocks/design.html`)
-![WeaveMAS Host Token Bindings and Complete 13-Icon SVG Set](docs/ui-mocks/design-tokens-icons.png)
+![WeaveMX Host Token Bindings and Complete 13-Icon SVG Set](docs/ui-mocks/design-tokens-icons.png)
 
 ### Standalone Vector Icon Sheet (`docs/ui-mocks/design-icons.svg`)
-![WeaveMAS 13 SVG Icons](docs/ui-mocks/design-icons.svg)
+![WeaveMX 13 SVG Icons](docs/ui-mocks/design-icons.svg)
 
 ---
 
@@ -22,7 +22,7 @@
    - Resolve active Antigravity theme mode, contrast (`normal` / `high`), font scale (`jetski.fontSize`), and custom/preset color seeds from `~/.gemini/config/config.json` and Antigravity `app_storage.json` on the server (`GET /api/theme` + initial inline CSS variables on `index.html`), while also respecting any CSS custom properties injected directly by `/preload.js` (`SidecarApp`) or VS Code webviews.
 2. **Direct CSS Variable Binding (with safe fallbacks only when undefined):**
    - Remove the hardcoded hex overrides inside `[data-theme="dark"]` (`#131316`) and `[data-theme="light"]` (`#f8fafc`) and remove the ~120 lines of `[data-theme="light"] .text-slate-* !important` patches in `styles.css`.
-   - Bind WeaveMAS tokens directly to host CSS variables:
+   - Bind WeaveMX tokens directly to host CSS variables:
      - `--agy-bg: var(--background, var(--vscode-editor-background, #090a0d))`
      - `--agy-fg: var(--foreground, var(--vscode-editor-foreground, #e5e7eb))`
      - `--agy-fg-secondary: var(--secondary-foreground, color-mix(in srgb, var(--agy-fg) 78%, var(--agy-bg)))`
@@ -72,9 +72,9 @@ All 6 status states share a consistent translucent badge treatment (`color-mix()
 
 ---
 
-## 4. Complete WeaveMAS SVG Icon Catalog (Zero Unicode Icons)
+## 4. Complete WeaveMX SVG Icon Catalog (Zero Unicode Icons)
 
-WeaveMAS uses **13 inline `16x16` SVG icons** (`aria-hidden="true"`): the **11 existing codebase SVGs** plus **2 `12x12` stroke SVGs** (`check` and `arrow-down`) replacing the remaining raw Unicode characters in `agent_panel.js` (`L176`, `L203`, `L327`). Separator bullets (`&bull;` and `U+2022`) are replaced by CSS `border-radius: 50%` dots (`.weave-sep-dot`, `.weave-log-bullet`).
+WeaveMX uses **13 inline `16x16` SVG icons** (`aria-hidden="true"`): the **11 existing codebase SVGs** plus **2 `12x12` stroke SVGs** (`check` and `arrow-down`) replacing the remaining raw Unicode characters in `agent_panel.js` (`L176`, `L203`, `L327`). Separator bullets (`&bull;` and `U+2022`) are replaced by CSS `border-radius: 50%` dots (`.weave-sep-dot`, `.weave-log-bullet`).
 
 | # | Icon ID | Rendered Size | Component / File Location | Exact `viewBox="0 0 16 16"` SVG Markup |
 |---|---|---|---|---|

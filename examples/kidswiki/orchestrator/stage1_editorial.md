@@ -36,4 +36,4 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
    - `age_checker` Parameters: `target_age`
    - Execution: Audit `../writer/draft.md` concurrently for factual accuracy (`fact_audit.md`) and age readability (`age_audit.md`). If either audit returns `verdict: FAIL` (max 2 revision cycles), route combined critique feedback to `writer` via `send_message` and re-run the failed checker(s).
 3. **User Review Gate**:
-   - Present `01_draft.md` for approval via WeaveMAS UI and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.
+   - Present `01_draft.md` for approval via WeaveMX UI and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.

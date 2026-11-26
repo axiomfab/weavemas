@@ -1,10 +1,10 @@
 {
-  "name": "weavemas",
-  "displayName": "WeaveMAS",
+  "name": "weavemx",
+  "displayName": "WeaveMX",
   "version": "1.1.0",
-  "description": "Declarative multi-agent orchestration for Google Antigravity with sandboxed weave.md manifests, MCP contract enforcement, and a zero-token UI sidecar.",
+  "description": "Declarative Multi-agent eXecution for Google Antigravity with sandboxed weave.md manifests, MCP contract enforcement, and a zero-token UI sidecar.",
   "author": "Martin Lukasiewycz",
-  "repository": "https://github.com/axiomfab/weavemas-agy",
+  "repository": "https://github.com/axiomfab/weavemx",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "Use the weave-authoring skill to create a minimal, single-file (stageless) KidsWiki pipeline for a topic and target age (3-12, default 4). Include two agents: a Writer and a Fact Checker with an in-place revision loop, saving the verified article to article.md in runs/<topic_slug>_age<age>/.",

@@ -1,6 +1,6 @@
-# Authoring Guide: WeaveMAS UI & Dashboard Tooling
+# Authoring Guide: WeaveMX UI & Dashboard Tooling
 
-In WeaveMAS, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `weave.md` files to `runs/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
+In WeaveMX, UI sidecars are decoupled from agent execution: orchestrators and subagents write canonical `weave.md` files to `runs/<context_slug>/`, and the Node.js sidecar (`sidecar_sdk`) observes the filesystem.
 
 ---
 

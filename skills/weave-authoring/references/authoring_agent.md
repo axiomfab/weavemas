@@ -1,4 +1,4 @@
-# Authoring Guide: WeaveMAS Agents
+# Authoring Guide: WeaveMX Agents
 
 Store all agent definitions **flat** at `.agent/agents/<agent_name>.md` (never in nested stage subdirectories, as Antigravity only discovers native custom subagents directly inside `.agent/agents/*.md`). For multi-stage pipelines, prefix `<agent_name>` with the stage identifier (e.g. `.agent/agents/stage1_director.md` with `name: stage1_director`). The filename stem MUST match the `name:` field in YAML frontmatter.
 
@@ -25,7 +25,7 @@ tools:
 * **`tools:` Constraint**: Always include `view_file` (required to load the `weave-agent` skill and read declared `inputs`), plus only the additional built-in tools required by the role (omit `run_command` unless shell execution is needed). **NEVER** list `call_mcp_tool` or `weave__*` in `tools:` (`inheritMcp: true` grants MCP access automatically).
 * **Mandatory Prompt Binding Statement**: Place this exact line near the top of the prompt body (right after the agent title and 1-sentence role summary):
   ```markdown
-  Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+  Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
   ```
 * **Zero Tool Boilerplate**: Never write `call_mcp_tool` instructions or JSON schemas in agent definitions; `weave-agent` handles all status tool calls automatically.
 
@@ -70,7 +70,7 @@ tools:
 
 You write age-calibrated articles within your dedicated working directory.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your completed prose to `draft.md`.
@@ -109,7 +109,7 @@ tools:
 
 You extract the illustration prompt from `draft.md` (bound via `draft.md: 01_draft.md`) and generate `illustration.png`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your visual asset to `illustration.png` (outputs: `["illustration.png"]`).

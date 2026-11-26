@@ -1,6 +1,6 @@
 # Authoring Guide: Outcome Review & Pipeline Revision (`C` $\leftrightarrow$ `R` Protocol)
 
-Triggered when a user critiques or reports issues with the output of a WeaveMAS pipeline run in `runs/<context_slug>/`.
+Triggered when a user critiques or reports issues with the output of a WeaveMX pipeline run in `runs/<context_slug>/`.
 
 ---
 

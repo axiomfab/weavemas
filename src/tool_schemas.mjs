@@ -1,13 +1,13 @@
 import { parseFrontmatter } from './frontmatter.mjs';
 
 /**
- * Tool definitions and schemas for WeaveMAS MCP server.
+ * Tool definitions and schemas for WeaveMX MCP server.
  */
 
 export const TOOLS = [
   {
     name: 'weave_init',
-    description: 'Initialize a WeaveMAS weave.md file in the specified directory.',
+    description: 'Initialize a WeaveMX weave.md file in the specified directory.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -49,7 +49,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_update',
-    description: 'Update the WeaveMAS weave.md with a new lifecycle state, progress note, outputs, and/or persisted worker conversation_id.',
+    description: 'Update the WeaveMX weave.md with a new lifecycle state, progress note, outputs, and/or persisted worker conversation_id.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -108,7 +108,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_read',
-    description: 'Read and verify status metadata (including persisted conversation_id) from a single WeaveMAS weave.md (dir) or batch-verify multiple agent workspaces in one call (dirs or stage_dir).',
+    description: 'Read and verify status metadata (including persisted conversation_id) from a single WeaveMX weave.md (dir) or batch-verify multiple agent workspaces in one call (dirs or stage_dir).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -146,7 +146,7 @@ export const TOOLS = [
   },
   {
     name: 'weave_discover_agents',
-    description: 'Discover initialized or matching WeaveMAS subagent workspaces (including persisted conversation_id) in a stage or context directory.',
+    description: 'Discover initialized or matching WeaveMX subagent workspaces (including persisted conversation_id) in a stage or context directory.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -169,8 +169,8 @@ export const TOOLS = [
 ];
 
 /**
- * Canonical 1-line parameter signatures for inlining into WeaveMAS skills and subagents
- * so models call `weavemas_weave` tools directly without reading `<appDataDir>/mcp/weavemas_weave/*.json`.
+ * Canonical 1-line parameter signatures for inlining into WeaveMX skills and subagents
+ * so models call `weavemx_weave` tools directly without reading `<appDataDir>/mcp/weavemx_weave/*.json`.
  * @type {Readonly<Record<string, string>>}
  */
 export const COMPACT_TOOL_SIGNATURES = Object.freeze({
@@ -185,12 +185,12 @@ export const COMPACT_TOOL_SIGNATURES = Object.freeze({
  * Required path fragment prohibiting unnecessary lazy MCP schema file reads.
  * @type {string}
  */
-export const NO_SCHEMA_READ_FRAGMENT = '<appDataDir>/mcp/weavemas_weave/*.json';
+export const NO_SCHEMA_READ_FRAGMENT = '<appDataDir>/mcp/weavemx_weave/*.json';
 
 /**
  * Validates that a skill or agent Markdown document contains exact compact 1-line
- * `weavemas_weave` MCP parameter signatures for all `requiredTools` plus an explicit
- * rule against reading `<appDataDir>/mcp/weavemas_weave/*.json`.
+ * `weavemx_weave` MCP parameter signatures for all `requiredTools` plus an explicit
+ * rule against reading `<appDataDir>/mcp/weavemx_weave/*.json`.
  *
  * @param {string} content - Markdown file content to validate.
  * @param {string[]} requiredTools - Non-empty list of tool names from `COMPACT_TOOL_SIGNATURES`.
@@ -206,7 +206,7 @@ export function verifyInlineToolSignatures(content, requiredTools) {
 
   for (const toolName of requiredTools) {
     if (typeof toolName !== 'string' || !Object.hasOwn(COMPACT_TOOL_SIGNATURES, toolName)) {
-      throw new Error(`CRITICAL: Unknown WeaveMAS MCP tool '${String(toolName)}' in requiredTools.`);
+      throw new Error(`CRITICAL: Unknown WeaveMX MCP tool '${String(toolName)}' in requiredTools.`);
     }
     const expectedSig = COMPACT_TOOL_SIGNATURES[toolName];
     if (!content.includes(toolName) || !content.includes(expectedSig)) {
@@ -238,7 +238,7 @@ export const STAGE_ORCHESTRATOR_TOOLS = Object.freeze([
 ]);
 
 /**
- * Required inline `weavemas_weave` MCP tool signatures for `agents/stage_orchestrator.md`.
+ * Required inline `weavemx_weave` MCP tool signatures for `agents/stage_orchestrator.md`.
  * @type { readonly string[] }
  */
 export const STAGE_ORCHESTRATOR_MCP_TOOLS = Object.freeze([

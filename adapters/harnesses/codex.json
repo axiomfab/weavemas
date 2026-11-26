@@ -16,8 +16,8 @@
   },
   "mcp": {
     "style": "prefixed",
-    "serverName": "weavemas_weave",
-    "toolPrefix": "mcp__weavemas_weave__"
+    "serverName": "weavemx_weave",
+    "toolPrefix": "mcp__weavemx_weave__"
   },
   "revision": {
     "mode": "stateless"

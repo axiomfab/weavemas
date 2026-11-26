@@ -23,11 +23,11 @@
   },
   "mcp": {
     "style": "wrapper",
-    "serverName": "weavemas_weave",
+    "serverName": "weavemx_weave",
     "wrapperTool": "call_mcp_tool",
-    "schemaGlob": "<appDataDir>/mcp/weavemas_weave/*.json"
+    "schemaGlob": "<appDataDir>/mcp/weavemx_weave/*.json"
   },
   "revision": { "mode": "resume", "handleKey": "conversationId" },
   "agentFrontmatter": { "agyFlags": true },
-  "uiTrackerLink": "[WeaveMAS UI](sidecar://weavemas/panel/)"
+  "uiTrackerLink": "[WeaveMX UI](sidecar://weavemx/panel/)"
 }

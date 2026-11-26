@@ -1,10 +1,10 @@
-# WeaveMAS
+# WeaveMX
 
-**WeaveMAS** is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMAS orchestrator and agent skills (`weave-orchestrator`, `weave-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemas_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. A canonical adapter generator ([`scripts/build-adapters.mjs`](scripts/build-adapters.mjs)) compiles these protocols and control-plane agents from a single template source to **Antigravity**, **Claude Code**, **Codex**, **Cursor**, and custom MCP harnesses.
+**WeaveMX** (*Multi-agent eXecution*) is a declarative orchestration layer for Google Antigravity (`agy`) that lets you define, rapidly prototype, and run structured multi-agent systems in plain Markdown, with zero code. You specify orchestrators and specialist agents in partially predefined Markdown files; WeaveMX orchestrator and agent skills (`weave-orchestrator`, `weave-agent`) ensure those definitions execute through predictable protocols; and programmatic Weave MCP tools (`weavemx_weave`) enforce port contracts and manage execution lifecycles on disk in `weave.md` files. A canonical adapter generator ([`scripts/build-adapters.mjs`](scripts/build-adapters.mjs)) compiles these protocols and control-plane agents from a single template source to **Antigravity**, **Claude Code**, **Codex**, **Cursor**, and custom MCP harnesses.
 
 ## Quick Example: KidsWiki
 
-With the `weavemas` plugin enabled in Antigravity, a single prompt to `weave-authoring` synthesizes a complete 2-stage, 4-agent illustrated encyclopedia pipeline in plain Markdown -- zero orchestration code required:
+With the `weavemx` plugin enabled in Antigravity, a single prompt to `weave-authoring` synthesizes a complete 2-stage, 4-agent illustrated encyclopedia pipeline in plain Markdown -- zero orchestration code required:
 
 > Use the `weave-authoring` skill to create a 2-stage KidsWiki pipeline for a `topic` and `target_age` (3-12, default 4). Stage 1 (Editorial): a Writer drafts the article with an `![<illustration prompt>](./02_illustration.png)` placeholder and italicized caption; a Fact Checker and Age Checker audit accuracy and readability in parallel with an in-place revision loop; then a human review gate approves `01_draft.md`. Stage 2 (Publishing): an Illustrator generates `02_illustration.png` from the alt-text prompt.
 
@@ -22,7 +22,7 @@ File: [`orchestrator.md`](examples/kidswiki/orchestrator.md)
 ```markdown
 # Multi-Agent KidsWiki Orchestrator Guide
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMX orchestrator. You MUST use the `weave-orchestrator` skill to manage stage scaffolding, per-stage `stage_orchestrator` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: Article subject (e.g., `"Rocket"`). Required.
@@ -94,7 +94,7 @@ Draft an age-calibrated KidsWiki article with an embedded illustration placehold
    - `age_checker` Parameters: `target_age`
    - Execution: Audit `../writer/draft.md` concurrently for factual accuracy (`fact_audit.md`) and age readability (`age_audit.md`). If either audit returns `verdict: FAIL` (max 2 revision cycles), route combined critique feedback to `writer` via `send_message` and re-run the failed checker(s).
 3. **User Review Gate**:
-   - Present `01_draft.md` for approval via WeaveMAS UI and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.
+   - Present `01_draft.md` for approval via WeaveMX UI and a direct `${RUN_DIR}/01_draft.md` link (zero-copy); route any revision feedback to `writer` via `send_message`.
 ```
 
 </details>
@@ -153,7 +153,7 @@ tools:
 
 You write concise, scientifically accurate encyclopedia articles calibrated to `target_age` for the assigned `topic`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save your completed article to `draft.md`.
@@ -207,7 +207,7 @@ tools:
 
 You audit `draft.md` strictly for scientific and factual accuracy on `topic`, catching oversimplified myths or false claims.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Write your factual audit report starting with `verdict: PASS` or `verdict: FAIL` to `fact_audit.md`.
@@ -239,7 +239,7 @@ tools:
 
 You audit `draft.md` (including both prose and the italicized image caption) for vocabulary, sentence length, and tone suited to `target_age`.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Write your readability audit report starting with `verdict: PASS` or `verdict: FAIL` to `age_audit.md`.
@@ -271,7 +271,7 @@ tools:
 
 You read `draft.md`, extract the visual prompt from `![<prompt>](./02_illustration.png)`, and generate `illustration.png` in your working directory via the `image-generator` subagent.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save the generated image to `illustration.png`.
@@ -306,26 +306,26 @@ trigger: always_on
 
 1. **Activate trigger**: Move `orchestrator_trigger.md` into `.agent/rules/orchestrator_trigger.md`.
 2. **Execute**: Prompt `"Write a KidsWiki article about 'Rocket' for a 4yo."`
-3. **Observe & Steer**: Click `[WeaveMAS UI](sidecar://weavemas/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
+3. **Observe & Steer**: Click `[WeaveMX UI](sidecar://weavemx/panel/)` or `[weave.md](file:///...)` in chat to monitor the 2-stage stepper, live agent cards, port badges, and deliverables in `runs/kidswiki_rocket_age4/`. Approve `01_draft.md` at the Stage 1 gate to unlock illustration, or request targeted natural-language edits (routed via `send_message` to the persisted worker `conversation_id`).
 
-![WeaveMAS UI Sidecar](assets/weavemas_ui_kidswiki.png)
+![WeaveMX UI Sidecar](assets/weavemas_ui_kidswiki.png)
 
-## Why WeaveMAS?
+## Why WeaveMX?
 
 Prompting a single LLM in one pass works well for short, self-contained tasks, but breaks down on complex, multi-part digital assets as competing constraints dilute context, subtle factual errors slip past self-critique, and monolithic tool/model assignments waste compute. Existing multi-agent approaches pull in two directions:
 
 - **Code-centric state graphs** (e.g., LangGraph, AutoGen, MetaGPT) provide static typing and state checkpointing, but require writing Python or TypeScript glue code, maintaining package environments, and pre-coding skip guards before interactive revisions can avoid full downstream replay.
 - **Open-ended agent harnesses and iterative single-agent ("Ralph") loops** avoid orchestration code, yet drift across folder layouts from run to run, lose constraints across conversational summaries, share correlated blind spots when one persona grades its own work, wander across unrestricted workspace directories, and expose poor visibility into intermediate progress.
 
-WeaveMAS brings repeatable multi-agent structure to agent harnesses with zero orchestration code through a three-part causal design:
+WeaveMX brings repeatable multi-agent structure to agent harnesses with zero orchestration code through a three-part causal design:
 
 1. **Partially Predefined Markdown Specifications (Zero Code)**: Orchestrators (`orchestrator.md`, `orchestrator/stage*.md`) and specialist worker agents (`.agent/agents/*.md`) are defined in plain Markdown combining structured sections (stages, roles, file/parameter ports, tasks, and review gates) with natural-language instructions, written by hand or synthesized and revised via `weave-authoring`.
 2. **Execution Skills for Predictable Protocols**: Dedicated orchestrator and worker skills (`weave-orchestrator` and `weave-agent`) govern how the harness interprets those Markdown files at runtime, prescribing two-phase workspace provisioning, subagent dispatch, directory discipline, and structured multi-turn handoffs.
-3. **MCP Contract Enforcement & `weave.md` Lifecycles**: Programmatic MCP tools (`weavemas_weave`) back those skills on disk, isolating each worker inside its own Current Working Directory (`runs/<context_slug>/...`), validating input/output port bindings, and managing orchestrator and worker lifecycles in structured `weave.md` manifests.
+3. **MCP Contract Enforcement & `weave.md` Lifecycles**: Programmatic MCP tools (`weavemx_weave`) back those skills on disk, isolating each worker inside its own Current Working Directory (`runs/<context_slug>/...`), validating input/output port bindings, and managing orchestrator and worker lifecycles in structured `weave.md` manifests.
 
-Building on this foundation, WeaveMAS provides:
+Building on this foundation, WeaveMX provides:
 
-- **Two-Tier Data-Flow Checking**: Pairs authoring-time auditing (port isomorphism, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via `weavemas_weave`.
+- **Two-Tier Data-Flow Checking**: Pairs authoring-time auditing (port isomorphism, causal input availability across waves, and output promotion) with zero-LLM runtime contract enforcement via `weavemx_weave`.
 - **Interactive Gates & Surgical Asset Edits**: Human review gates pause execution at verified milestone files, while persisted worker sessions (`conversation_id`) enable natural-language cross-stage surgical edits without re-spawning agents or replaying downstream checkpoints.
 - **Zero-Token Out-of-Band UI Sidecar**: A local Node.js web panel (`sidecars/panel/`) polls `weave.md` manifests directly from disk with zero LLM calls.
 
@@ -343,40 +343,40 @@ Clone this repository into your Antigravity plugins directory:
 
 ```bash
 # macOS / Linux
-git clone https://github.com/axiomfab/weavemas-agy.git ~/.gemini/config/plugins/weavemas
+git clone https://github.com/axiomfab/weavemx.git ~/.gemini/config/plugins/weavemx
 
 # Windows (PowerShell)
-git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plugins/weavemas"
+git clone https://github.com/axiomfab/weavemx.git "$HOME/.gemini/config/plugins/weavemx"
 ```
 
-When enabled in Antigravity (`customization://weavemas`), the plugin automatically registers the `weavemas_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMAS UI` sidecar (`sidecars/panel/`).
+When enabled in Antigravity (`customization://weavemx`), the plugin automatically registers the `weavemx_weave` MCP server (`mcp_config.json`), core skills (`weave-authoring`, `weave-orchestrator`, `weave-agent`), control-plane subagents (`provisioner`, `stage_orchestrator`), and the `WeaveMX UI` sidecar (`sidecars/panel/`).
 
 </details>
 
 <details>
-<summary><strong>2. Antigravity IDE &amp; VS Code</strong> -- Plugin + native <code>weavemas-viewer.vsix</code> custom editor for <code>weave.md</code>.</summary>
+<summary><strong>2. Antigravity IDE &amp; VS Code</strong> -- Plugin + native <code>weavemx-viewer.vsix</code> custom editor for <code>weave.md</code>.</summary>
 
 Clone this repository into your Antigravity plugins directory:
 
 ```bash
 # macOS / Linux
-git clone https://github.com/axiomfab/weavemas-agy.git ~/.gemini/config/plugins/weavemas
+git clone https://github.com/axiomfab/weavemx.git ~/.gemini/config/plugins/weavemx
 
 # Windows (PowerShell)
-git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/.gemini/config/plugins/weavemas"
+git clone https://github.com/axiomfab/weavemx.git "$HOME/.gemini/config/plugins/weavemx"
 ```
 
-Install `weavemas-viewer.vsix` to open the WeaveMAS UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
+Install `weavemx-viewer.vsix` to open the WeaveMX UI natively in an editor tab whenever you click any `weave.md` file (or `[weave.md](file:///...)` link in chat) -- with `FileSystemWatcher` push updates, zero `localhost` HTTP ports, and a 1-click **View Raw Markdown** toggle:
 
 ```bash
-# Option A: Download weavemas-viewer.vsix from the latest GitHub Release
-# https://github.com/axiomfab/weavemas-agy/releases/latest
-code --install-extension weavemas-viewer.vsix
+# Option A: Download weavemx-viewer.vsix from the latest GitHub Release
+# https://github.com/axiomfab/weavemx/releases/latest
+code --install-extension weavemx-viewer.vsix
 
 # Option B: Build from the cloned repository and install
-cd ~/.gemini/config/plugins/weavemas
+cd ~/.gemini/config/plugins/weavemx
 npm run build:vsix
-code --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
+code --install-extension extensions/vscode-viewer/weavemx-viewer.vsix
 ```
 
 If `code` is not on your `PATH` (or you are in Antigravity IDE), install the `.vsix` via the Command Palette (`Extensions: Install from VSIX...`).
@@ -384,29 +384,29 @@ If `code` is not on your `PATH` (or you are in Antigravity IDE), install the `.v
 </details>
 
 <details>
-<summary><strong>3. Cursor</strong> -- <code>.cursor/rules</code> + <code>.cursor/agents</code> + <code>.cursor/mcp.json</code> + native <code>weavemas-viewer.vsix</code> editor.</summary>
+<summary><strong>3. Cursor</strong> -- <code>.cursor/rules</code> + <code>.cursor/agents</code> + <code>.cursor/mcp.json</code> + native <code>weavemx-viewer.vsix</code> editor.</summary>
 
-Clone this repository, install the Cursor adapter and MCP registration into your target workspace, and install `weavemas-viewer.vsix` for native `weave.md` rendering:
+Clone this repository, install the Cursor adapter and MCP registration into your target workspace, and install `weavemx-viewer.vsix` for native `weave.md` rendering:
 
 ```bash
 # 1. Clone the repository (macOS / Linux)
-git clone https://github.com/axiomfab/weavemas-agy.git ~/weavemas-agy
-cd ~/weavemas-agy
+git clone https://github.com/axiomfab/weavemx.git ~/weavemx
+cd ~/weavemx
 
 # Windows (PowerShell)
-# git clone https://github.com/axiomfab/weavemas-agy.git "$HOME/weavemas-agy"
-# Set-Location "$HOME/weavemas-agy"
+# git clone https://github.com/axiomfab/weavemx.git "$HOME/weavemx"
+# Set-Location "$HOME/weavemx"
 
-# 2. Install .cursor/rules/*.mdc, .cursor/agents/*.md, and merge weavemas_weave into .cursor/mcp.json
+# 2. Install .cursor/rules/*.mdc, .cursor/agents/*.md, and merge weavemx_weave into .cursor/mcp.json
 node scripts/install-cursor.mjs --target /path/to/your/workspace
 
-# 3. Install the WeaveMAS Viewer extension (from GitHub Release or local build)
-# Option A: Download weavemas-viewer.vsix from https://github.com/axiomfab/weavemas-agy/releases/latest
-cursor --install-extension weavemas-viewer.vsix
+# 3. Install the WeaveMX Viewer extension (from GitHub Release or local build)
+# Option A: Download weavemx-viewer.vsix from https://github.com/axiomfab/weavemx/releases/latest
+cursor --install-extension weavemx-viewer.vsix
 
 # Option B: Build locally from the cloned repository
 npm run build:vsix
-cursor --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
+cursor --install-extension extensions/vscode-viewer/weavemx-viewer.vsix
 ```
 
 </details>
@@ -416,14 +416,14 @@ cursor --install-extension extensions/vscode-viewer/weavemas-viewer.vsix
 
 First-class installers for **Codex**, **Claude Code**, **Windsurf**, and other MCP/ACP harnesses are planned. Want prioritized support for your harness? Reach out at [contact@axiomfab.org](mailto:contact@axiomfab.org).
 
-In the meantime, you can register the standalone `weavemas_weave` MCP state and contract server directly in any MCP host configuration (`mcp_config.json`):
+In the meantime, you can register the standalone `weavemx_weave` MCP state and contract server directly in any MCP host configuration (`mcp_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "weavemas_weave": {
+    "weavemx_weave": {
       "command": "node",
-      "args": ["/absolute/path/to/weavemas-agy/src/mcp_server.mjs"]
+      "args": ["/absolute/path/to/weavemx/src/mcp_server.mjs"]
     }
   }
 }
@@ -433,7 +433,7 @@ You can also generate `claude-code` or `codex` protocol skills and control-plane
 
 </details>
 
-### MCP Tools (`weavemas_weave`)
+### MCP Tools (`weavemx_weave`)
 
 All directory arguments (`dir`, `dirs`, `stage_dir`, `directory`, `mirror_to`) must be absolute paths.
 
@@ -447,7 +447,7 @@ All directory arguments (`dir`, `dirs`, `stage_dir`, `directory`, `mirror_to`) m
 
 ## The `weave.md` Manifest Contract
 
-Every run root (`runs/<context_slug>/weave.md`) and worker sandbox (`runs/<context_slug>/.../agents/<agent_id>/weave.md`) stores state in an on-disk `weave.md` file managed exclusively via `weavemas_weave`. It pairs a closed 7-key YAML frontmatter header with an append-only Markdown log:
+Every run root (`runs/<context_slug>/weave.md`) and worker sandbox (`runs/<context_slug>/.../agents/<agent_id>/weave.md`) stores state in an on-disk `weave.md` file managed exclusively via `weavemx_weave`. It pairs a closed 7-key YAML frontmatter header with an append-only Markdown log:
 
 ```yaml
 ---
@@ -485,7 +485,7 @@ For compact workflows that do not need intermediate review gates or `orchestrato
 ```markdown
 # KidsWiki Stageless Orchestrator
 
-Operate as a WeaveMAS orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 `provisioner` delegation, and pipeline lifecycle tracking.
+Operate as a WeaveMX orchestrator. You MUST use the `weave-orchestrator` skill to manage workspace scaffolding, Phase 1 `provisioner` delegation, and pipeline lifecycle tracking.
 
 ## Inputs
 - `topic`: Article subject (required).
@@ -521,7 +521,7 @@ Every run is scoped to `runs/kidswiki_<topic_slug>_age<target_age>/`.
 
 ## Multi-Platform Harness Adapters
 
-WeaveMAS maintains its core orchestration/worker skills (`weave-orchestrator`, `weave-agent`, `orchestrator-agent-instantiation`, `orchestrator-agent-execution`) and control-plane subagents (`provisioner`, `stage_orchestrator`) as canonical templates in `adapters/templates/` paired with declarative JSON configs in `adapters/harnesses/` (validated against [`adapters/schema.json`](adapters/schema.json)).
+WeaveMX maintains its core orchestration/worker skills (`weave-orchestrator`, `weave-agent`, `orchestrator-agent-instantiation`, `orchestrator-agent-execution`) and control-plane subagents (`provisioner`, `stage_orchestrator`) as canonical templates in `adapters/templates/` paired with declarative JSON configs in `adapters/harnesses/` (validated against [`adapters/schema.json`](adapters/schema.json)).
 
 ### Built-In Harnesses
 
@@ -541,7 +541,7 @@ npm run build:adapters
 # Generate a single harness directly into a target project workspace
 node scripts/build-adapters.mjs --harness claude-code --out-dir /path/to/workspace
 
-# Install the Cursor adapter (.cursor/rules, .cursor/agents) and merge weavemas_weave into .cursor/mcp.json
+# Install the Cursor adapter (.cursor/rules, .cursor/agents) and merge weavemx_weave into .cursor/mcp.json
 node scripts/install-cursor.mjs --target /path/to/workspace
 
 # Verify zero template drift and run cross-harness contract checks (CI mode)
@@ -550,7 +550,7 @@ node scripts/build-adapters.mjs --check
 
 ### Adding a New Harness in ~30 Lines of JSON
 
-To port WeaveMAS to a new MCP/ACP harness (e.g., Windsurf), add `adapters/harnesses/<id>.json` conforming to [`adapters/schema.json`](adapters/schema.json) and run `npm run build:adapters`:
+To port WeaveMX to a new MCP/ACP harness (e.g., Windsurf), add `adapters/harnesses/<id>.json` conforming to [`adapters/schema.json`](adapters/schema.json) and run `npm run build:adapters`:
 
 ```json
 {
@@ -571,7 +571,7 @@ To port WeaveMAS to a new MCP/ACP harness (e.g., Windsurf), add `adapters/harnes
   },
   "mcp": {
     "style": "direct",
-    "serverName": "weavemas_weave"
+    "serverName": "weavemx_weave"
   },
   "revision": {
     "mode": "stateless"
@@ -581,7 +581,7 @@ To port WeaveMAS to a new MCP/ACP harness (e.g., Windsurf), add `adapters/harnes
 
 Key schema mappings:
 - **`targets.protocolFormat`**: `"skill"` (`<protocolsDir>/<name>/SKILL.md`), `"mdc"` (`<protocolsDir>/<name>.mdc` with `alwaysApply: false`), or `"rule"` (`<protocolsDir>/<name>.md` with `trigger: model_decision`).
-- **`mcp.style`**: `"wrapper"` (invokes `wrapperTool` with `ServerName`), `"prefixed"` (prefixes tools with `toolPrefix`, e.g. `mcp__weavemas_weave__`), or `"direct"` (invokes bare MCP tool names).
+- **`mcp.style`**: `"wrapper"` (invokes `wrapperTool` with `ServerName`), `"prefixed"` (prefixes tools with `toolPrefix`, e.g. `mcp__weavemx_weave__`), or `"direct"` (invokes bare MCP tool names).
 - **`revision.mode`**: `"resume"` (routes audit/gate edits to an idle worker session via `tools.resume` and `revision.handleKey`) or `"stateless"` (re-dispatches the worker via `tools.subagent` in its existing `<dir>/` CWD so on-disk artifacts and `weave.md` update in place).
 
 ## Testing

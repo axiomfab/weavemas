@@ -643,7 +643,7 @@ function inspectAgentOutputsForBatch(resolvedDir, outputsToCheck, requireOnDisk,
 }
 
 /**
- * Batch-reads and verifies multiple WeaveMAS workspaces via `dirs` (explicit absolute directory list)
+ * Batch-reads and verifies multiple WeaveMX workspaces via `dirs` (explicit absolute directory list)
  * or `stage_dir` / `stageDir` (stage or context directory containing `agents/` workspaces).
  * Returns a compact summary with `all_completed`, `verified`, per-agent status/verdict, and missing outputs.
  * @param {{

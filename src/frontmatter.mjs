@@ -1,5 +1,5 @@
 /**
- * Frontmatter parser and serializer for WeaveMAS weave.md files.
+ * Frontmatter parser and serializer for WeaveMX weave.md files.
  */
 
 export const ALLOWED_FRONTMATTER_KEYS = new Set([

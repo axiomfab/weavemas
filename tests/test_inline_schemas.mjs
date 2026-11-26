@@ -107,7 +107,7 @@ test('verifyInlineToolSignatures - Failure Path 2: throws Error on unknown tool,
 
   assert.throws(() => verifyInlineToolSignatures(validWithNoProhibition, ['unknown_tool']), {
     name: 'Error',
-    message: /CRITICAL: Unknown WeaveMAS MCP tool 'unknown_tool'/
+    message: /CRITICAL: Unknown WeaveMX MCP tool 'unknown_tool'/
   });
 
   assert.throws(
@@ -120,7 +120,7 @@ test('verifyInlineToolSignatures - Failure Path 2: throws Error on unknown tool,
 
   assert.throws(() => verifyInlineToolSignatures(validWithNoProhibition, ['weave_verify']), {
     name: 'Error',
-    message: /CRITICAL: Missing explicit prohibition against reading '<appDataDir>\/mcp\/weavemas_weave\/\*\.json'/
+    message: /CRITICAL: Missing explicit prohibition against reading '<appDataDir>\/mcp\/weavemx_weave\/\*\.json'/
   });
 });
 

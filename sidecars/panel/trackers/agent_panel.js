@@ -1,4 +1,4 @@
-// Pipeline Agents Panel Frontend Module - Dynamic WeaveMAS Discovery Across All Stages
+// Pipeline Agents Panel Frontend Module - Dynamic WeaveMX Discovery Across All Stages
 (function() {
   const expandedCards = new Set(), expandedGroups = new Set(), collapsedStages = new Set();
   const cardViewModes = new Map(), pendingScrollBottom = new Set();

@@ -129,7 +129,7 @@ test('Live theme-change postMessage Listener (Issue #27) - Updates dataset.theme
 
   const ctx = {
     window: {
-      __WEAVEMAS_HOST_THEME__: { mode: 'dark' },
+      __WEAVEMX_HOST_THEME__: { mode: 'dark' },
       addEventListener(ev, fn) { if (ev === 'message') messageListeners.push(fn); }
     },
     document: {

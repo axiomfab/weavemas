@@ -1,6 +1,6 @@
 # Authoring Guide: Static Pipeline Data-Flow Verification
 
-Run this static analysis **purely on the authored pipeline files** (`orchestrator.md`, `orchestrator/*.md`, `.agent/agents/*.md`, and static workspace files)—before any pipeline execution—whenever creating or revising a WeaveMAS pipeline.
+Run this static analysis **purely on the authored pipeline files** (`orchestrator.md`, `orchestrator/*.md`, `.agent/agents/*.md`, and static workspace files)—before any pipeline execution—whenever creating or revising a WeaveMX pipeline.
 
 ---
 

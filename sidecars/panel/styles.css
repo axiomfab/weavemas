@@ -29,7 +29,7 @@
   --agy-mono: var(--editor-font-family, "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
   --weave-font-scale: var(--app-font-scale, 1);
 
-  /* Semantic WeaveMAS panel tokens derived directly from agy host variables (Option A: Flat Native Fit) */
+  /* Semantic WeaveMX panel tokens derived directly from agy host variables (Option A: Flat Native Fit) */
   --weave-fg-strong: var(--agy-fg);
   --weave-fg-primary: var(--agy-fg);
   --weave-fg-secondary: var(--agy-fg-secondary);

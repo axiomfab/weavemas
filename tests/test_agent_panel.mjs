@@ -72,7 +72,7 @@ test('Failure Path: Dynamic Title Formatting handles null, undefined, or missing
   assert.equal(formatAgentTitle(undefined, undefined), 'Agent');
 });
 
-test('Happy Path: Status Badge correctly renders WeaveMAS compound sub-states', () => {
+test('Happy Path: Status Badge correctly renders WeaveMX compound sub-states', () => {
   const completed = getStatusBadge('completed/concept_ready');
   assert.match(completed, /completed: concept ready/);
   assert.match(completed, /bg-emerald-500/);
@@ -154,7 +154,7 @@ test('Happy Path: Multi-stage render generates horizontal stage section headers 
   assert.doesNotMatch(container.innerHTML, /bg-amber-500\/10/);
   // Verify obsolete wrapper is absent
   assert.doesNotMatch(container.innerHTML, /Pipeline Subagents/);
-  assert.doesNotMatch(container.innerHTML, /Dynamic WeaveMAS Discovery/);
+  assert.doesNotMatch(container.innerHTML, /Dynamic WeaveMX Discovery/);
   // Verify icons are strictly absent
   assert.doesNotMatch(container.innerHTML, /🎬|🔍|🤖|✍️|🎙️|📹|🛡️/);
   assert.equal(getAgentIcon('director'), '');

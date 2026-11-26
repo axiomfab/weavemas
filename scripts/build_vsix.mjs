@@ -246,15 +246,15 @@ export function buildVsixManifestXml(pkg) {
   if (!pkg || typeof pkg !== 'object') {
     throw new TypeError('CRITICAL: buildVsixManifestXml requires a package.json object');
   }
-  const id = escapeXml(pkg.name || 'weavemas-viewer');
+  const id = escapeXml(pkg.name || 'weavemx-viewer');
   const version = escapeXml(pkg.version || '0.1.0');
   const publisher = escapeXml(pkg.publisher || 'axiomfab');
-  const displayName = escapeXml(pkg.displayName || pkg.name || 'WeaveMAS Viewer');
+  const displayName = escapeXml(pkg.displayName || pkg.name || 'WeaveMX Viewer');
   const description = escapeXml(pkg.description || '');
   const engine = escapeXml(pkg.engines?.vscode || '^1.85.0');
   const categories = escapeXml(Array.isArray(pkg.categories) ? pkg.categories.join(',') : 'Other');
   const repoUrl = escapeXml(
-    typeof pkg.repository === 'string' ? pkg.repository : (pkg.repository?.url || 'https://github.com/axiomfab/weavemas-agy.git')
+    typeof pkg.repository === 'string' ? pkg.repository : (pkg.repository?.url || 'https://github.com/axiomfab/weavemx.git')
   );
 
   return [
@@ -264,7 +264,7 @@ export function buildVsixManifestXml(pkg) {
     `    <Identity Language="en-US" Id="${id}" Version="${version}" Publisher="${publisher}" />`,
     `    <DisplayName>${displayName}</DisplayName>`,
     `    <Description xml:space="preserve">${description}</Description>`,
-    '    <Tags>weavemas,multi-agent,antigravity,custom-editor,weave.md</Tags>',
+    '    <Tags>weavemx,multi-agent,antigravity,custom-editor,weave.md</Tags>',
     `    <Categories>${categories}</Categories>`,
     '    <GalleryFlags>Public</GalleryFlags>',
     '    <Properties>',
@@ -293,7 +293,7 @@ export function buildVsixManifestXml(pkg) {
 
 /**
  * Packages `extensions/vscode-viewer/` together with shared `sidecars/panel/*` and
- * `src/{status_grammar.mjs,path_resolver.mjs}` into a standalone `weavemas-viewer.vsix`.
+ * `src/{status_grammar.mjs,path_resolver.mjs}` into a standalone `weavemx-viewer.vsix`.
  * @param {{
  *   repoRoot?: string,
  *   outputPath?: string
@@ -313,7 +313,7 @@ export function buildVsixPackage(options = {}) {
 
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   const outputPath = path.resolve(
-    options.outputPath || path.join(extDir, 'weavemas-viewer.vsix')
+    options.outputPath || path.join(extDir, 'weavemx-viewer.vsix')
   );
 
   const fileMappings = [
@@ -323,7 +323,7 @@ export function buildVsixPackage(options = {}) {
     { zipPath: 'extension/webview_tailwind.css', diskPath: path.join(extDir, 'webview_tailwind.css') },
     { zipPath: 'extension/README.md', diskPath: path.join(extDir, 'README.md') },
     { zipPath: 'extension/LICENSE', diskPath: path.join(repoRoot, 'LICENSE') },
-    // Shared WeaveMAS panel UI & libraries (no sidecar_sdk / main.mjs server)
+    // Shared WeaveMX panel UI & libraries (no sidecar_sdk / main.mjs server)
     { zipPath: 'extension/sidecars/panel/index.html', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'index.html') },
     { zipPath: 'extension/sidecars/panel/app.js', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'app.js') },
     { zipPath: 'extension/sidecars/panel/styles.css', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'styles.css') },
@@ -336,7 +336,7 @@ export function buildVsixPackage(options = {}) {
     { zipPath: 'extension/sidecars/panel/trackers/stage_panel.js', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'trackers', 'stage_panel.js') },
     { zipPath: 'extension/sidecars/panel/trackers/concept_tracker.js', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'trackers', 'concept_tracker.js') },
     { zipPath: 'extension/sidecars/panel/trackers/generic_tracker.js', diskPath: path.join(repoRoot, 'sidecars', 'panel', 'trackers', 'generic_tracker.js') },
-    // Shared WeaveMAS grammar & path resolver imported by sidecars/panel/lib/*
+    // Shared WeaveMX grammar & path resolver imported by sidecars/panel/lib/*
     { zipPath: 'extension/src/status_grammar.mjs', diskPath: path.join(repoRoot, 'src', 'status_grammar.mjs') },
     { zipPath: 'extension/src/path_resolver.mjs', diskPath: path.join(repoRoot, 'src', 'path_resolver.mjs') }
   ];
@@ -379,6 +379,6 @@ if (isCliMain) {
   }
   const result = buildVsixPackage(outArg ? { outputPath: outArg } : {});
   console.log(
-    `Packaged weavemas-viewer v${result.version} (${result.entryPaths.length} files, ${result.bytes} bytes) -> ${result.outputPath}`
+    `Packaged weavemx-viewer v${result.version} (${result.entryPaths.length} files, ${result.bytes} bytes) -> ${result.outputPath}`
   );
 }

@@ -9,8 +9,8 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 function printHelp() {
   console.log(`Usage: node scripts/install-cursor.mjs [options] [target-dir]
 
-Installs the WeaveMAS Cursor adapter (.cursor/rules/*.mdc, .cursor/agents/*.md)
-and registers the 'weavemas_weave' MCP server in <target-dir>/.cursor/mcp.json.
+Installs the WeaveMX Cursor adapter (.cursor/rules/*.mdc, .cursor/agents/*.md)
+and registers the 'weavemx_weave' MCP server in <target-dir>/.cursor/mcp.json.
 
 Options:
   -t, --target <dir>       Target project directory (or pass as first positional arg)
@@ -55,11 +55,11 @@ function main() {
   const rules = result.adapterFiles.filter((f) => f.startsWith('.cursor/rules/'));
   const agents = result.adapterFiles.filter((f) => f.startsWith('.cursor/agents/'));
 
-  console.log(`${prefix}Installed WeaveMAS Cursor adapter into ${result.targetDir.replace(/\\/g, '/')}`);
+  console.log(`${prefix}Installed WeaveMX Cursor adapter into ${result.targetDir.replace(/\\/g, '/')}`);
   console.log(`  Rules  (${rules.length}): ${rules.join(', ')}`);
   console.log(`  Agents (${agents.length}): ${agents.join(', ')}`);
-  console.log(`  MCP    (${result.mcpStatus}): .cursor/mcp.json -> weavemas_weave (${result.mcpServer.args[0]})`);
-  console.log('  Tip: Install the weave.md viewer with `cursor --install-extension extensions/vscode-viewer/weavemas-viewer.vsix`');
+  console.log(`  MCP    (${result.mcpStatus}): .cursor/mcp.json -> weavemx_weave (${result.mcpServer.args[0]})`);
+  console.log('  Tip: Install the weave.md viewer with `cursor --install-extension extensions/vscode-viewer/weavemx-viewer.vsix`');
 }
 
 try {

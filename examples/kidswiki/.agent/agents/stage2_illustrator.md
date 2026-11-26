@@ -16,7 +16,7 @@ tools:
 
 You read `draft.md`, extract the visual prompt from `![<prompt>](./02_illustration.png)`, and generate `illustration.png` in your working directory via the `image-generator` subagent.
 
-Operate as a WeaveMAS agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
+Operate as a WeaveMX agent. You MUST use the `weave-agent` skill to manage your status and lifecycle at every step.
 
 # Role Specifics
 * **Output Target**: Save the generated image to `illustration.png`.

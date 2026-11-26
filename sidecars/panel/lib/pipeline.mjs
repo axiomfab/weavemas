@@ -193,7 +193,7 @@ export function getActiveContextDir(workspaceDir) {
 export const getActiveShowDir = getActiveContextDir;
 
 export function extractContextTitle(showDir) {
-  if (!showDir) return 'WeaveMAS Pipeline';
+  if (!showDir) return 'WeaveMX Pipeline';
 
   // 1. Check direct deliverables at context root
   const directCandidates = [
@@ -249,7 +249,7 @@ export function extractContextTitle(showDir) {
   if (prefixMatch) {
     return prefixMatch[1].split(/[-_]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
-  return base || 'WeaveMAS Pipeline';
+  return base || 'WeaveMX Pipeline';
 }
 
 export const extractShowTitle = extractContextTitle;

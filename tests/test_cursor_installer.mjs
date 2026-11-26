@@ -135,7 +135,7 @@ test('Cursor Installer (#25) - Happy Path: installs valid .mdc rules, agents, an
     const provFm = parseAdapterFrontmatter(fs.readFileSync(provisionerPath, 'utf8')).frontmatter;
     assert.equal(provFm.name, 'provisioner');
     assert.equal(provFm.subagent, true);
-    assert.deepEqual(provFm.tools, ['read_file', 'mcp_weavemas_weave_weave_init']);
+    assert.deepEqual(provFm.tools, ['read_file', 'mcp_weavemx_weave_weave_init']);
 
     const stageFm = parseAdapterFrontmatter(fs.readFileSync(stageOrchPath, 'utf8')).frontmatter;
     assert.equal(stageFm.name, 'stage_orchestrator');
@@ -143,9 +143,9 @@ test('Cursor Installer (#25) - Happy Path: installs valid .mdc rules, agents, an
     assert.deepEqual(stageFm.tools, [
       'read_file',
       'mcp_task',
-      'mcp_weavemas_weave_weave_discover_agents',
-      'mcp_weavemas_weave_weave_update',
-      'mcp_weavemas_weave_weave_read'
+      'mcp_weavemx_weave_weave_discover_agents',
+      'mcp_weavemx_weave_weave_update',
+      'mcp_weavemx_weave_weave_read'
     ]);
 
     // Verify .cursor/mcp.json structure
@@ -243,7 +243,7 @@ test('Cursor Installer CLI (#25) - Happy & Failure Paths: --help, --dry-run, pos
       cwd: REPO_ROOT,
       encoding: 'utf8'
     });
-    assert.match(dryOut, /\[dry-run\] Installed WeaveMAS Cursor adapter/);
+    assert.match(dryOut, /\[dry-run\] Installed WeaveMX Cursor adapter/);
     assert.equal(fs.existsSync(path.join(dryDir, '.cursor')), false);
 
     // Positional target installs cleanly

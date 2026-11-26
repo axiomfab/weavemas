@@ -1,4 +1,4 @@
-// VS Code Webview Host Bridge for WeaveMAS UI (zero polling, zero localhost HTTP)
+// VS Code Webview Host Bridge for WeaveMX UI (zero polling, zero localhost HTTP)
 (function() {
   function createWeaveHostBridge(options) {
     if (options !== undefined && (typeof options !== 'object' || options === null || Array.isArray(options))) {
@@ -10,7 +10,7 @@
       throw new Error('CRITICAL: VS Code Webview API (acquireVsCodeApi) is unavailable');
     }
 
-    const boot = opts.bootConfig || (typeof window !== 'undefined' && window.__WEAVEMAS_BOOT__ ? window.__WEAVEMAS_BOOT__ : {});
+    const boot = opts.bootConfig || (typeof window !== 'undefined' && window.__WEAVEMX_BOOT__ ? window.__WEAVEMX_BOOT__ : {});
     const listeners = new Set();
     const memoryState = {};
 
@@ -44,7 +44,7 @@
       }
     };
 
-    const storedTheme = storage.getItem('weavemas-ui-theme');
+    const storedTheme = storage.getItem('weavemx-ui-theme');
     const defaultTheme = (storedTheme === 'light' || storedTheme === 'dark')
       ? storedTheme
       : (boot.initialTheme === 'light' ? 'light' : 'dark');
@@ -65,7 +65,7 @@
           try {
             fn(msg.payload);
           } catch (err) {
-            console.error('[weavemas-viewer] listener error:', err);
+            console.error('[weavemx-viewer] listener error:', err);
           }
         });
       } else if (msg.type === 'theme-change') {
