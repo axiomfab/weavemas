@@ -1,7 +1,7 @@
 {
   "name": "weavemx",
   "displayName": "WeaveMX",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Declarative Multi-agent eXecution for Google Antigravity with sandboxed weave.md manifests, MCP contract enforcement, and a zero-token UI sidecar.",
   "author": "Martin Lukasiewycz",
   "repository": "https://github.com/axiomfab/weavemx",
