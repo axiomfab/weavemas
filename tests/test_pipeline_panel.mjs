@@ -707,4 +707,23 @@ describe('Pipeline Panel Stage Evaluation', () => {
     assert.equal(stepperTrack.style.minWidth, '');
     assert.equal(stepperRoot.style.display, 'none');
   });
+
+  it('Root Font-Size & Rem Scale (Issue #35): keeps 16px root on html, 13px on body, and avoids text-xs on body', () => {
+    const css = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'styles.css'), 'utf8');
+    const html = readFileSync(resolve(__dirname, '..', 'sidecars', 'panel', 'index.html'), 'utf8');
+    const extJs = readFileSync(resolve(__dirname, '..', 'extensions', 'vscode-viewer', 'extension.js'), 'utf8');
+
+    // Happy Path: html preserves native 16px root for rem/Tailwind scale; body uses 13px scaled by --weave-font-scale
+    assert.match(css, /(?:^|\r?\n)html\s*\{[^}]*font-size:\s*calc\(16px\s*\*\s*var\(--weave-font-scale,\s*1\)\);/);
+    assert.match(css, /(?:^|\r?\n)body\s*\{[^}]*font-size:\s*calc\(13px\s*\*\s*var\(--weave-font-scale,\s*1\)\);/);
+
+    // Failure Path 1: html, body shared block must not set 12px root font-size
+    const sharedBlock = css.match(/html,\s*\r?\nbody\s*\{([^}]*)\}/);
+    assert.ok(sharedBlock, 'Shared html, body rule should exist');
+    assert.doesNotMatch(sharedBlock[1], /font-size\s*:/);
+
+    // Failure Path 2: neither sidecar index.html nor VS Code viewer puts text-xs on <body>
+    assert.doesNotMatch(html, /<body[^>]*\btext-xs\b/);
+    assert.doesNotMatch(extJs, /<body[^>]*\btext-xs\b/);
+  });
 });

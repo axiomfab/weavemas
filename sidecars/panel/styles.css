@@ -127,17 +127,24 @@
   --agy-err: #f43f5e;
 }
 
+html {
+  font-size: calc(16px * var(--weave-font-scale, 1));
+}
+
 html,
 body {
   background-color: var(--agy-bg) !important;
   color: var(--agy-fg) !important;
   font-family: var(--agy-font);
-  font-size: calc(12px * var(--weave-font-scale, 1));
   margin: 0;
   padding: 0;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+body {
+  font-size: calc(13px * var(--weave-font-scale, 1));
 }
 
 /* Flat Native AGY Panel Header */

@@ -63,6 +63,9 @@ All 6 status states share a consistent translucent badge treatment (`color-mix()
 - **Font Stacks:**
   - `--agy-font`: `var(--vscode-font-family, var(--font-family, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif))`
   - `--agy-mono`: `var(--editor-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace)`
+- **Root & Body Baseline (Preserve Native `1rem = 16px` Scale):**
+  - `html` keeps the standard `16px` root (`font-size: calc(16px * var(--weave-font-scale, 1))`) so all `rem`-based Tailwind typography (`text-xs` = `12px`, `text-sm` = `14px`) and spacing utilities (`p-3`, `space-y-4`, `max-w-4xl`) render at full native scale.
+  - `body` sets `font-size: calc(13px * var(--weave-font-scale, 1))` without `text-xs` on `<body>`, matching Antigravity's native UI body scale.
 - **4 Tight Size Levels (scaled with `--app-font-scale, 1`):**
   - `10px` (`--text-2xs`): Status badges, stepper stage-name subtitle, worktree tag (`10.5px`)
   - `11px` (`--text-xs`): Stepper `Stage N` label, deliverable chips, runtime badges, `#show-select` (`11.5px`), toolbar metadata

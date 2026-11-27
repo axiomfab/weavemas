@@ -374,7 +374,7 @@ function renderWebviewHtml(opts) {
   <link rel="stylesheet" href="${tailwindCssUri}">
   <link rel="stylesheet" href="${panelStylesUri}">
 </head>
-<body class="min-h-screen text-xs select-none">
+<body class="min-h-screen select-none">
   <header id="header-root"></header>
 
   <div class="max-w-4xl mx-auto p-3 space-y-4">
