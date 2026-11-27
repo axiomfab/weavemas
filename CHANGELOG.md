@@ -2,6 +2,20 @@
 
 All notable changes to WeaveMAS are documented in this file.
 
+## [1.3.0](https://github.com/axiomfab/weavemx/compare/v1.2.0...v1.3.0) (2026-11-27)
+
+
+### Features
+
+* wrap up WeaveMX UI font and spacing shrink by 25% due to 12px root font-siz… ([f418053](https://github.com/axiomfab/weavemx/commit/f4180539c9c309ae609a0d447cc8c23f192befd7))
+
+
+### Bug Fixes
+
+* **panel:** propagate workspaceUri/contextDir and resolve worktree media ([#34](https://github.com/axiomfab/weavemx/issues/34)) ([2af39db](https://github.com/axiomfab/weavemx/commit/2af39db516cdb0b3c721e37ea09e441f35f33522))
+* **ui:** fix narrow-pane responsive layout for stepper, badges, and toolbars ([#32](https://github.com/axiomfab/weavemx/issues/32)) ([ed2d65e](https://github.com/axiomfab/weavemx/commit/ed2d65ed092f69e597a39c38d439f57f4853384f))
+* **ui:** rename sidecar/panel label from WeaveMX UI to WeaveMX ([#31](https://github.com/axiomfab/weavemx/issues/31)) ([00f54fc](https://github.com/axiomfab/weavemx/commit/00f54fc3581f1c50a9f98e74a4a2a5a81681c278))
+
 ## [1.2.0](https://github.com/axiomfab/weavemx/compare/v1.1.0...v1.2.0) (2026-11-26)
 
 

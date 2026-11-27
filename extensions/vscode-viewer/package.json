@@ -2,7 +2,7 @@
   "name": "weavemx-viewer",
   "displayName": "WeaveMX Viewer",
   "description": "Zero-token custom editor that opens WeaveMX natively on any weave.md pipeline manifest.",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "publisher": "axiomfab",
   "license": "MIT",
   "repository": {
